@@ -21,6 +21,21 @@ const SIZES: Record<Size, string> = {
   sm: 'min-h-[48px] px-5 text-base font-semibold rounded-xl sm:rounded-2xl',
 };
 
+/** คลาสของปุ่ม แยกออกมาเพื่อใช้กับลิงก์ <a> ที่หน้าตาเหมือนปุ่มได้ */
+export const buttonClass = (
+  variant: Variant = 'primary',
+  size: Size = 'md',
+  fullWidth?: boolean,
+  className?: string
+) =>
+  cn(
+    'inline-flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-[0.99]',
+    VARIANTS[variant],
+    SIZES[size],
+    fullWidth && 'w-full',
+    className
+  );
+
 /** ปุ่มมาตรฐาน: ตัวหนังสือชัด ปุ่มสูงอย่างน้อย 48px - 58px */
 export const Button: React.FC<ButtonProps> = ({
   variant = 'primary',
@@ -29,16 +44,4 @@ export const Button: React.FC<ButtonProps> = ({
   type = 'button',
   className,
   ...props
-}) => (
-  <button
-    type={type}
-    className={cn(
-      'inline-flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-[0.99]',
-      VARIANTS[variant],
-      SIZES[size],
-      fullWidth && 'w-full',
-      className
-    )}
-    {...props}
-  />
-);
+}) => <button type={type} className={buttonClass(variant, size, fullWidth, className)} {...props} />;

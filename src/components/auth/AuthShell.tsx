@@ -37,7 +37,7 @@ export const AuthShell: React.FC<AuthShellProps> = ({
 
         <div className="flex items-center gap-3">
           {headerExtra}
-          <span className="text-base font-semibold text-purple-700 bg-purple-50 border border-purple-200/60 px-4 py-1.5 rounded-full">
+          <span className="max-[359px]:hidden text-base font-semibold text-purple-700 bg-purple-50 border border-purple-200/60 px-4 py-1.5 rounded-full">
             Growa Homecare
           </span>
         </div>

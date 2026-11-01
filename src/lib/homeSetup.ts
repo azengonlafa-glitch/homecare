@@ -8,8 +8,6 @@ export interface HomeSetup {
   recipientFirstName?: string;
   recipientLastName?: string;
   timeZone?: string;
-  healthConditions?: string[];
-  heardFrom?: string;
 }
 
 export function loadHomeSetup(): HomeSetup | null {
