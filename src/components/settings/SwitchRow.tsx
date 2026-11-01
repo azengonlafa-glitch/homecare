@@ -6,16 +6,21 @@ interface SwitchRowProps {
   description: string;
   checked: boolean;
   onChange: (checked: boolean) => void;
+  /** ปรับระยะ/มุมของแถว เช่น แถวที่อยู่ในรายการที่คั่นด้วยเส้น */
+  className?: string;
 }
 
 /** แถวสวิตช์เปิด/ปิดทั้งแถวกดได้ กดง่ายด้วยนิ้วเดียว (สูงกว่าขั้นต่ำ 48px) */
-export const SwitchRow: React.FC<SwitchRowProps> = ({ label, description, checked, onChange }) => (
+export const SwitchRow: React.FC<SwitchRowProps> = ({ label, description, checked, onChange, className }) => (
   <button
     type="button"
     role="switch"
     aria-checked={checked}
     onClick={() => onChange(!checked)}
-    className="flex w-full items-center justify-between gap-4 min-h-[72px] px-1 py-4 text-left cursor-pointer rounded-2xl hover:bg-slate-50 transition-colors"
+    className={cn(
+      'flex w-full items-center justify-between gap-4 min-h-[72px] px-1 py-4 text-left cursor-pointer rounded-2xl hover:bg-slate-50 active:bg-slate-100 transition-colors',
+      className
+    )}
   >
     <span className="min-w-0">
       <span className="block text-base sm:text-lg font-bold text-slate-900 break-words">{label}</span>
