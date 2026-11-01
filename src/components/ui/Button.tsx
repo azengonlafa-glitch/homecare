@@ -30,6 +30,8 @@ export const buttonClass = (
 ) =>
   cn(
     'inline-flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-[0.99]',
+    // ปุ่มที่ถูกปิด: จางลง กดไม่ได้ และไม่ยุบตอนกด
+    'disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100',
     VARIANTS[variant],
     SIZES[size],
     fullWidth && 'w-full',
