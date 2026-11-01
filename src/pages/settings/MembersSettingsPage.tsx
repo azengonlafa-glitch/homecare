@@ -125,7 +125,7 @@ export const MembersSettingsPage: React.FC = () => {
       <ConfirmDialog
         open={!!removing}
         title={`นำ ${removing?.name ?? ''} ออกจากบ้าน?`}
-        message={`เมื่อนำออกแล้ว ${removing?.name ?? 'สมาชิกคนนี้'} จะเปิดดูข้อมูลของบ้านนี้ไม่ได้อีก`}
+        message={`${removing?.name ?? 'สมาชิกคนนี้'} จะเปิดดูข้อมูลของบ้านนี้ไม่ได้อีก ถ้าต้องการให้กลับมา ต้องชวนด้วยรหัสอีกครั้ง`}
         confirmLabel="นำออก"
         onCancel={() => setRemoving(null)}
         onConfirm={confirmRemove}

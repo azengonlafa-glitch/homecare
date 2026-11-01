@@ -119,9 +119,10 @@ export const HomeCodeSettingsPage: React.FC = () => {
 
       <ConfirmDialog
         open={confirmChange}
-        title="เปลี่ยนรหัสใหม่?"
-        message="รหัสเก่าจะใช้ไม่ได้ ต้องการเปลี่ยนไหม?"
+        title="เปลี่ยนรหัสชวนใหม่?"
+        message="รหัสเดิมจะใช้ไม่ได้ทันที ญาติที่ยังไม่ได้เข้าร่วมบ้านต้องขอรหัสใหม่จากคุณ ส่วนคนที่อยู่ในบ้านแล้วไม่ได้รับผลกระทบ"
         confirmLabel="เปลี่ยนรหัส"
+        tone="primary"
         onCancel={() => setConfirmChange(false)}
         onConfirm={handleChangeCode}
       />

@@ -127,7 +127,7 @@ export const SettingsPage: React.FC = () => {
       <ConfirmDialog
         open={confirm === 'logout'}
         title="ออกจากบ้าน?"
-        message="คุณจะกลับไปหน้าเข้าสู่ระบบ ข้อมูลของบ้านนี้ยังอยู่ครบ"
+        message="คุณจะออกจากระบบและกลับไปหน้าเข้าสู่ระบบ ข้อมูลของบ้านและสมาชิกยังอยู่ครบ เข้ามาใหม่ได้ด้วยบัญชีเดิม"
         confirmLabel="ออกจากบ้าน"
         onCancel={() => setConfirm(null)}
         onConfirm={handleLogout}
@@ -136,7 +136,7 @@ export const SettingsPage: React.FC = () => {
       <ConfirmDialog
         open={confirm === 'reset'}
         title="รีเซ็ตข้อมูลสมมติ?"
-        message="ข้อมูลทั้งหมดจะกลับไปเป็นค่าเริ่มต้นเหมือนเปิดแอปครั้งแรก แล้วพากลับไปหน้าตั้งค่าบ้าน"
+        message="ข้อมูลทั้งหมดในเครื่องนี้จะถูกลบ ได้แก่ ข้อมูลสุขภาพ บ้านและรหัสชวน บันทึกอาการ กิจกรรมในปฏิทิน และรูปที่แนบไว้ แล้วเริ่มใหม่ที่หน้าตั้งค่าบ้าน กู้คืนไม่ได้"
         confirmLabel="รีเซ็ตข้อมูล"
         onCancel={() => setConfirm(null)}
         onConfirm={handleReset}
