@@ -12,11 +12,11 @@
 
   /* ขนาดตัวอักษรทั้งแอป ปรับได้ที่หน้า "ตั้งค่า > ขนาดตัวอักษร" */
   html[data-font-scale='large'] {
-    font-size: 20px;
+    font-size: 22px;
   }
 
   html[data-font-scale='xlarge'] {
-    font-size: 22px;
+    font-size: 26px;
   }
 
   body {

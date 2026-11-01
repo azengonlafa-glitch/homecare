@@ -47,8 +47,8 @@ export const CURRENT_MEMBER_ID = 'me';
 
 export const FONT_SCALES: { value: FontScale; label: string; px: number }[] = [
   { value: 'normal', label: 'ปกติ', px: 18 },
-  { value: 'large', label: 'ใหญ่', px: 20 },
-  { value: 'xlarge', label: 'ใหญ่มาก', px: 22 },
+  { value: 'large', label: 'ใหญ่', px: 22 },
+  { value: 'xlarge', label: 'ใหญ่มาก', px: 26 },
 ];
 
 export const LOW_STOCK_DAY_OPTIONS: LowStockDays[] = [3, 5, 7, 10];

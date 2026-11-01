@@ -4,13 +4,10 @@ import { Card } from '../../components/ui/Card';
 import { PageLayout } from '../../components/settings/PageLayout';
 import { useToast } from '../../components/ui/Toast';
 import { cn } from '../../lib/cn';
-import {
-  FONT_SCALES,
-  applyFontScale,
-  loadSettings,
-  saveSettings,
-  type FontScale,
-} from '../../lib/settings';
+import { FONT_SCALES, applyFontScale, loadSettings, saveSettings, type FontScale } from '../../lib/settings';
+
+/** ข้อความตัวอย่างจริงในแอป (ชื่อยา ขนาด วิธีกิน) ใช้ให้ผู้ใช้เห็นว่าแต่ละขนาดอ่านเป็นอย่างไร */
+const SAMPLE_TEXT = 'ยาความดัน เม็ดเล็ก หลังอาหารเช้า';
 
 /** ตั้งค่า > ขนาดตัวอักษร: เลือก 3 ระดับ เห็นผลทั้งแอปทันที */
 export const FontSizeSettingsPage: React.FC = () => {
@@ -20,6 +17,7 @@ export const FontSizeSettingsPage: React.FC = () => {
   const selected = FONT_SCALES.find((option) => option.value === settings.fontScale) ?? FONT_SCALES[0];
 
   const choose = (value: FontScale) => {
+    if (value === settings.fontScale) return;
     const next = saveSettings({ ...settings, fontScale: value });
     setSettings(next);
     applyFontScale(value);
@@ -55,8 +53,17 @@ export const FontSizeSettingsPage: React.FC = () => {
                   className="sr-only"
                 />
                 <span className="flex-1 min-w-0">
-                  <span className="block text-lg font-bold text-slate-900">{option.label}</span>
-                  <span className="block mt-0.5 text-sm text-slate-600">ตัวอักษร {option.px}px</span>
+                  <span className="block text-base font-bold text-slate-900">{option.label}</span>
+                  {/*
+                    ตัวอย่างวาดที่ขนาดจริงของตัวเลือกนี้ โดยคำนวณเป็น rem เทียบกับขนาดฐานที่ใช้อยู่ตอนนี้
+                    (ไม่ใช้ px ตายตัว) เมื่อเปลี่ยนตัวเลือก ขนาดฐานเปลี่ยน ตัวอย่างทุกบรรทัดก็คำนวณใหม่ให้ถูก
+                  */}
+                  <span
+                    className="block mt-1 text-slate-700 break-words leading-snug"
+                    style={{ fontSize: `${option.px / selected.px}rem` }}
+                  >
+                    {SAMPLE_TEXT}
+                  </span>
                 </span>
                 <span
                   aria-hidden="true"
@@ -73,14 +80,14 @@ export const FontSizeSettingsPage: React.FC = () => {
         </div>
       </fieldset>
 
-      <Card className="bg-purple-50/70 border-purple-200">
-        <p className="text-sm font-bold text-purple-900">ตัวอย่างข้อความ</p>
-        <p
-          style={{ fontSize: `${selected.px}px`, lineHeight: 1.7 }}
-          className="mt-2 text-slate-900 break-words"
-        >
-          นี่คือข้อความตัวอย่างขนาด {selected.px}px อ่านสบายตาสำหรับทุกคนในบ้าน
-        </p>
+      {/* ตัวอย่างหน้าตาจริงในแอป ใช้ขนาดตามที่เลือกอยู่ และอัปเดตทันทีเมื่อแตะตัวเลือก */}
+      <Card className="bg-purple-50/70 border-purple-200" aria-live="polite">
+        <p className="text-sm font-bold text-purple-900">ตัวอย่างในแอป ({selected.label})</p>
+        <div className="mt-3 rounded-2xl bg-white border border-purple-100 p-4">
+          <p className="text-lg font-bold text-slate-900 break-words">ยาความดัน</p>
+          <p className="mt-1 text-base text-slate-800 break-words">เม็ดเล็ก · หลังอาหารเช้า</p>
+          <p className="mt-1 text-sm text-slate-600">เหลือ 12 เม็ด</p>
+        </div>
       </Card>
     </PageLayout>
   );
