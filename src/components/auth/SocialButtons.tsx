@@ -7,25 +7,25 @@ interface SocialButtonsProps {
 }
 
 const socialButtonClass =
-  'w-14 h-12 flex items-center justify-center bg-white border border-slate-200 rounded-xl hover:bg-slate-50 active:bg-slate-100 transition-colors cursor-pointer';
+  'w-18 h-14 sm:w-20 sm:h-15 px-4 flex items-center justify-center bg-white border border-slate-300 rounded-2xl hover:bg-slate-50 active:bg-slate-100 transition-all cursor-pointer shadow-xs hover:border-slate-400';
 
-/** ตัวคั่น "or do it via other accounts" และปุ่ม Google / Apple */
+/** ตัวคั่น "or do it via other accounts" และปุ่ม Google / Apple ขนาดใหญ่ขึ้น */
 export const SocialButtons: React.FC<SocialButtonsProps> = ({ labelPrefix, onClick }) => (
   <>
-    <div className="relative my-6">
+    <div className="relative my-7 sm:my-8">
       <div className="absolute inset-0 flex items-center">
         <div className="w-full border-t border-slate-200" />
       </div>
-      <div className="relative flex justify-center text-xs">
-        <span className="bg-white px-3 text-slate-500 uppercase tracking-wider font-medium">
+      <div className="relative flex justify-center text-sm">
+        <span className="bg-white px-4 text-slate-500 uppercase tracking-wider font-semibold text-xs sm:text-sm">
           or do it via other accounts
         </span>
       </div>
     </div>
 
-    <div className="flex items-center justify-center gap-4">
+    <div className="flex items-center justify-center gap-5">
       <button type="button" onClick={onClick} className={socialButtonClass} aria-label={`${labelPrefix} Google`}>
-        <svg className="w-5 h-5" viewBox="0 0 24 24" aria-hidden="true">
+        <svg className="w-6 h-6" viewBox="0 0 24 24" aria-hidden="true">
           <path
             fill="#4285F4"
             d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.65v3.03h3.88c2.27-2.09 3.66-5.17 3.66-9.12z"
@@ -46,7 +46,7 @@ export const SocialButtons: React.FC<SocialButtonsProps> = ({ labelPrefix, onCli
       </button>
 
       <button type="button" onClick={onClick} className={socialButtonClass} aria-label={`${labelPrefix} Apple`}>
-        <svg className="w-5 h-5 fill-slate-900" viewBox="0 0 24 24" aria-hidden="true">
+        <svg className="w-6 h-6 fill-slate-900" viewBox="0 0 24 24" aria-hidden="true">
           <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.84c.64-.78 1.08-1.87.96-2.96-.93.04-2.05.62-2.71 1.4-.58.67-1.09 1.77-.95 2.83 1.03.08 2.06-.5 2.7-1.27z" />
         </svg>
       </button>

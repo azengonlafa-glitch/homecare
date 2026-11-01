@@ -7,12 +7,12 @@ interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   interactive?: boolean;
 }
 
-/** การ์ดมาตรฐาน: มุมโค้งพอดี เส้นขอบบาง ไม่มีเงา */
+/** การ์ดมาตรฐาน: ขนาดใหญ่ขึ้น นุ่มนวล สบายตา */
 export const Card: React.FC<CardProps> = ({ interactive, className, ...props }) => (
   <div
     className={cn(
-      'bg-white border border-slate-200 rounded-2xl p-5 sm:p-6',
-      interactive && 'transition-colors hover:border-purple-300',
+      'bg-white border border-slate-200/90 rounded-3xl p-6 sm:p-8 shadow-xs',
+      interactive && 'transition-all hover:border-purple-300 hover:shadow-md',
       className
     )}
     {...props}
@@ -27,9 +27,9 @@ interface CardHeaderProps {
 
 /** หัวข้อภายในการ์ด: ไอคอน + ชื่อ + ลิงก์/ปุ่มด้านขวา */
 export const CardHeader: React.FC<CardHeaderProps> = ({ icon: Icon, title, action }) => (
-  <div className="flex items-center justify-between gap-3 mb-4">
-    <h2 className="min-w-0 text-xl font-bold text-slate-900 flex items-center gap-2">
-      {Icon && <Icon className="w-6 h-6 shrink-0 text-purple-700" aria-hidden="true" />}
+  <div className="flex items-center justify-between gap-3 mb-5">
+    <h2 className="min-w-0 text-xl sm:text-2xl font-bold text-slate-900 flex items-center gap-2.5">
+      {Icon && <Icon className="w-7 h-7 shrink-0 text-purple-700" aria-hidden="true" />}
       <span>{title}</span>
     </h2>
     {action && <div className="shrink-0">{action}</div>}

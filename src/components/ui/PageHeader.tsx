@@ -1,22 +1,30 @@
 import React from 'react';
 
 interface PageHeaderProps {
+  /** ข้อความนำด้านบน เช่น "บ้านของคุณ" */
+  eyebrow?: string;
   title: string;
   description?: string;
-  /** ข้อความเล็กเหนือชื่อหน้า */
-  eyebrow?: string;
-  /** ปุ่มหรือช่องค้นหาด้านขวา (ย้ายลงใต้ชื่อบนมือถือ) */
+  /** ปุ่มหรือตัวควบคุมด้านขวาของหัวหน้า เช่น ปุ่มเพิ่มข้อมูล */
   action?: React.ReactNode;
 }
 
-/** หัวข้อหน้ามาตรฐานสำหรับทุกหน้าในแอป */
-export const PageHeader: React.FC<PageHeaderProps> = ({ title, description, eyebrow, action }) => (
-  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-    <div className="min-w-0">
-      {eyebrow && <p className="text-sm font-semibold text-purple-700 mb-1">{eyebrow}</p>}
-      <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 break-words">{title}</h1>
+/** ส่วนหัวหน้าจอมาตรฐาน: ขนาดใหญ่ ชัดเจน อ่านสบายตา */
+export const PageHeader: React.FC<PageHeaderProps> = ({ eyebrow, title, description, action }) => (
+  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+    <div>
+      {eyebrow && (
+        <span className="text-sm sm:text-base font-bold text-purple-700 bg-purple-50 border border-purple-200/60 px-3.5 py-1 rounded-full uppercase tracking-wide inline-block mb-2">
+          {eyebrow}
+        </span>
+      )}
+      <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight">
+        {title}
+      </h1>
       {description && (
-        <p className="text-slate-600 text-sm sm:text-base mt-1">{description}</p>
+        <p className="text-base sm:text-xl text-slate-600 mt-2 font-medium">
+          {description}
+        </p>
       )}
     </div>
     {action && <div className="shrink-0">{action}</div>}

@@ -9,13 +9,13 @@ interface BrandMarkProps {
 }
 
 export const BrandMark: React.FC<BrandMarkProps> = ({ compact }) => (
-  <NavLink to="/" aria-label="Growa Homecare หน้าหลัก" className="flex items-center gap-3 min-w-0">
-    <div className="w-10 h-10 shrink-0 rounded-xl bg-purple-700 flex items-center justify-center text-white">
+  <NavLink to="/" aria-label="Growa Homecare หน้าหลัก" className="flex items-center gap-3.5 min-w-0">
+    <div className="w-11 h-11 shrink-0 rounded-2xl bg-purple-700 flex items-center justify-center text-white shadow-xs">
       <Pill className="w-6 h-6" aria-hidden="true" />
     </div>
     <span
       className={cn(
-        'text-lg font-bold text-purple-700 tracking-tight leading-tight whitespace-nowrap max-[359px]:hidden',
+        'text-xl font-bold text-purple-700 tracking-tight leading-tight whitespace-nowrap max-[359px]:hidden',
         compact && 'hidden lg:block'
       )}
     >

@@ -11,7 +11,7 @@ interface AuthShellProps {
   children: React.ReactNode;
 }
 
-/** กรอบการ์ดกลางจอสำหรับหน้าเข้าสู่ระบบและสมัครสมาชิก */
+/** กรอบการ์ดกลางจอสำหรับหน้าเข้าสู่ระบบและสมัครสมาชิก ขนาดใหญ่เต็มตา อ่านง่าย สบายตา */
 export const AuthShell: React.FC<AuthShellProps> = ({
   onBack,
   backLabel,
@@ -20,29 +20,33 @@ export const AuthShell: React.FC<AuthShellProps> = ({
   subtitle,
   children,
 }) => (
-  <div className="min-h-dvh w-full bg-[#FAF5FF]/30 sm:bg-slate-50/80 flex items-center justify-center p-3 sm:p-6">
-    <div className="w-full max-w-[440px] bg-white rounded-2xl p-6 sm:p-8 sm:border sm:border-slate-200">
-      <div className="flex items-center justify-between gap-2 mb-6">
+  <div className="min-h-dvh w-full bg-[#FAF5FF]/40 sm:bg-slate-100/70 flex items-center justify-center p-4 sm:p-8 md:p-12">
+    <div className="w-full max-w-xl md:max-w-[580px] bg-white rounded-3xl p-8 sm:p-12 shadow-xl shadow-purple-900/5 sm:border sm:border-slate-200/80 transition-all">
+      <div className="flex items-center justify-between gap-3 mb-8">
         <button
           type="button"
           onClick={onBack}
-          className="inline-flex items-center justify-center w-11 h-11 -ml-2 rounded-full text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
+          className="inline-flex items-center justify-center w-12 h-12 -ml-2 rounded-full text-slate-700 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
           aria-label={backLabel}
         >
-          <ArrowLeft className="w-6 h-6" aria-hidden="true" />
+          <ArrowLeft className="w-7 h-7" aria-hidden="true" />
         </button>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           {headerExtra}
-          <span className="text-sm font-medium text-purple-700 bg-purple-50 px-3 py-1 rounded-full">
+          <span className="text-base font-semibold text-purple-700 bg-purple-50 border border-purple-200/60 px-4 py-1.5 rounded-full">
             Growa Homecare
           </span>
         </div>
       </div>
 
-      <div className="text-center mb-6">
-        <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">{title}</h1>
-        <p className="text-sm text-slate-500 mt-1">{subtitle}</p>
+      <div className="text-center mb-8 sm:mb-10">
+        <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 tracking-tight leading-tight">
+          {title}
+        </h1>
+        <p className="text-base sm:text-lg text-slate-600 mt-2">
+          {subtitle}
+        </p>
       </div>
 
       {children}
