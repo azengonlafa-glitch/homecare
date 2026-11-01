@@ -13,6 +13,7 @@ dist-ssr
 *.local
 
 # Editor directories and files
+skills-lock.json
 .claude/
 *.lnk
 .vscode/*
