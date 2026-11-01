@@ -26,10 +26,11 @@ export const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white flex flex-col justify-between max-w-md mx-auto px-6 py-8">
-      {/* ส่วนบน: ปุ่มย้อนกลับและปุ่ม Demo */}
-      <div>
-        <div className="flex items-center justify-between mb-8">
+    <div className="min-h-screen w-full bg-[#FAF5FF]/30 sm:bg-slate-50/80 flex items-center justify-center p-3 sm:p-6">
+      {/* การ์ดฟอร์ม: บนมือถือเต็มจอ บนจอคอมพิวเตอร์แสดงเป็นการ์ดคลีนตรงกลางจอพอดี */}
+      <div className="w-full max-w-[440px] bg-white rounded-3xl p-6 sm:p-8 sm:shadow-xl sm:border sm:border-purple-100/60 transition-all">
+        {/* ส่วนบน: ปุ่มย้อนกลับและปุ่ม Demo */}
+        <div className="flex items-center justify-between mb-6">
           <button
             type="button"
             onClick={() => navigate('/')}
@@ -45,7 +46,7 @@ export const LoginPage: React.FC = () => {
               type="button"
               onClick={handleDemoLogin}
               title="กดเพื่อเข้าใช้งานแบบ Demo ทันทีสำหรับทดสอบ"
-              className="text-xs font-semibold bg-purple-100 hover:bg-purple-200 active:bg-purple-300 text-purple-800 px-3 py-1 rounded-full border border-purple-300 transition-all shadow-xs flex items-center space-x-1"
+              className="text-xs font-semibold bg-purple-100 hover:bg-purple-200 active:bg-purple-300 text-purple-800 px-3 py-1 rounded-full border border-purple-300 transition-all shadow-xs flex items-center space-x-1 cursor-pointer"
             >
               <span>⚡</span>
               <span>Demo</span>
@@ -57,20 +58,20 @@ export const LoginPage: React.FC = () => {
         </div>
 
         {/* หัวข้อหน้าจอ */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-6">
           <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
             Sign in to your account
           </h1>
-          <p className="text-sm text-slate-500 mt-1.5">
+          <p className="text-sm text-slate-500 mt-1">
             เข้าสู่ระบบเพื่อดูแลยาของครอบครัว
           </p>
         </div>
 
         {/* ฟอร์มเข้าสู่ระบบ */}
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-4">
           {/* ฟิลด์ E-mail */}
           <div>
-            <label htmlFor="email" className="block text-sm font-semibold text-slate-800 mb-2">
+            <label htmlFor="email" className="block text-sm font-semibold text-slate-800 mb-1.5">
               E-mail
             </label>
             <input
@@ -80,13 +81,13 @@ export const LoginPage: React.FC = () => {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Enter your e-mail"
               required
-              className="w-full min-h-[48px] px-4 py-3 bg-white border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-600 focus:border-transparent transition-all shadow-sm text-base"
+              className="w-full min-h-[48px] px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-600 focus:border-transparent transition-all shadow-xs text-base"
             />
           </div>
 
           {/* ฟิลด์ Password */}
           <div>
-            <label htmlFor="password" className="block text-sm font-semibold text-slate-800 mb-2">
+            <label htmlFor="password" className="block text-sm font-semibold text-slate-800 mb-1.5">
               Password
             </label>
             <div className="relative">
@@ -97,7 +98,7 @@ export const LoginPage: React.FC = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter your password"
                 required
-                className="w-full min-h-[48px] px-4 py-3 pr-12 bg-white border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-600 focus:border-transparent transition-all shadow-sm text-base"
+                className="w-full min-h-[48px] px-4 py-2.5 pr-12 bg-white border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-600 focus:border-transparent transition-all shadow-xs text-base"
               />
               <button
                 type="button"
@@ -111,7 +112,7 @@ export const LoginPage: React.FC = () => {
           </div>
 
           {/* Remember me & Forgot password */}
-          <div className="flex items-center justify-between pt-1 text-sm">
+          <div className="flex items-center justify-between pt-0.5 text-sm">
             <label className="flex items-center space-x-2.5 cursor-pointer select-none">
               <input
                 type="checkbox"
@@ -133,17 +134,17 @@ export const LoginPage: React.FC = () => {
             </a>
           </div>
 
-          {/* ปุ่ม Sign in สีม่วง คลีนและเด่นชัด */}
+          {/* ปุ่ม Sign in สีม่วง */}
           <button
             type="submit"
-            className="w-full min-h-[50px] bg-purple-700 hover:bg-purple-800 active:bg-purple-900 text-white font-semibold rounded-xl transition-all shadow-sm shadow-purple-200 flex items-center justify-center text-base"
+            className="w-full min-h-[48px] bg-purple-700 hover:bg-purple-800 active:bg-purple-900 text-white font-semibold rounded-xl transition-all shadow-sm shadow-purple-200 flex items-center justify-center text-base cursor-pointer"
           >
             Sign in
           </button>
         </form>
 
         {/* ตัวคั่น or do it via other accounts */}
-        <div className="relative my-7">
+        <div className="relative my-6">
           <div className="absolute inset-0 flex items-center">
             <div className="w-full border-t border-slate-200" />
           </div>
@@ -155,12 +156,12 @@ export const LoginPage: React.FC = () => {
         </div>
 
         {/* Social Login: Google & Apple */}
-        <div className="flex items-center justify-center space-x-4">
+        <div className="flex items-center justify-center space-x-4 mb-6">
           {/* Google Button */}
           <button
             type="button"
             onClick={handleSubmit}
-            className="w-14 h-12 flex items-center justify-center bg-white border border-slate-200 rounded-xl hover:bg-slate-50 active:bg-slate-100 transition-colors shadow-sm"
+            className="w-14 h-12 flex items-center justify-center bg-white border border-slate-200 rounded-xl hover:bg-slate-50 active:bg-slate-100 transition-colors shadow-xs cursor-pointer"
             aria-label="Sign in with Google"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -187,7 +188,7 @@ export const LoginPage: React.FC = () => {
           <button
             type="button"
             onClick={handleSubmit}
-            className="w-14 h-12 flex items-center justify-center bg-white border border-slate-200 rounded-xl hover:bg-slate-50 active:bg-slate-100 transition-colors shadow-sm"
+            className="w-14 h-12 flex items-center justify-center bg-white border border-slate-200 rounded-xl hover:bg-slate-50 active:bg-slate-100 transition-colors shadow-xs cursor-pointer"
             aria-label="Sign in with Apple"
           >
             <svg className="w-5 h-5 fill-slate-900" viewBox="0 0 24 24">
@@ -195,16 +196,16 @@ export const LoginPage: React.FC = () => {
             </svg>
           </button>
         </div>
-      </div>
 
-      {/* ลิงก์สลับไปหน้า Sign up */}
-      <div className="text-center pt-8">
-        <p className="text-sm text-slate-600">
-          Don’t have an account?{' '}
-          <Link to="/signup" className="text-purple-700 font-semibold hover:text-purple-800 transition-colors">
-            Sign up for free
-          </Link>
-        </p>
+        {/* ลิงก์สลับไปหน้า Sign up */}
+        <div className="text-center pt-2">
+          <p className="text-sm text-slate-600">
+            Don’t have an account?{' '}
+            <Link to="/signup" className="text-purple-700 font-semibold hover:text-purple-800 transition-colors">
+              Sign up for free
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );
