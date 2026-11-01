@@ -31,3 +31,11 @@ export function saveHomeSetup(setup: HomeSetup): void {
 export function pathAfterLogin(): string {
   return loadHomeSetup() ? '/' : '/setup';
 }
+
+export function clearHomeSetup(): void {
+  try {
+    localStorage.removeItem(SETUP_KEY);
+  } catch {
+    // ไม่มีสิทธิ์เข้าถึง localStorage: ข้ามได้
+  }
+}

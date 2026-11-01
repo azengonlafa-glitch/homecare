@@ -6,6 +6,7 @@ import { PasswordToggle } from '../components/auth/PasswordToggle';
 import { TextField } from '../components/ui/TextField';
 import { Button } from '../components/ui/Button';
 import { pathAfterLogin } from '../lib/homeSetup';
+import { resetDemoState } from '../lib/demo';
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
@@ -22,12 +23,13 @@ export const LoginPage: React.FC = () => {
   };
 
   const handleDemoLogin = () => {
-    // เข้าสู่ระบบแบบ Demo ทันที สะดวกสำหรับนักพัฒนาและการทดสอบ
+    // เข้าสู่ระบบแบบ Demo: เริ่มใหม่ทุกครั้ง แล้วพาไปหน้าเข้าร่วม/สร้างบ้านก่อน จากนั้นกรอกข้อมูลพื้นฐาน
+    resetDemoState();
     localStorage.setItem(
       'growa_auth_user',
       JSON.stringify({ email: 'demo@growa-homecare.com', name: 'ผู้ใช้ทดสอบ (Demo)' })
     );
-    navigate(pathAfterLogin());
+    navigate('/setup');
   };
 
   return (

@@ -120,7 +120,7 @@ export const HomeCreatedPanel: React.FC<HomeCreatedPanelProps> = ({ homeName, co
       </p>
 
       <Button fullWidth className="mt-8" onClick={onContinue}>
-        เข้าสู่หน้าหลัก
+        ต่อไป: กรอกข้อมูลสุขภาพพื้นฐาน
       </Button>
     </Card>
   );

@@ -77,7 +77,7 @@ export const HomeSetupPage: React.FC = () => {
     }
     // ต้นแบบ: ยังไม่มีเซิร์ฟเวอร์ตรวจรหัส จึงบันทึกรหัสไว้ในเครื่องแล้วไปต่อ
     saveHomeSetup({ mode: 'join', inviteCode: digits });
-    navigate('/');
+    navigate('/onboarding');
   };
 
   const handleCreate = (e: React.FormEvent) => {
@@ -127,7 +127,7 @@ export const HomeSetupPage: React.FC = () => {
           <HomeCreatedPanel
             homeName={created.homeName}
             code={created.code}
-            onContinue={() => navigate('/')}
+            onContinue={() => navigate('/onboarding')}
           />
         ) : (
           <>
