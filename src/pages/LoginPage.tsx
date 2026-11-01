@@ -16,9 +16,18 @@ export const LoginPage: React.FC = () => {
     navigate('/');
   };
 
+  const handleDemoLogin = () => {
+    // เข้าสู่ระบบแบบ Demo ทันที สะดวกสำหรับนักพัฒนาและการทดสอบ
+    localStorage.setItem(
+      'growa_auth_user',
+      JSON.stringify({ email: 'demo@growa-homecare.com', name: 'ผู้ใช้ทดสอบ (Demo)' })
+    );
+    navigate('/');
+  };
+
   return (
     <div className="min-h-screen bg-white flex flex-col justify-between max-w-md mx-auto px-6 py-8">
-      {/* ส่วนบน: ปุ่มย้อนกลับ */}
+      {/* ส่วนบน: ปุ่มย้อนกลับและปุ่ม Demo */}
       <div>
         <div className="flex items-center justify-between mb-8">
           <button
@@ -29,9 +38,22 @@ export const LoginPage: React.FC = () => {
           >
             <ArrowLeft className="w-6 h-6" />
           </button>
-          <span className="text-sm font-medium text-purple-700 bg-purple-50 px-3 py-1 rounded-full">
-            Growa Homecare
-          </span>
+          
+          <div className="flex items-center space-x-2">
+            {/* ปุ่มเล็ก Demo สำหรับ dev */}
+            <button
+              type="button"
+              onClick={handleDemoLogin}
+              title="กดเพื่อเข้าใช้งานแบบ Demo ทันทีสำหรับทดสอบ"
+              className="text-xs font-semibold bg-purple-100 hover:bg-purple-200 active:bg-purple-300 text-purple-800 px-3 py-1 rounded-full border border-purple-300 transition-all shadow-xs flex items-center space-x-1"
+            >
+              <span>⚡</span>
+              <span>Demo</span>
+            </button>
+            <span className="text-sm font-medium text-purple-700 bg-purple-50 px-3 py-1 rounded-full">
+              Growa Homecare
+            </span>
+          </div>
         </div>
 
         {/* หัวข้อหน้าจอ */}
@@ -187,3 +209,4 @@ export const LoginPage: React.FC = () => {
     </div>
   );
 };
+
