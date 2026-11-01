@@ -105,7 +105,7 @@ export const HomeCodeSettingsPage: React.FC = () => {
       }
     >
       <Card>
-        <p className="text-sm font-semibold text-slate-500">ชื่อบ้าน</p>
+        <p className="text-sm font-semibold text-slate-600">ชื่อบ้าน</p>
         <p className="mt-1 text-lg font-bold text-slate-900 break-words">{settings.homeName}</p>
 
         <div className="mt-6 rounded-2xl bg-purple-50 border border-purple-200 px-4 py-6 text-center">

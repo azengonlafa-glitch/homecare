@@ -2,10 +2,21 @@
 @tailwind components;
 @tailwind utilities;
 
+/* หมายเหตุ: ขนาดตัวอักษรของ Tailwind กำหนดเป็น rem ใน tailwind.config.js */
+
 @layer base {
   html {
     font-size: 18px; /* ตัวอักษรหลักเริ่มต้นอย่างน้อย 18px */
     -webkit-tap-highlight-color: transparent;
+  }
+
+  /* ขนาดตัวอักษรทั้งแอป ปรับได้ที่หน้า "ตั้งค่า > ขนาดตัวอักษร" */
+  html[data-font-scale='large'] {
+    font-size: 20px;
+  }
+
+  html[data-font-scale='xlarge'] {
+    font-size: 22px;
   }
 
   body {

@@ -80,7 +80,7 @@ export const MembersSettingsPage: React.FC = () => {
                     <p className="text-base sm:text-lg font-bold text-slate-900 break-words">
                       {member.name}
                       {member.id === CURRENT_MEMBER_ID && (
-                        <span className="font-normal text-slate-500"> (คุณ)</span>
+                        <span className="font-normal text-slate-600"> (คุณ)</span>
                       )}
                     </p>
                     <p className="mt-0.5 text-sm text-slate-600 break-words">

@@ -26,7 +26,7 @@ const SettingsRow: React.FC<SettingsRowProps> = ({ to, label, value }) => (
         <span className="block text-base sm:text-lg font-bold text-slate-900 break-words">{label}</span>
         {value && <span className="block mt-0.5 text-sm text-slate-600 truncate">{value}</span>}
       </span>
-      <ChevronRight className="w-6 h-6 shrink-0 text-slate-400" aria-hidden="true" />
+      <ChevronRight className="w-6 h-6 shrink-0 text-slate-500" aria-hidden="true" />
     </Link>
   </li>
 );
@@ -93,7 +93,7 @@ export const SettingsPage: React.FC = () => {
 
       {isTestMode && (
         <Card className="border-dashed border-2 border-slate-300 bg-slate-50/60">
-          <p className="text-sm font-bold text-slate-500 uppercase tracking-wide">เครื่องมือทดสอบ</p>
+          <p className="text-sm font-bold text-slate-600 uppercase tracking-wide">เครื่องมือทดสอบ</p>
           <p className="mt-1 text-sm text-slate-600">แสดงเฉพาะเมื่อเปิดลิงก์ด้วย ?test=1</p>
 
           <div className="mt-4 space-y-3">

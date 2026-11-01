@@ -35,14 +35,15 @@ export default {
           border: '#E2E8F0',
         }
       },
+      // ใช้ rem เพื่อให้ขนาดตัวอักษรทั้งแอปขยายตามค่า html font-size
+      // (ตัวอักษรหลักที่ขนาดปกติ = 18px, หน้า "ตั้งค่า > ขนาดตัวอักษร" ปรับได้ 18/20/22px)
       fontSize: {
-        // ตัวอักษรหลักเริ่มต้นอย่างน้อย 18px
-        sm: ['16px', { lineHeight: '24px' }],
-        base: ['18px', { lineHeight: '28px' }],
-        lg: ['20px', { lineHeight: '30px' }],
-        xl: ['24px', { lineHeight: '32px' }],
-        '2xl': ['28px', { lineHeight: '36px' }],
-        '3xl': ['32px', { lineHeight: '40px' }],
+        sm: ['0.8889rem', { lineHeight: '1.3333rem' }],
+        base: ['1rem', { lineHeight: '1.5556rem' }],
+        lg: ['1.1111rem', { lineHeight: '1.6667rem' }],
+        xl: ['1.3333rem', { lineHeight: '1.7778rem' }],
+        '2xl': ['1.5556rem', { lineHeight: '2rem' }],
+        '3xl': ['1.7778rem', { lineHeight: '2.2222rem' }],
       },
       minHeight: {
         // ขนาดสัมผัสของปุ่มอย่างน้อย 48px สำหรับผู้สูงอายุ

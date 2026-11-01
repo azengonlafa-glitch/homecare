@@ -33,12 +33,12 @@ export const PharmacySettingsPage: React.FC = () => (
     <Card>
       <dl className="space-y-5">
         <div>
-          <dt className="text-sm font-semibold text-slate-500">ชื่อร้าน</dt>
+          <dt className="text-sm font-semibold text-slate-600">ชื่อร้าน</dt>
           <dd className="mt-1 text-base sm:text-lg font-bold text-slate-900 break-words">{PHARMACY.name}</dd>
         </div>
 
         <div>
-          <dt className="text-sm font-semibold text-slate-500">เบอร์โทร</dt>
+          <dt className="text-sm font-semibold text-slate-600">เบอร์โทร</dt>
           <dd className="mt-1">
             <a href={PHARMACY.phoneHref} className={linkClass}>
               {PHARMACY.phoneLabel}
@@ -47,7 +47,7 @@ export const PharmacySettingsPage: React.FC = () => (
         </div>
 
         <div>
-          <dt className="text-sm font-semibold text-slate-500">ไลน์</dt>
+          <dt className="text-sm font-semibold text-slate-600">ไลน์</dt>
           <dd className="mt-1">
             <a href={PHARMACY.lineUrl} target="_blank" rel="noopener noreferrer" className={linkClass}>
               {PHARMACY.lineLabel}
@@ -56,7 +56,7 @@ export const PharmacySettingsPage: React.FC = () => (
         </div>
       </dl>
 
-      <p className="mt-6 text-sm text-slate-500">ข้อมูลร้านเป็นข้อมูลสมมติของต้นแบบ</p>
+      <p className="mt-6 text-sm text-slate-600">ข้อมูลร้านเป็นข้อมูลสมมติของต้นแบบ</p>
     </Card>
   </PageLayout>
 );
