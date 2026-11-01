@@ -18,3 +18,4 @@ export const MedsPage: React.FC = () => {
     </div>
   );
 };
+

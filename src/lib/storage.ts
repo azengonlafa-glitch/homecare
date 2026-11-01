@@ -32,3 +32,4 @@ export function resetHomeData(): HomeData {
   }
   return initialHomeData;
 }
+

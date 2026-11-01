@@ -18,3 +18,4 @@ export const AppointmentsPage: React.FC = () => {
     </div>
   );
 };
+

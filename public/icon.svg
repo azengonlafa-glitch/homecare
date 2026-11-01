@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
-  <rect width="128" height="128" rx="28" fill="#EA580C"/>
-  <!-- บ้าน + กากบาทพยาบาล/ยา สีขาว คอนทราสต์สูง -->
+  <rect width="128" height="128" rx="28" fill="#6D28D9"/>
+  <!-- บ้าน + ยา สีขาว คลีน สะอาดตา -->
   <path d="M64 26L28 58H40V98H88V58H100L64 26Z" fill="#FFFFFF"/>
-  <rect x="58" y="62" width="12" height="26" rx="3" fill="#EA580C"/>
-  <rect x="51" y="69" width="26" height="12" rx="3" fill="#EA580C"/>
+  <rect x="58" y="62" width="12" height="26" rx="3" fill="#6D28D9"/>
+  <rect x="51" y="69" width="26" height="12" rx="3" fill="#6D28D9"/>
 </svg>

@@ -10,30 +10,29 @@ export default {
         sans: ['"IBM Plex Sans Thai"', '"Noto Sans Thai"', 'sans-serif'],
       },
       colors: {
-        // สีเน้นสีเดียวที่อบอุ่น (Warm Terracotta / Amber) พร้อมคอนทราสต์สูง
+        // โทนสีม่วงกับขาว สะอาดตา (Clean Purple & White)
         primary: {
-          50: '#FFF7ED',
-          100: '#FFEDD5',
-          200: '#FED7AA',
-          300: '#FDBA74',
-          400: '#FB923C',
-          500: '#F97316',
-          600: '#EA580C', // สีเน้นหลัก warm primary อบอุ่น ชัดเจน
-          700: '#C2410C',
-          800: '#9A3412',
-          900: '#7C2D12',
-          DEFAULT: '#EA580C',
+          50: '#F5F3FF',
+          100: '#EDE9FE',
+          200: '#DDD6FE',
+          300: '#C4B5FD',
+          400: '#A78BFA',
+          500: '#8B5CF6',
+          600: '#7C3AED', // ม่วงหลัก สดใส ชัดเจน
+          700: '#6D28D9', // ม่วงเข้มสำหรับปุ่มและตัวอักษรสำคัญ
+          800: '#5B21B6',
+          900: '#4C1D95',
+          DEFAULT: '#6D28D9',
         },
-        // สีพื้นหลังและตัวหนังสือเน้นคอนทราสต์สูง อ่านง่ายสำหรับผู้สูงอายุ
         surface: {
-          light: '#F8FAFC',
+          light: '#FAFAFE',
           DEFAULT: '#FFFFFF',
           dark: '#0F172A',
         },
         contrast: {
-          high: '#0F172A',    // ดำเข้ม ชัดเจนสำหรับเนื้อหาสำคัญ
-          medium: '#334155',  // เทาเข้ม คอนทราสต์ผ่านเกณฑ์ WCAG AAA
-          border: '#CBD5E1',  // ขอบชัดเจน สังเกตง่าย
+          high: '#0F172A',
+          medium: '#475569',
+          border: '#E2E8F0',
         }
       },
       fontSize: {
@@ -57,3 +56,4 @@ export default {
   },
   plugins: [],
 };
+

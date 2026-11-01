@@ -6,8 +6,8 @@ export const HomePage: React.FC = () => {
 
   return (
     <div className="space-y-4">
-      <div className="bg-orange-50 border border-orange-200 rounded-2xl p-4">
-        <h2 className="text-xl font-bold text-orange-900">{data.homeName}</h2>
+      <div className="bg-purple-50 border border-purple-200 rounded-2xl p-4">
+        <h2 className="text-xl font-bold text-purple-900">{data.homeName}</h2>
         <p className="text-slate-700 mt-1">
           ผู้รับการดูแล {data.patients.length} ท่าน | รายการยาทั้งหมด {data.medications.length} ชนิด
         </p>
@@ -21,3 +21,4 @@ export const HomePage: React.FC = () => {
     </div>
   );
 };
+

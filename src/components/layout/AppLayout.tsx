@@ -6,9 +6,17 @@ export const AppLayout: React.FC = () => {
   return (
     <div className="flex flex-col min-h-screen max-w-md mx-auto bg-white shadow-sm border-x border-slate-200">
       {/* ส่วนหัวแอป */}
-      <header className="sticky top-0 z-20 bg-white/95 backdrop-blur-sm border-b border-slate-200 px-4 py-3">
-        <h1 className="text-xl font-bold text-orange-600">Growa Homecare</h1>
-        <p className="text-sm text-slate-600">ดูแลยาของครอบครัว</p>
+      <header className="sticky top-0 z-20 bg-white/95 backdrop-blur-sm border-b border-slate-200 px-4 py-3 flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-bold text-purple-700">Growa Homecare</h1>
+          <p className="text-sm text-slate-600">ดูแลยาของครอบครัว</p>
+        </div>
+        <NavLink
+          to="/login"
+          className="text-sm font-medium text-purple-700 hover:text-purple-800 bg-purple-50 hover:bg-purple-100 px-3 py-1.5 rounded-lg transition-colors"
+        >
+          เข้าสู่ระบบ
+        </NavLink>
       </header>
 
       {/* ส่วนเนื้อหาหลัก */}
@@ -28,7 +36,7 @@ export const AppLayout: React.FC = () => {
             className={({ isActive }) =>
               `flex flex-col items-center justify-center min-h-[48px] py-1 rounded-xl font-medium transition-colors ${
                 isActive
-                  ? 'text-orange-600 bg-orange-50 font-semibold'
+                  ? 'text-purple-700 bg-purple-50 font-semibold'
                   : 'text-slate-600 hover:text-slate-900 active:bg-slate-100'
               }`
             }
@@ -42,7 +50,7 @@ export const AppLayout: React.FC = () => {
             className={({ isActive }) =>
               `flex flex-col items-center justify-center min-h-[48px] py-1 rounded-xl font-medium transition-colors ${
                 isActive
-                  ? 'text-orange-600 bg-orange-50 font-semibold'
+                  ? 'text-purple-700 bg-purple-50 font-semibold'
                   : 'text-slate-600 hover:text-slate-900 active:bg-slate-100'
               }`
             }
@@ -56,7 +64,7 @@ export const AppLayout: React.FC = () => {
             className={({ isActive }) =>
               `flex flex-col items-center justify-center min-h-[48px] py-1 rounded-xl font-medium transition-colors ${
                 isActive
-                  ? 'text-orange-600 bg-orange-50 font-semibold'
+                  ? 'text-purple-700 bg-purple-50 font-semibold'
                   : 'text-slate-600 hover:text-slate-900 active:bg-slate-100'
               }`
             }
@@ -69,3 +77,4 @@ export const AppLayout: React.FC = () => {
     </div>
   );
 };
+
