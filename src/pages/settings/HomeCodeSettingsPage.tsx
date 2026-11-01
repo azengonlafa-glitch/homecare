@@ -4,6 +4,7 @@ import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { PageLayout } from '../../components/settings/PageLayout';
 import { ConfirmDialog } from '../../components/settings/ConfirmDialog';
+import { useToast } from '../../components/ui/Toast';
 import { generateInviteCode, loadSettings, saveSettings } from '../../lib/settings';
 
 /** "482 916" เพื่อให้อ่านและบอกต่อได้ง่าย */
@@ -39,17 +40,13 @@ const copyToClipboard = async (text: string): Promise<boolean> => {
 export const HomeCodeSettingsPage: React.FC = () => {
   const [settings, setSettings] = useState(loadSettings);
   const [confirmChange, setConfirmChange] = useState(false);
-  const [message, setMessage] = useState('');
-  const [isError, setIsError] = useState(false);
+  const toast = useToast();
 
   const code = settings.inviteCode;
   const shownCode = formatCode(code);
   const shareText = `ชวนเข้าร่วมบ้าน "${settings.homeName}" บน Growa Homecare ใช้รหัสชวน ${shownCode} ${window.location.origin}`;
 
-  const notify = (text: string, error = false) => {
-    setMessage(text);
-    setIsError(error);
-  };
+  const notify = (text: string, error = false) => toast.show(text, { tone: error ? 'error' : 'success' });
 
   const handleCopy = async () => {
     const copied = await copyToClipboard(code);
@@ -118,17 +115,6 @@ export const HomeCodeSettingsPage: React.FC = () => {
           </p>
         </div>
 
-        <p
-          role="status"
-          aria-live="polite"
-          className={
-            message
-              ? `mt-4 text-base font-bold ${isError ? 'text-red-700' : 'text-emerald-700'}`
-              : 'sr-only'
-          }
-        >
-          {message}
-        </p>
       </Card>
 
       <ConfirmDialog

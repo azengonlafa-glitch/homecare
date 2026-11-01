@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Check } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 import { PageLayout } from '../../components/settings/PageLayout';
-import { SavedNote } from '../../components/settings/SavedNote';
+import { useToast } from '../../components/ui/Toast';
 import { cn } from '../../lib/cn';
 import {
   FONT_SCALES,
@@ -15,7 +15,7 @@ import {
 /** ตั้งค่า > ขนาดตัวอักษร: เลือก 3 ระดับ เห็นผลทั้งแอปทันที */
 export const FontSizeSettingsPage: React.FC = () => {
   const [settings, setSettings] = useState(loadSettings);
-  const [status, setStatus] = useState('');
+  const toast = useToast();
 
   const selected = FONT_SCALES.find((option) => option.value === settings.fontScale) ?? FONT_SCALES[0];
 
@@ -25,7 +25,7 @@ export const FontSizeSettingsPage: React.FC = () => {
     applyFontScale(value);
 
     const label = FONT_SCALES.find((option) => option.value === value)?.label ?? '';
-    setStatus(`เปลี่ยนขนาดตัวอักษรเป็น ${label} แล้ว`);
+    toast.show(`เปลี่ยนขนาดตัวอักษรเป็น ${label} แล้ว`);
   };
 
   return (
@@ -82,8 +82,6 @@ export const FontSizeSettingsPage: React.FC = () => {
           นี่คือข้อความตัวอย่างขนาด {selected.px}px อ่านสบายตาสำหรับทุกคนในบ้าน
         </p>
       </Card>
-
-      <SavedNote show={!!status}>{status}</SavedNote>
     </PageLayout>
   );
 };

@@ -4,7 +4,7 @@ import { Card } from '../../components/ui/Card';
 import { Chip } from '../../components/ui/ChoiceChips';
 import { PageLayout } from '../../components/settings/PageLayout';
 import { ConfirmDialog } from '../../components/settings/ConfirmDialog';
-import { SavedNote } from '../../components/settings/SavedNote';
+import { useToast } from '../../components/ui/Toast';
 import { cn } from '../../lib/cn';
 import {
   CURRENT_MEMBER_ID,
@@ -28,7 +28,7 @@ const badgeClass = (permission: MemberPermission) =>
 export const MembersSettingsPage: React.FC = () => {
   const [settings, setSettings] = useState(loadSettings);
   const [removing, setRemoving] = useState<HouseholdMember | null>(null);
-  const [status, setStatus] = useState('');
+  const toast = useToast();
 
   const current = getCurrentMember(settings);
   const canManage = !!current?.isOwner && current.permission === 'edit';
@@ -40,7 +40,7 @@ export const MembersSettingsPage: React.FC = () => {
       members: settings.members.map((member) => (member.id === id ? { ...member, permission } : member)),
     });
     setSettings(next);
-    setStatus(`เปลี่ยนสิทธิ์เป็น ${PERMISSION_LABELS[permission]} แล้ว`);
+    toast.show(`เปลี่ยนสิทธิ์เป็น ${PERMISSION_LABELS[permission]} แล้ว`);
   };
 
   const confirmRemove = () => {
@@ -52,7 +52,7 @@ export const MembersSettingsPage: React.FC = () => {
     });
     setSettings(next);
     setRemoving(null);
-    setStatus(`นำ ${name} ออกจากบ้านแล้ว`);
+    toast.show(`นำ ${name} ออกจากบ้านแล้ว`);
   };
 
   return (
@@ -121,8 +121,6 @@ export const MembersSettingsPage: React.FC = () => {
           </ul>
         )}
       </Card>
-
-      <SavedNote show={!!status}>{status}</SavedNote>
 
       <ConfirmDialog
         open={!!removing}

@@ -3,7 +3,7 @@ import { Card } from '../../components/ui/Card';
 import { Chip, FieldGroup } from '../../components/ui/ChoiceChips';
 import { PageLayout } from '../../components/settings/PageLayout';
 import { SwitchRow } from '../../components/settings/SwitchRow';
-import { SavedNote } from '../../components/settings/SavedNote';
+import { useToast } from '../../components/ui/Toast';
 import {
   LOW_STOCK_DAY_OPTIONS,
   loadSettings,
@@ -15,12 +15,12 @@ import {
 /** ตั้งค่า > การเตือน: เปิด/ปิด 3 ชนิด และกำหนดจำนวนวันเตือนยาใกล้หมด */
 export const RemindersSettingsPage: React.FC = () => {
   const [settings, setSettings] = useState(loadSettings);
-  const [saved, setSaved] = useState(false);
+  const toast = useToast();
 
   const update = (patch: Partial<ReminderSettings>) => {
     const next = saveSettings({ ...settings, reminders: { ...settings.reminders, ...patch } });
     setSettings(next);
-    setSaved(true);
+    toast.show('บันทึกแล้ว');
   };
 
   const { reminders } = settings;
@@ -68,8 +68,6 @@ export const RemindersSettingsPage: React.FC = () => {
           </div>
         </FieldGroup>
       </Card>
-
-      <SavedNote show={saved} />
     </PageLayout>
   );
 };

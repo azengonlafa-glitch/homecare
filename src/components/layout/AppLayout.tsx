@@ -3,6 +3,7 @@ import { Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
 import { MobileNav } from './MobileNav';
+import { ToastProvider } from '../ui/Toast';
 
 export const AppLayout: React.FC = () => {
   // ดึงข้อมูลผู้ใช้จาก localStorage ถ้ามี
@@ -15,30 +16,29 @@ export const AppLayout: React.FC = () => {
   };
 
   return (
-    <div className="min-h-dvh bg-slate-50 text-slate-900 md:flex">
-      <a
-        href="#main-content"
-        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:px-4 focus:py-2 focus:rounded-xl focus:bg-purple-700 focus:text-white"
-      >
-        ข้ามไปที่เนื้อหาหลัก
-      </a>
-
-      {/* Sidebar ซ้าย (แท็บเล็ตขึ้นไป) */}
-      <Sidebar />
-
-      <div className="flex-1 min-w-0 flex flex-col">
-        <TopBar user={user} onLogout={handleLogout} />
-
-        <main
-          id="main-content"
-          className="flex-1 w-full max-w-6xl mx-auto p-4 sm:p-6 lg:p-8 pb-28 md:pb-8"
+    <ToastProvider>
+      <div className="min-h-dvh bg-slate-50 text-slate-900 md:flex">
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:px-4 focus:py-2 focus:rounded-xl focus:bg-purple-700 focus:text-white"
         >
-          <Outlet />
-        </main>
-      </div>
+          ข้ามไปที่เนื้อหาหลัก
+        </a>
 
-      {/* เมนูล่าง (มือถือ) */}
-      <MobileNav />
-    </div>
+        {/* Sidebar ซ้าย (แท็บเล็ตขึ้นไป) */}
+        <Sidebar />
+
+        <div className="flex-1 min-w-0 flex flex-col">
+          <TopBar user={user} onLogout={handleLogout} />
+
+          <main id="main-content" className="flex-1 w-full max-w-6xl mx-auto p-4 sm:p-6 lg:p-8 pb-28 md:pb-8">
+            <Outlet />
+          </main>
+        </div>
+
+        {/* เมนูล่าง (มือถือ) */}
+        <MobileNav />
+      </div>
+    </ToastProvider>
   );
 };

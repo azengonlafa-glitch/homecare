@@ -3,7 +3,7 @@ import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { TextField } from '../../components/ui/TextField';
 import { PageLayout } from '../../components/settings/PageLayout';
-import { SavedNote } from '../../components/settings/SavedNote';
+import { useToast } from '../../components/ui/Toast';
 import { CURRENT_MEMBER_ID, loadSettings, saveSettings } from '../../lib/settings';
 
 const MAX_NICKNAME = 20;
@@ -13,7 +13,7 @@ export const ProfileSettingsPage: React.FC = () => {
   const [settings, setSettings] = useState(loadSettings);
   const [nickname, setNickname] = useState(settings.nickname);
   const [error, setError] = useState('');
-  const [saved, setSaved] = useState(false);
+  const toast = useToast();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,7 +21,6 @@ export const ProfileSettingsPage: React.FC = () => {
 
     if (!value) {
       setError('กรุณากรอกชื่อเล่น');
-      setSaved(false);
       document.getElementById('settings-nickname')?.focus();
       return;
     }
@@ -37,7 +36,7 @@ export const ProfileSettingsPage: React.FC = () => {
     setSettings(next);
     setNickname(value);
     setError('');
-    setSaved(true);
+    toast.show('บันทึกแล้ว');
   };
 
   return (
@@ -64,10 +63,8 @@ export const ProfileSettingsPage: React.FC = () => {
             onChange={(e) => {
               setNickname(e.target.value);
               if (error) setError('');
-              if (saved) setSaved(false);
             }}
           />
-          <SavedNote show={saved} />
         </Card>
       </PageLayout>
     </form>
