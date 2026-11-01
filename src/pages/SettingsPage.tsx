@@ -24,7 +24,7 @@ const SettingsRow: React.FC<SettingsRowProps> = ({ to, label, value }) => (
     >
       <span className="flex-1 min-w-0">
         <span className="block text-base sm:text-lg font-bold text-slate-900 break-words">{label}</span>
-        {value && <span className="block mt-0.5 text-sm text-slate-600 truncate">{value}</span>}
+        {value && <span className="block mt-0.5 text-sm text-slate-600 break-words">{value}</span>}
       </span>
       <ChevronRight className="w-6 h-6 shrink-0 text-slate-500" aria-hidden="true" />
     </Link>

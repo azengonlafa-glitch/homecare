@@ -5,7 +5,8 @@ import { buttonClass } from '../../components/ui/Button';
 import { PageLayout } from '../../components/settings/PageLayout';
 import { PHARMACY } from '../../lib/config';
 
-const linkClass = 'text-base sm:text-lg font-bold text-purple-700 hover:text-purple-800 underline underline-offset-4 break-all';
+const linkClass =
+  'inline-flex items-center min-h-[48px] text-base sm:text-lg font-bold text-purple-700 hover:text-purple-800 underline underline-offset-4 break-all';
 
 /** ตั้งค่า > ร้านยาของเรา: ข้อมูลร้านเดียวกับที่หน้า "ถามเภสัชกร" ใช้ */
 export const PharmacySettingsPage: React.FC = () => (
@@ -39,7 +40,7 @@ export const PharmacySettingsPage: React.FC = () => (
 
         <div>
           <dt className="text-sm font-semibold text-slate-600">เบอร์โทร</dt>
-          <dd className="mt-1">
+          <dd>
             <a href={PHARMACY.phoneHref} className={linkClass}>
               {PHARMACY.phoneLabel}
             </a>
@@ -48,7 +49,7 @@ export const PharmacySettingsPage: React.FC = () => (
 
         <div>
           <dt className="text-sm font-semibold text-slate-600">ไลน์</dt>
-          <dd className="mt-1">
+          <dd>
             <a href={PHARMACY.lineUrl} target="_blank" rel="noopener noreferrer" className={linkClass}>
               {PHARMACY.lineLabel}
             </a>
