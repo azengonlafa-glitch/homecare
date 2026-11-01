@@ -22,19 +22,32 @@ export const SwitchRow: React.FC<SwitchRowProps> = ({ label, description, checke
       <span className="block mt-1 text-sm text-slate-600 leading-snug break-words">{description}</span>
     </span>
 
-    <span
-      aria-hidden="true"
-      className={cn(
-        'relative inline-flex shrink-0 w-[62px] h-[36px] rounded-full transition-colors',
-        checked ? 'bg-purple-700' : 'bg-slate-300'
-      )}
-    >
+    <span className="flex shrink-0 items-center gap-3">
+      {/* ข้อความบอกสถานะ: ไม่ใช้สีอย่างเดียว (screen reader อ่านจาก aria-checked อยู่แล้ว) */}
       <span
+        aria-hidden="true"
         className={cn(
-          'absolute top-[3px] left-[3px] w-[30px] h-[30px] rounded-full bg-white shadow-sm transition-transform',
-          checked && 'translate-x-[26px]'
+          'min-w-[2.75rem] text-right text-base font-bold',
+          checked ? 'text-purple-800' : 'text-slate-600'
         )}
-      />
+      >
+        {checked ? 'เปิด' : 'ปิด'}
+      </span>
+
+      <span
+        aria-hidden="true"
+        className={cn(
+          'relative inline-flex shrink-0 w-[62px] h-[36px] rounded-full transition-colors',
+          checked ? 'bg-purple-700' : 'bg-slate-500'
+        )}
+      >
+        <span
+          className={cn(
+            'absolute top-[3px] left-[3px] w-[30px] h-[30px] rounded-full bg-white shadow-sm transition-transform',
+            checked && 'translate-x-[26px]'
+          )}
+        />
+      </span>
     </span>
   </button>
 );
