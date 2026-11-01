@@ -1,5 +1,8 @@
 import { loadHomeData } from './storage';
 import { loadHomeSetup } from './homeSetup';
+import { loadOnboarding } from './onboarding';
+import { DEFAULT_COUNTRY } from '../data/addressOptions';
+import { DEFAULT_TIME_ZONE } from '../data/timeZones';
 
 /**
  * ข้อมูลหน้าตั้งค่าของต้นแบบ เก็บใน localStorage (ยังไม่มีเซิร์ฟเวอร์)
@@ -8,7 +11,8 @@ import { loadHomeSetup } from './homeSetup';
 const SETTINGS_KEY = 'growa_settings_v1';
 
 export type FontScale = 'normal' | 'large' | 'xlarge';
-export type MemberPermission = 'edit' | 'view';
+/** บทบาทในบ้าน: owner มีได้คนเดียว (ผู้สร้างบ้านหรือผู้ที่ได้รับมอบ) */
+export type MemberRole = 'owner' | 'member' | 'external';
 export type LowStockDays = 3 | 5 | 7 | 10;
 
 export interface HouseholdMember {
@@ -16,9 +20,7 @@ export interface HouseholdMember {
   name: string;
   /** ความสัมพันธ์กับเจ้าของบ้าน เช่น ลูกสาว พี่ชาย */
   relation: string;
-  permission: MemberPermission;
-  /** ผู้ดูแลหลัก (เจ้าของบ้าน) เปลี่ยนหรือนำตัวเองออกไม่ได้ */
-  isOwner: boolean;
+  role: MemberRole;
 }
 
 export interface ReminderSettings {
@@ -32,7 +34,46 @@ export interface ReminderSettings {
   lowStockDays: LowStockDays;
 }
 
+/** ข้อมูลส่วนตัวในหน้า "โปรไฟล์ของฉัน" (นอกเหนือจากชื่อเล่น) */
+export interface UserProfile {
+  firstName: string;
+  lastName: string;
+  email: string;
+  /** ซ่อนอีเมลจากสมาชิกคนอื่นในบ้าน */
+  hideEmail: boolean;
+  timeZone: string;
+  phone: string;
+  address1: string;
+  address2: string;
+  country: string;
+  /** จังหวัด (ถ้าเลือกประเทศไทย) หรือรัฐ/แคว้นที่พิมพ์เอง */
+  state: string;
+  city: string;
+  zip: string;
+  /** รูปโปรไฟล์ (data URL ที่ย่อแล้ว) ว่าง = ไม่มีรูป */
+  photo: string;
+}
+
+/** ข้อมูลของบ้าน (ระบบบ้าน ทุกคนในบ้านเห็น) นอกเหนือจากชื่อบ้านและรหัสชวน */
+export interface HomeInfo {
+  /** รูปบ้าน (data URL ที่ย่อแล้ว) ว่าง = ไม่มีรูป */
+  photo: string;
+  timeZone: string;
+  address1: string;
+  address2: string;
+  country: string;
+  state: string;
+  city: string;
+  zip: string;
+  /** โรคและภาวะสุขภาพของคนในบ้าน ใช้ให้คำแนะนำเฉพาะบ้าน */
+  conditions: string[];
+  /** false = ปิดใช้งานบ้านชั่วคราว */
+  active: boolean;
+}
+
 export interface AppSettings {
+  profile: UserProfile;
+  home: HomeInfo;
   nickname: string;
   homeName: string;
   /** รหัสชวน 6 หลัก */
@@ -53,10 +94,50 @@ export const FONT_SCALES: { value: FontScale; label: string; px: number }[] = [
 
 export const LOW_STOCK_DAY_OPTIONS: LowStockDays[] = [3, 5, 7, 10];
 
-export const PERMISSION_LABELS: Record<MemberPermission, string> = {
-  edit: 'แก้ไขได้',
-  view: 'ดูอย่างเดียว',
+export interface RoleMeta {
+  label: string;
+  description: string;
+  /** สีจุดหน้าชื่อบทบาท (คล้ายบทบาทใน Discord) */
+  dot: string;
+}
+
+export const ROLE_ORDER: MemberRole[] = ['owner', 'member', 'external'];
+
+export const ROLE_META: Record<MemberRole, RoleMeta> = {
+  owner: {
+    label: 'ผู้ดูแลหลักของบ้าน',
+    description: 'เห็นหน้าตั้งค่าบ้าน จัดการบ้านและมอบบทบาทได้ ทำได้ทุกอย่าง มีได้แค่คนเดียว (ผู้สร้างบ้าน)',
+    dot: 'bg-amber-500',
+  },
+  member: {
+    label: 'สมาชิกในบ้าน',
+    description: 'ใช้งานทุกอย่างในบ้านได้ ยกเว้นหน้าตั้งค่าบ้านและการมอบบทบาท',
+    dot: 'bg-purple-500',
+  },
+  external: {
+    label: 'ผู้ดูแลภายนอก',
+    description: 'เช่น พยาบาลหรือผู้ดูแลที่มาช่วย สิทธิ์เท่าสมาชิกในบ้าน',
+    dot: 'bg-teal-500',
+  },
 };
+
+/** แปลงข้อมูลสมาชิกที่เคยบันทึกไว้แบบเก่า (permission / isOwner) เป็น role และให้มีเจ้าของบ้านคนเดียวเสมอ */
+function normalizeMembers(raw: unknown[], fallback: HouseholdMember[]): HouseholdMember[] {
+  const valid = (r: unknown): r is MemberRole => r === 'owner' || r === 'member' || r === 'external';
+  const members = raw.map((item) => {
+    const m = item as HouseholdMember & { isOwner?: boolean };
+    const role: MemberRole = valid(m.role) ? m.role : m.isOwner ? 'owner' : 'member';
+    const { isOwner: _legacyOwner, ...rest } = m as HouseholdMember & { isOwner?: boolean; permission?: string };
+    delete (rest as { permission?: string }).permission;
+    return { ...rest, role } as HouseholdMember;
+  });
+  if (members.length === 0) return fallback;
+  const firstOwner = members.findIndex((m) => m.role === 'owner');
+  const ownerIndex = firstOwner >= 0 ? firstOwner : Math.max(0, members.findIndex((m) => m.id === CURRENT_MEMBER_ID));
+  return members.map((m, i) =>
+    i === ownerIndex ? { ...m, role: 'owner' } : m.role === 'owner' ? { ...m, role: 'member' } : m
+  );
+}
 
 const DEFAULT_INVITE_CODE = '482916';
 
@@ -67,6 +148,38 @@ const isFontScale = (value: unknown): value is FontScale =>
   FONT_SCALES.some((option) => option.value === value);
 
 /** ชื่อเล่นของผู้ใช้จากบัญชีที่ล็อกอิน (ใช้เป็นค่าเริ่มต้นเท่านั้น) */
+const readAuthEmail = (): string => {
+  try {
+    const raw = localStorage.getItem('growa_auth_user');
+    const email = raw ? (JSON.parse(raw) as { email?: string }).email : '';
+    return typeof email === 'string' ? email.trim() : '';
+  } catch {
+    return '';
+  }
+};
+
+/** ค่าเริ่มต้นของโปรไฟล์: ดึงจากข้อมูลที่ผู้ใช้เคยกรอกตอนสมัครและตอนกรอกข้อมูลพื้นฐาน */
+export function defaultProfile(): UserProfile {
+  const onboarding = loadOnboarding().profile;
+  const fullName = (onboarding.fullName || readAuthName()).trim();
+  const [firstName = '', ...rest] = fullName.split(/\s+/);
+  return {
+    firstName,
+    lastName: rest.join(' '),
+    email: readAuthEmail(),
+    hideEmail: false,
+    timeZone: DEFAULT_TIME_ZONE,
+    phone: onboarding.phone ?? '',
+    address1: onboarding.address ?? '',
+    address2: '',
+    country: DEFAULT_COUNTRY,
+    state: '',
+    city: '',
+    zip: '',
+    photo: '',
+  };
+}
+
 const readAuthName = (): string => {
   try {
     const raw = localStorage.getItem('growa_auth_user');
@@ -90,17 +203,34 @@ export function generateInviteCode(): string {
   return String(100000 + (value % 900000));
 }
 
+export function defaultHome(): HomeInfo {
+  return {
+    photo: '',
+    timeZone: loadHomeSetup()?.timeZone || DEFAULT_TIME_ZONE,
+    address1: '',
+    address2: '',
+    country: DEFAULT_COUNTRY,
+    state: '',
+    city: '',
+    zip: '',
+    conditions: [],
+    active: true,
+  };
+}
+
 export function defaultSettings(): AppSettings {
   const nickname = readAuthName() || 'ฉัน';
   return {
+    profile: defaultProfile(),
+    home: defaultHome(),
     nickname,
     homeName: readHomeName(),
     inviteCode: DEFAULT_INVITE_CODE,
     members: [
-      { id: CURRENT_MEMBER_ID, name: nickname, relation: 'ฉัน', permission: 'edit', isOwner: true },
-      { id: 'mint', name: 'น้องมิ้นท์', relation: 'ลูกสาว', permission: 'edit', isOwner: false },
-      { id: 'chai', name: 'พี่ชัย', relation: 'พี่ชาย', permission: 'view', isOwner: false },
-      { id: 'daeng', name: 'ป้าแดง', relation: 'ป้า', permission: 'view', isOwner: false },
+      { id: CURRENT_MEMBER_ID, name: nickname, relation: 'ฉัน', role: 'owner' },
+      { id: 'mint', name: 'น้องมิ้นท์', relation: 'ลูกสาว', role: 'member' },
+      { id: 'chai', name: 'พี่ชัย', relation: 'พี่ชาย', role: 'member' },
+      { id: 'daeng', name: 'ป้าแดง', relation: 'ป้า', role: 'external' },
     ],
     reminders: { lowStock: true, doseWindow: true, appointment: true, lowStockDays: 7 },
     fontScale: 'normal',
@@ -115,12 +245,16 @@ export function loadSettings(): AppSettings {
     if (!raw) return base;
 
     const parsed = JSON.parse(raw) as Partial<AppSettings>;
-    const members = Array.isArray(parsed.members) && parsed.members.length > 0 ? parsed.members : base.members;
+    const members = Array.isArray(parsed.members)
+      ? normalizeMembers(parsed.members, base.members)
+      : base.members;
     const reminders = { ...base.reminders, ...(parsed.reminders ?? {}) };
 
     return {
-      nickname: typeof parsed.nickname === 'string' && parsed.nickname.trim() ? parsed.nickname : base.nickname,
-      homeName: typeof parsed.homeName === 'string' && parsed.homeName.trim() ? parsed.homeName : base.homeName,
+      nickname:
+        typeof parsed.nickname === 'string' && parsed.nickname.trim() ? parsed.nickname : base.nickname,
+      homeName:
+        typeof parsed.homeName === 'string' && parsed.homeName.trim() ? parsed.homeName : base.homeName,
       inviteCode: /^\d{6}$/.test(parsed.inviteCode ?? '') ? parsed.inviteCode! : base.inviteCode,
       members,
       reminders: {
@@ -130,6 +264,8 @@ export function loadSettings(): AppSettings {
         lowStockDays: isLowStockDays(reminders.lowStockDays) ? reminders.lowStockDays : 7,
       },
       fontScale: isFontScale(parsed.fontScale) ? parsed.fontScale : 'normal',
+      profile: { ...base.profile, ...(parsed.profile ?? {}) },
+      home: { ...base.home, ...(parsed.home ?? {}) },
     };
   } catch (err) {
     console.error('Failed to load settings from localStorage', err);
@@ -137,12 +273,16 @@ export function loadSettings(): AppSettings {
   }
 }
 
+export const SETTINGS_CHANGED_EVENT = 'growa-settings-changed';
+
 export function saveSettings(settings: AppSettings): AppSettings {
   try {
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
   } catch (err) {
     console.error('Failed to save settings to localStorage', err);
   }
+  // แจ้งส่วนอื่นของแอป (เช่นแถบบน) ให้อัปเดตรูปและชื่อ
+  window.dispatchEvent(new Event(SETTINGS_CHANGED_EVENT));
   return settings;
 }
 
@@ -171,3 +311,9 @@ export function fontScaleLabel(scale: FontScale): string {
 export function getCurrentMember(settings: AppSettings): HouseholdMember | undefined {
   return settings.members.find((member) => member.id === CURRENT_MEMBER_ID);
 }
+
+/** บทบาทของผู้ใช้ปัจจุบัน */
+export const roleOf = (settings: AppSettings): MemberRole => getCurrentMember(settings)?.role ?? 'member';
+
+/** เห็นหน้าตั้งค่าบ้านและมอบบทบาทได้เฉพาะผู้ดูแลหลักของบ้าน */
+export const canManageHome = (settings: AppSettings): boolean => roleOf(settings) === 'owner';

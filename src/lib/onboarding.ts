@@ -39,6 +39,10 @@ export interface OnboardingProfile {
   smoking: string;
   alcohol: string;
   exercise: string;
+  /** ค่าตรวจล่าสุด (ไม่บังคับ ใช้วิเคราะห์ในหน้าข้อมูลสุขภาพ) ความดันตัวบน/ล่าง mmHg และน้ำตาลตอนอดอาหาร mg/dL */
+  systolic: string;
+  diastolic: string;
+  fastingGlucose: string;
   // 3 ประวัติการแพ้
   noAllergies: boolean;
   drugAllergies: DrugAllergy[];
@@ -90,6 +94,9 @@ export const emptyProfile: OnboardingProfile = {
   smoking: '',
   alcohol: '',
   exercise: '',
+  systolic: '',
+  diastolic: '',
+  fastingGlucose: '',
   noAllergies: false,
   drugAllergies: [],
   otherAllergies: [],

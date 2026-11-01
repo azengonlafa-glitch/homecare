@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Eye, File as FileIcon, FileText, Loader2, Paperclip, X } from 'lucide-react';
+import { Eye, File as FileIcon, FileText, Loader2, Paperclip, Upload, X } from 'lucide-react';
 import type { Attachment } from '../../lib/onboarding';
 import {
   MAX_FILE_BYTES,
@@ -112,6 +112,8 @@ interface AttachmentPickerProps {
   maxBytes?: number;
   /** ไม่ลบไฟล์ออกจากที่เก็บเมื่อผู้ใช้ลบ/แทนที่ ให้ผู้เรียกจัดการเอง (ใช้ตอนแก้ไขโพสต์ที่ยังกดยกเลิกได้) */
   deferDelete?: boolean;
+  /** box = กล่องอัปโหลดแบบเรียบ ทั้งกล่องกดได้ (ไอคอนอัปโหลด + ข้อความ) */
+  variant?: 'default' | 'box';
 }
 
 /** แนบไฟล์หรือรูปภาพ: กดเลือก ถ่ายรูป (บนมือถือ) หรือลากไฟล์มาวางได้ */
@@ -125,6 +127,7 @@ export const AttachmentPicker: React.FC<AttachmentPickerProps> = ({
   maxFiles,
   maxBytes,
   deferDelete,
+  variant = 'default',
 }) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const valueRef = useRef(value);
@@ -189,8 +192,10 @@ export const AttachmentPicker: React.FC<AttachmentPickerProps> = ({
           void handleFiles(e.dataTransfer.files);
         }}
         className={cn(
-          'rounded-2xl border-2 border-dashed p-4 sm:p-5 text-center transition-colors',
-          dragging ? 'border-purple-600 bg-purple-100' : 'border-purple-300 bg-purple-50/60'
+          'rounded-2xl p-4 sm:p-5 text-center transition-colors',
+          variant === 'box'
+            ? cn('border', dragging ? 'border-purple-600 bg-purple-50' : 'border-slate-300 bg-white')
+            : cn('border-2 border-dashed', dragging ? 'border-purple-600 bg-purple-100' : 'border-purple-300 bg-purple-50/60')
         )}
       >
         <input
@@ -203,23 +208,46 @@ export const AttachmentPicker: React.FC<AttachmentPickerProps> = ({
           className="sr-only"
           onChange={(e) => e.target.files && void handleFiles(e.target.files)}
         />
-        <button
-          type="button"
-          disabled={busy}
-          onClick={() => inputRef.current?.click()}
-          className="inline-flex items-center justify-center gap-2 min-h-[48px] px-6 rounded-full bg-white border border-purple-300 text-purple-900 text-base font-bold hover:bg-purple-50 disabled:opacity-60 cursor-pointer"
-        >
-          {busy ? (
-            <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" />
-          ) : (
-            <Paperclip className="w-5 h-5" aria-hidden="true" />
-          )}
-          <span>{busy ? 'กำลังบันทึกไฟล์…' : title}</span>
-        </button>
-        <p className="text-sm text-slate-600 mt-2">
-          {description ??
-            `กดเลือก หรือลากไฟล์มาวางที่นี่ · ไม่เกิน ${maxBytes ? formatFileSize(maxBytes) : MAX_FILE_LABEL} ต่อไฟล์`}
-        </p>
+        {variant === 'box' ? (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => inputRef.current?.click()}
+            className="flex w-full flex-col items-center gap-1 py-3 disabled:opacity-60 cursor-pointer"
+          >
+            {busy ? (
+              <Loader2 className="w-6 h-6 text-purple-700 animate-spin" aria-hidden="true" />
+            ) : (
+              <span className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-purple-100 text-purple-700">
+                <Upload className="w-5 h-5" aria-hidden="true" />
+              </span>
+            )}
+            <span className="text-base font-bold text-purple-800">{busy ? 'กำลังบันทึกไฟล์…' : title}</span>
+            <span className="text-sm text-slate-600">
+              {description ?? `หรือลากไฟล์มาวางที่นี่ (ไม่เกิน ${maxBytes ? formatFileSize(maxBytes) : MAX_FILE_LABEL} ต่อไฟล์)`}
+            </span>
+          </button>
+        ) : (
+          <>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => inputRef.current?.click()}
+              className="inline-flex items-center justify-center gap-2 min-h-[48px] px-6 rounded-full bg-white border border-purple-300 text-purple-900 text-base font-bold hover:bg-purple-50 disabled:opacity-60 cursor-pointer"
+            >
+              {busy ? (
+                <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" />
+              ) : (
+                <Paperclip className="w-5 h-5" aria-hidden="true" />
+              )}
+              <span>{busy ? 'กำลังบันทึกไฟล์…' : title}</span>
+            </button>
+            <p className="text-sm text-slate-600 mt-2">
+              {description ??
+                `กดเลือก หรือลากไฟล์มาวางที่นี่ · ไม่เกิน ${maxBytes ? formatFileSize(maxBytes) : MAX_FILE_LABEL} ต่อไฟล์`}
+            </p>
+          </>
+        )}
       </div>
 
       {message && (

@@ -1,14 +1,22 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
 import { MobileNav } from './MobileNav';
 import { ToastProvider } from '../ui/Toast';
+import { SETTINGS_CHANGED_EVENT, loadSettings } from '../../lib/settings';
 
 export const AppLayout: React.FC = () => {
   // ดึงข้อมูลผู้ใช้จาก localStorage ถ้ามี
   const savedUser = localStorage.getItem('growa_auth_user');
   const user = savedUser ? JSON.parse(savedUser) : null;
+
+  const [photo, setPhoto] = useState(() => loadSettings().profile.photo);
+  useEffect(() => {
+    const sync = () => setPhoto(loadSettings().profile.photo);
+    window.addEventListener(SETTINGS_CHANGED_EVENT, sync);
+    return () => window.removeEventListener(SETTINGS_CHANGED_EVENT, sync);
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem('growa_auth_user');
@@ -29,7 +37,7 @@ export const AppLayout: React.FC = () => {
         <Sidebar />
 
         <div className="flex-1 min-w-0 flex flex-col">
-          <TopBar user={user} onLogout={handleLogout} />
+          <TopBar user={user} photo={photo} onLogout={handleLogout} />
 
           <main id="main-content" className="flex-1 w-full max-w-6xl mx-auto p-4 sm:p-6 lg:p-8 pb-28 md:pb-8">
             <Outlet />

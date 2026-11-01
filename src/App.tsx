@@ -11,14 +11,12 @@ import { SignUpPage } from './pages/SignUpPage';
 import { HomeSetupPage } from './pages/HomeSetupPage';
 import { OnboardingPage } from './pages/OnboardingPage';
 import { RequireOnboarding } from './components/auth/RequireOnboarding';
+import { HomeSettingsPage } from './pages/HomeSettingsPage';
+import { HealthProfilePage } from './pages/HealthProfilePage';
 import { SettingsPage } from './pages/SettingsPage';
 import { ProfileSettingsPage } from './pages/settings/ProfileSettingsPage';
-import { HomeCodeSettingsPage } from './pages/settings/HomeCodeSettingsPage';
-import { MembersSettingsPage } from './pages/settings/MembersSettingsPage';
 import { RemindersSettingsPage } from './pages/settings/RemindersSettingsPage';
 import { FontSizeSettingsPage } from './pages/settings/FontSizeSettingsPage';
-import { PharmacySettingsPage } from './pages/settings/PharmacySettingsPage';
-import { AboutSettingsPage } from './pages/settings/AboutSettingsPage';
 
 export const App: React.FC = () => {
   return (
@@ -48,6 +46,8 @@ export const App: React.FC = () => {
           <Route path="appointments" element={<AppointmentsPage />} />
           <Route path="calendar" element={<CalendarPage />} />
           <Route path="journal" element={<JournalPage />} />
+          <Route path="home-settings" element={<HomeSettingsPage />} />
+          <Route path="health" element={<HealthProfilePage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
 
@@ -62,12 +62,8 @@ export const App: React.FC = () => {
         >
           <Route index element={<SettingsPage />} />
           <Route path="profile" element={<ProfileSettingsPage />} />
-          <Route path="home" element={<HomeCodeSettingsPage />} />
-          <Route path="members" element={<MembersSettingsPage />} />
           <Route path="reminders" element={<RemindersSettingsPage />} />
           <Route path="font-size" element={<FontSizeSettingsPage />} />
-          <Route path="pharmacy" element={<PharmacySettingsPage />} />
-          <Route path="about" element={<AboutSettingsPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

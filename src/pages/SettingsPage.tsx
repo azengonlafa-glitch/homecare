@@ -5,9 +5,9 @@ import { PageLayout } from '../components/settings/PageLayout';
 import { Card } from '../components/ui/Card';
 import { Button, buttonClass } from '../components/ui/Button';
 import { ConfirmDialog } from '../components/settings/ConfirmDialog';
-import { fontScaleLabel, getCurrentMember, loadSettings, resetSettings } from '../lib/settings';
+import { fontScaleLabel, loadSettings, resetSettings } from '../lib/settings';
 import { resetDemoState } from '../lib/demo';
-import { FEEDBACK_URL, PHARMACY } from '../lib/config';
+import { FEEDBACK_URL } from '../lib/config';
 
 interface SettingsRowProps {
   to: string;
@@ -40,8 +40,6 @@ export const SettingsPage: React.FC = () => {
   const [settings] = useState(loadSettings);
   const [confirm, setConfirm] = useState<'logout' | 'reset' | null>(null);
 
-  const currentMember = getCurrentMember(settings);
-  const canManageMembers = currentMember?.permission === 'edit';
   const enabledReminders = [
     settings.reminders.lowStock,
     settings.reminders.doseWindow,
@@ -66,12 +64,6 @@ export const SettingsPage: React.FC = () => {
       <Card className="p-0 overflow-hidden">
         <ul className="divide-y divide-slate-200">
           <SettingsRow to="/settings/profile" label="โปรไฟล์ของฉัน" value={settings.nickname} />
-          <SettingsRow to="/settings/home" label="บ้านและรหัสชวน" value={settings.homeName} />
-          <SettingsRow
-            to="/settings/members"
-            label="สมาชิกในบ้าน"
-            value={`${settings.members.length} คน${canManageMembers ? '' : ' · คุณดูได้อย่างเดียว'}`}
-          />
           <SettingsRow
             to="/settings/reminders"
             label="การเตือน"
@@ -86,8 +78,6 @@ export const SettingsPage: React.FC = () => {
             label="ขนาดตัวอักษร"
             value={fontScaleLabel(settings.fontScale)}
           />
-          <SettingsRow to="/settings/pharmacy" label="ร้านยาของเรา" value={PHARMACY.name} />
-          <SettingsRow to="/settings/about" label="เกี่ยวกับต้นแบบ" />
         </ul>
       </Card>
 

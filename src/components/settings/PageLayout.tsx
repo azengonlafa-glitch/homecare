@@ -10,6 +10,8 @@ interface PageLayoutProps {
   children: React.ReactNode;
   /** ปุ่มสำคัญของหน้า วางต่อท้ายเนื้อหาโดยตรง (ไม่ติดขอบล่างของจอ) */
   footer?: React.ReactNode;
+  /** ใช้ความกว้างมากขึ้นบนจอใหญ่ (สำหรับหน้าฟอร์มยาว ๆ ที่จัดเป็น 2 คอลัมน์) */
+  wide?: boolean;
 }
 
 /**
@@ -17,8 +19,8 @@ interface PageLayoutProps {
  * - เนื้อหากว้างสูงสุด 560px จัดกึ่งกลาง ขอบซ้ายขวาเท่ากันทุกหน้า
  * - ปุ่มย้อนกลับ "‹ ตั้งค่า" อยู่ตำแหน่งเดียวกันเสมอ (บนสุดของเนื้อหา)
  */
-export const PageLayout: React.FC<PageLayoutProps> = ({ title, description, back = true, children, footer }) => (
-  <div className="mx-auto w-full max-w-[560px]">
+export const PageLayout: React.FC<PageLayoutProps> = ({ title, description, back = true, children, footer, wide = false }) => (
+  <div className={wide ? 'mx-auto w-full max-w-[560px] lg:max-w-5xl' : 'mx-auto w-full max-w-[560px]'}>
     {back && (
       <Link
         to="/settings"
@@ -35,8 +37,10 @@ export const PageLayout: React.FC<PageLayoutProps> = ({ title, description, back
       {description && <p className="mt-2 text-base text-slate-600 break-words">{description}</p>}
     </header>
 
-    <div className="space-y-5">{children}</div>
+    <div className={wide ? 'space-y-5 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-5 lg:items-start' : 'space-y-5'}>
+      {children}
+    </div>
 
-    {footer && <div className="mt-6">{footer}</div>}
+    {footer && <div className={wide ? 'mt-6 lg:ml-auto lg:max-w-[560px]' : 'mt-6'}>{footer}</div>}
   </div>
 );

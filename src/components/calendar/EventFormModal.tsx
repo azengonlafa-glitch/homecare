@@ -1,14 +1,13 @@
 import React, { useRef, useState } from 'react';
+import { Bell, ChevronDown, Clock, Flag, Info, MapPin, Paperclip, Repeat, ThumbsUp, Users } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { TextField } from '../ui/TextField';
 import { TextAreaField } from '../ui/TextAreaField';
-import { NativeSelect } from '../ui/NativeSelect';
 import { CheckboxField } from '../ui/CheckboxField';
 import { ChipsWithCustom } from '../ui/ChipsWithCustom';
 import { FieldGroup } from '../ui/ChoiceChips';
 import { AttachmentPicker } from '../ui/AttachmentPicker';
-import { SwitchRow } from '../settings/SwitchRow';
 import { ConfirmDialog } from '../settings/ConfirmDialog';
 import { DEFAULT_TIME_ZONE, TIME_ZONE_OPTIONS } from '../../data/timeZones';
 import { deleteFiles } from '../../lib/fileStore';
@@ -18,6 +17,8 @@ import {
   REPEAT_UNIT_LABEL,
   defaultRepeat,
   emptyLocation,
+  parseKey,
+  repeatLabel,
   type CalendarEvent,
   type EventLocation,
   type RepeatEnd,
@@ -104,9 +105,98 @@ const REPEAT_UNIT_OPTIONS = (Object.keys(REPEAT_UNIT_LABEL) as RepeatUnit[]).map
   label: REPEAT_UNIT_LABEL[unit],
 }));
 
-const Section: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className }) => (
-  <div className={cn('pt-6 mt-6 border-t border-slate-200', className)}>{children}</div>
+const REMINDER_SELECT_OPTIONS = [{ value: 'none', label: 'ไม่มี' }, ...REMINDER_OPTIONS];
+
+const repeatEveryOptions = (current: number) => {
+  const max = Math.max(30, current);
+  return Array.from({ length: max }, (_, i) => ({ value: i + 1, label: String(i + 1) }));
+};
+
+const pillBase =
+  'min-h-[44px] rounded-full bg-purple-50 text-purple-900 [color-scheme:light] accent-purple-700 text-base font-semibold border border-purple-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-600 disabled:opacity-50';
+
+/** dropdown ทรงเม็ดยา (ขนาดพอดีตัวอักษร) */
+const PillSelect: React.FC<{
+  id: string;
+  label: string;
+  value: string | number;
+  options: { value: string | number; label: string }[];
+  onChange: (value: string) => void;
+}> = ({ id, label, value, options, onChange }) => (
+  <div className="relative inline-block max-w-full">
+    <select
+      id={id}
+      aria-label={label}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className={cn(pillBase, 'appearance-none pl-4 pr-10 max-w-full cursor-pointer')}
+    >
+      {options.map((o) => (
+        <option key={o.value} value={o.value}>
+          {o.label}
+        </option>
+      ))}
+    </select>
+    <ChevronDown
+      className="w-4 h-4 text-purple-800 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
+      aria-hidden="true"
+    />
+  </div>
 );
+
+const PillInput: React.FC<React.InputHTMLAttributes<HTMLInputElement> & { id: string; label: string }> = ({
+  label,
+  className,
+  ...props
+}) => <input aria-label={label} className={cn(pillBase, 'px-4', className)} {...props} />;
+
+const SwitchTrack: React.FC<{ checked: boolean }> = ({ checked }) => (
+  <span
+    aria-hidden="true"
+    className={cn(
+      'relative inline-flex shrink-0 w-[52px] h-[30px] rounded-full transition-colors',
+      checked ? 'bg-purple-700' : 'bg-slate-300'
+    )}
+  >
+    <span
+      className={cn(
+        'absolute top-[3px] left-[3px] w-6 h-6 rounded-full bg-white shadow-sm transition-transform',
+        checked && 'translate-x-[22px]'
+      )}
+    />
+  </span>
+);
+
+/** หัวข้อพร้อมไอคอน + สวิตช์ทางขวา (ทั้งแถวกดได้) */
+const ToggleRow: React.FC<{
+  icon: React.ReactNode;
+  label: string;
+  checked: boolean;
+  onChange: (v: boolean) => void;
+}> = ({ icon, label, checked, onChange }) => (
+  <button
+    type="button"
+    role="switch"
+    aria-checked={checked}
+    onClick={() => onChange(!checked)}
+    className="flex w-full items-center justify-between gap-3 min-h-[52px] text-left cursor-pointer rounded-xl"
+  >
+    <span className="flex items-center gap-3 min-w-0">
+      {icon}
+      <span className="text-base sm:text-lg font-bold text-slate-900 break-words">{label}</span>
+    </span>
+    <SwitchTrack checked={checked} />
+  </button>
+);
+
+const Heading: React.FC<{ icon: React.ReactNode; children: React.ReactNode }> = ({ icon, children }) => (
+  <div className="flex items-center gap-3 min-h-[44px]">
+    {icon}
+    <h3 className="text-base sm:text-lg font-bold text-slate-900">{children}</h3>
+  </div>
+);
+
+const iconClass = 'w-6 h-6 shrink-0 text-purple-600';
 
 const FormDialog: React.FC<Omit<EventFormModalProps, 'open'>> = ({
   initial,
@@ -158,7 +248,6 @@ const FormDialog: React.FC<Omit<EventFormModalProps, 'open'>> = ({
     else if (endKey < startKey) next['ev-end-date'] = 'เวลาสิ้นสุดต้องไม่ก่อนเวลาเริ่ม';
 
     if (form.repeatOn) {
-      if (!(Number(form.repeatEvery) >= 1)) next['ev-repeat-every'] = 'กรอกจำนวนอย่างน้อย 1';
       if (form.repeatEndMode === 'after' && !(Number(form.repeatCount) >= 1))
         next['ev-repeat-count'] = 'กรอกจำนวนครั้งอย่างน้อย 1';
       if (form.repeatEndMode === 'on' && (!form.repeatEndDate || form.repeatEndDate < form.startDate)) {
@@ -200,7 +289,7 @@ const FormDialog: React.FC<Omit<EventFormModalProps, 'open'>> = ({
       reminderMinutes: form.reminderOn ? form.reminderMinutes : null,
       repeat: form.repeatOn
         ? {
-            every: Math.max(1, Math.floor(Number(form.repeatEvery))),
+            every: Math.max(1, Math.floor(Number(form.repeatEvery)) || 1),
             unit: form.repeatUnit,
             endMode: form.repeatEndMode,
             endDate: form.repeatEndDate,
@@ -214,6 +303,19 @@ const FormDialog: React.FC<Omit<EventFormModalProps, 'open'>> = ({
     });
   };
 
+  const repeatSummary = form.repeatOn
+    ? repeatLabel({
+        every: Math.max(1, Math.floor(Number(form.repeatEvery)) || 1),
+        unit: form.repeatUnit,
+        endMode: form.repeatEndMode,
+        endDate: form.repeatEndDate,
+        count: Math.max(1, Math.floor(Number(form.repeatCount)) || 1),
+      })
+    : '';
+
+  const dateLong = (key: string) =>
+    key ? parseKey(key).toLocaleDateString('th-TH', { dateStyle: 'long' }) : '-';
+
   return (
     <>
       <Modal
@@ -222,20 +324,21 @@ const FormDialog: React.FC<Omit<EventFormModalProps, 'open'>> = ({
         title={initial ? 'แก้ไขกิจกรรม' : 'สร้างกิจกรรม'}
         initialFocusSelector="#ev-title"
         footer={
-          <Button type="button" fullWidth onClick={submit}>
-            {initial ? 'บันทึกการแก้ไข' : 'สร้างกิจกรรม'}
-          </Button>
+          <div className="flex justify-end">
+            <Button type="button" onClick={submit}>
+              {initial ? 'บันทึกการแก้ไข' : 'สร้างกิจกรรม'}
+            </Button>
+          </div>
         }
       >
-        <div className="py-6">
-          {/* ชื่อหลัก / คำอธิบาย */}
+        <div className="py-6 space-y-6">
+          {/* ชื่อ / คำอธิบาย */}
           <div className="space-y-5">
             <TextField
               id="ev-title"
               label="ชื่อกิจกรรม"
-              labelSuffix="(จำเป็น)"
               autoComplete="off"
-              placeholder="เช่น ไปตรวจเลือดที่โรงพยาบาล"
+              placeholder="ใส่ชื่อกิจกรรม"
               value={form.title}
               onChange={(e) => set('title', e.target.value)}
               error={errors['ev-title']}
@@ -244,44 +347,40 @@ const FormDialog: React.FC<Omit<EventFormModalProps, 'open'>> = ({
               id="ev-desc"
               label="คำอธิบาย"
               labelSuffix="(ไม่บังคับ)"
-              rows={3}
-              placeholder="รายละเอียดที่ต้องเตรียมหรือจำไว้"
+              rows={2}
+              placeholder="ใส่คำอธิบาย"
               value={form.description}
               onChange={(e) => set('description', e.target.value)}
             />
           </div>
 
-          {/* ติ๊กสิ่งสำคัญ + แท็ก */}
-          <Section>
-            <SwitchRow
+          <hr className="border-slate-200" />
+
+          {/* สำคัญ + แท็ก */}
+          <div className="space-y-3">
+            <ToggleRow
+              icon={<Flag className="w-6 h-6 shrink-0 text-red-600 fill-red-600" aria-hidden="true" />}
               label="สำคัญ"
-              description="ปักธงแดงให้เห็นเด่นในปฏิทิน และขึ้นเป็นรายการแรกของวัน"
               checked={form.important}
               onChange={(v) => set('important', v)}
             />
-            <div className="mt-4">
-              <ChipsWithCustom
-                id="ev-tags"
-                label="เกี่ยวกับอะไร (แท็ก)"
-                hint="ช่วยจัดหมวดหมู่ เช่น หมอ ตรวจเลือด รับยา"
-                options={[]}
-                value={form.tags}
-                onChange={(v) => set('tags', v)}
-                customPlaceholder="พิมพ์แท็กแล้วกดเพิ่ม"
-              />
-            </div>
-          </Section>
+            <ChipsWithCustom
+              id="ev-tags"
+              label="แท็ก (ไม่บังคับ)"
+              options={[]}
+              value={form.tags}
+              onChange={(v) => set('tags', v)}
+              customPlaceholder="เพิ่มแท็ก"
+            />
+          </div>
 
           {/* วันและเวลา */}
-          <Section>
-            <h3 className="text-lg font-bold text-slate-900 mb-3">วันและเวลา</h3>
-            <div className="space-y-5">
-              <CheckboxField id="ev-allday" checked={form.allDay} onChange={(v) => set('allDay', v)}>
-                ทั้งวัน
-              </CheckboxField>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                <TextField
+          <div className="space-y-3">
+            <Heading icon={<Clock className={iconClass} aria-hidden="true" />}>เลือกวันและเวลา</Heading>
+            <div className="space-y-3 pl-1 sm:pl-9">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                <span className="w-16 text-base text-slate-700">เริ่ม</span>
+                <PillInput
                   id="ev-start-date"
                   type="date"
                   label="วันที่เริ่ม"
@@ -295,10 +394,9 @@ const FormDialog: React.FC<Omit<EventFormModalProps, 'open'>> = ({
                     }));
                     setErrors({});
                   }}
-                  error={errors['ev-start-date']}
                 />
                 {!form.allDay && (
-                  <TextField
+                  <PillInput
                     id="ev-start-time"
                     type="time"
                     label="เวลาเริ่ม"
@@ -306,17 +404,19 @@ const FormDialog: React.FC<Omit<EventFormModalProps, 'open'>> = ({
                     onChange={(e) => set('startTime', e.target.value)}
                   />
                 )}
-                <TextField
+              </div>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                <span className="w-16 text-base text-slate-700">สิ้นสุด</span>
+                <PillInput
                   id="ev-end-date"
                   type="date"
                   label="วันที่สิ้นสุด"
                   min={form.startDate}
                   value={form.endDate}
                   onChange={(e) => set('endDate', e.target.value)}
-                  error={errors['ev-end-date']}
                 />
                 {!form.allDay && (
-                  <TextField
+                  <PillInput
                     id="ev-end-time"
                     type="time"
                     label="เวลาสิ้นสุด"
@@ -325,68 +425,82 @@ const FormDialog: React.FC<Omit<EventFormModalProps, 'open'>> = ({
                   />
                 )}
               </div>
+              {(errors['ev-start-date'] || errors['ev-end-date']) && (
+                <p role="alert" className="text-base font-semibold text-red-700">
+                  {errors['ev-start-date'] || errors['ev-end-date']}
+                </p>
+              )}
+              <CheckboxField id="ev-allday" checked={form.allDay} onChange={(v) => set('allDay', v)}>
+                ทั้งวัน
+              </CheckboxField>
+            </div>
 
-              <NativeSelect
+            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 min-h-[48px]">
+              <span className="text-base font-bold text-slate-900">เขตเวลา</span>
+              <PillSelect
                 id="ev-timezone"
                 label="เขตเวลา"
-                hint="ใช้เวลาของประเทศไหนเป็นเกณฑ์"
                 options={TIME_ZONE_OPTIONS}
                 value={form.timeZone}
                 onChange={(v) => set('timeZone', v)}
               />
             </div>
-          </Section>
+          </div>
 
-          {/* แจ้งเตือน / ทำซ้ำ */}
-          <Section className="space-y-1">
-            <SwitchRow
-              label="ส่งการแจ้งเตือน"
-              description="บันทึกว่าให้เตือนก่อนถึงเวลาเท่าไร (ต้นแบบ: ยังไม่ส่งแจ้งเตือนจริง)"
-              checked={form.reminderOn}
-              onChange={(v) => set('reminderOn', v)}
+          {/* แจ้งเตือน */}
+          <div className="flex items-center justify-between gap-3 min-h-[52px]">
+            <Heading icon={<Bell className={iconClass} aria-hidden="true" />}>ส่งการแจ้งเตือน</Heading>
+            <PillSelect
+              id="ev-reminder"
+              label="เตือนเมื่อไหร่"
+              options={REMINDER_SELECT_OPTIONS}
+              value={form.reminderOn ? form.reminderMinutes : 'none'}
+              onChange={(v) =>
+                setForm((prev) =>
+                  v === 'none'
+                    ? { ...prev, reminderOn: false }
+                    : { ...prev, reminderOn: true, reminderMinutes: Number(v) }
+                )
+              }
             />
-            {form.reminderOn && (
-              <div className="pb-3">
-                <NativeSelect
-                  id="ev-reminder"
-                  label="เตือนเมื่อไหร่"
-                  options={REMINDER_OPTIONS}
-                  value={form.reminderMinutes}
-                  onChange={(v) => set('reminderMinutes', Number(v))}
-                />
-              </div>
-            )}
+          </div>
 
-            <SwitchRow
-              label="ทำซ้ำ"
-              description="กิจกรรมที่ต้องทำต่อเนื่อง เช่น กินยาทุกวัน ไปหาหมอทุกเดือน"
+          {/* ทำซ้ำ */}
+          <div className="space-y-3">
+            <ToggleRow
+              icon={<Repeat className={iconClass} aria-hidden="true" />}
+              label="ทำซ้ำกิจกรรม"
               checked={form.repeatOn}
               onChange={(v) => set('repeatOn', v)}
             />
             {form.repeatOn && (
-              <div className="pb-3 space-y-5">
-                <div className="grid grid-cols-2 gap-4">
-                  <TextField
-                    id="ev-repeat-every"
-                    type="number"
-                    inputMode="numeric"
-                    min={1}
-                    label="ทำซ้ำทุก"
-                    value={form.repeatEvery}
-                    onChange={(e) => set('repeatEvery', e.target.value)}
-                    error={errors['ev-repeat-every']}
-                  />
-                  <NativeSelect
-                    id="ev-repeat-unit"
-                    label="หน่วย"
-                    options={REPEAT_UNIT_OPTIONS}
-                    value={form.repeatUnit}
-                    onChange={(v) => set('repeatUnit', v as RepeatUnit)}
-                  />
+              <div className="space-y-4 pl-1 sm:pl-9">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-base text-slate-700">ทำซ้ำทุก</span>
+                  <div className="flex items-center gap-2">
+                    <PillSelect
+                      id="ev-repeat-every"
+                      label="ทำซ้ำทุกกี่หน่วย"
+                      options={repeatEveryOptions(Number(form.repeatEvery) || 1)}
+                      value={Number(form.repeatEvery) || 1}
+                      onChange={(v) => set('repeatEvery', v)}
+                    />
+                    <PillSelect
+                      id="ev-repeat-unit"
+                      label="หน่วยของการทำซ้ำ"
+                      options={REPEAT_UNIT_OPTIONS}
+                      value={form.repeatUnit}
+                      onChange={(v) => set('repeatUnit', v as RepeatUnit)}
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-base text-slate-700">เริ่มวันที่</span>
+                  <span className="text-base font-bold text-slate-900">{dateLong(form.startDate)}</span>
                 </div>
 
-                <FieldGroup label="สิ้นสุดการทำซ้ำ" error={errors['ev-repeat-end']}>
-                  <div className="space-y-2">
+                <FieldGroup label="สิ้นสุด" error={errors['ev-repeat-end']}>
+                  <div className="space-y-1">
                     <label className="flex items-center gap-3 min-h-[48px] cursor-pointer">
                       <input
                         type="radio"
@@ -395,7 +509,7 @@ const FormDialog: React.FC<Omit<EventFormModalProps, 'open'>> = ({
                         onChange={() => set('repeatEndMode', 'never')}
                         className="w-5 h-5 text-purple-700 focus:ring-purple-600"
                       />
-                      <span className="text-base sm:text-lg text-slate-900">ไม่สิ้นสุด</span>
+                      <span className="text-base text-slate-900">ไม่สิ้นสุด</span>
                     </label>
                     <div className="flex flex-wrap items-center gap-3 min-h-[48px]">
                       <label className="flex items-center gap-3 cursor-pointer">
@@ -406,18 +520,18 @@ const FormDialog: React.FC<Omit<EventFormModalProps, 'open'>> = ({
                           onChange={() => set('repeatEndMode', 'on')}
                           className="w-5 h-5 text-purple-700 focus:ring-purple-600"
                         />
-                        <span className="text-base sm:text-lg text-slate-900">สิ้นสุดวันที่</span>
+                        <span className="text-base text-slate-900">ในวันที่</span>
                       </label>
-                      <input
-                        id="ev-repeat-end"
-                        type="date"
-                        aria-label="วันที่สิ้นสุดการทำซ้ำ"
-                        min={form.startDate}
-                        disabled={form.repeatEndMode !== 'on'}
-                        value={form.repeatEndDate}
-                        onChange={(e) => set('repeatEndDate', e.target.value)}
-                        className="min-h-[48px] px-4 rounded-full border border-slate-300 bg-white text-base disabled:opacity-50"
-                      />
+                      {form.repeatEndMode === 'on' && (
+                        <PillInput
+                          id="ev-repeat-end"
+                          type="date"
+                          label="วันที่สิ้นสุดการทำซ้ำ"
+                          min={form.startDate}
+                          value={form.repeatEndDate}
+                          onChange={(e) => set('repeatEndDate', e.target.value)}
+                        />
+                      )}
                     </div>
                     <div className="flex flex-wrap items-center gap-3 min-h-[48px]">
                       <label className="flex items-center gap-3 cursor-pointer">
@@ -428,20 +542,23 @@ const FormDialog: React.FC<Omit<EventFormModalProps, 'open'>> = ({
                           onChange={() => set('repeatEndMode', 'after')}
                           className="w-5 h-5 text-purple-700 focus:ring-purple-600"
                         />
-                        <span className="text-base sm:text-lg text-slate-900">หลังจาก</span>
+                        <span className="text-base text-slate-900">หลังจาก</span>
                       </label>
-                      <input
-                        id="ev-repeat-count"
-                        type="number"
-                        inputMode="numeric"
-                        min={1}
-                        aria-label="จำนวนครั้งที่ทำซ้ำ"
-                        disabled={form.repeatEndMode !== 'after'}
-                        value={form.repeatCount}
-                        onChange={(e) => set('repeatCount', e.target.value)}
-                        className="w-24 min-h-[48px] px-4 rounded-full border border-slate-300 bg-white text-base disabled:opacity-50"
-                      />
-                      <span className="text-base sm:text-lg text-slate-900">ครั้ง</span>
+                      {form.repeatEndMode === 'after' && (
+                        <>
+                          <PillInput
+                            id="ev-repeat-count"
+                            type="number"
+                            inputMode="numeric"
+                            min={1}
+                            label="จำนวนครั้งที่ทำซ้ำ"
+                            className="w-24"
+                            value={form.repeatCount}
+                            onChange={(e) => set('repeatCount', e.target.value)}
+                          />
+                          <span className="text-base text-slate-900">ครั้ง</span>
+                        </>
+                      )}
                     </div>
                   </div>
                   {errors['ev-repeat-count'] && (
@@ -450,138 +567,171 @@ const FormDialog: React.FC<Omit<EventFormModalProps, 'open'>> = ({
                     </p>
                   )}
                 </FieldGroup>
+
+                <div className="flex items-center gap-3 rounded-xl border border-slate-300 bg-slate-100 px-4 py-3 text-base text-slate-800">
+                  <Info className="w-5 h-5 shrink-0 text-slate-600" aria-hidden="true" />
+                  <span>{repeatSummary}</span>
+                </div>
               </div>
             )}
+          </div>
 
-            {/* สถานที่ */}
-            <SwitchRow
+          {/* สถานที่ */}
+          <div className="space-y-3">
+            <ToggleRow
+              icon={<MapPin className={iconClass} aria-hidden="true" />}
               label="สถานที่"
-              description="บอกว่าต้องไปที่ไหน"
               checked={form.locationOn}
               onChange={(v) => set('locationOn', v)}
             />
             {form.locationOn && (
-              <div className="pb-3 space-y-5">
+              <div className="space-y-5">
                 <TextField
                   id="ev-loc-name"
                   label="ชื่อสถานที่"
                   autoComplete="off"
-                  placeholder="เช่น โรงพยาบาลประจำอำเภอ"
+                  placeholder="ใส่ชื่อสถานที่"
                   value={form.location.name}
                   onChange={(e) => setLoc('name', e.target.value)}
                   error={errors['ev-loc-name']}
                 />
                 <TextField
                   id="ev-loc-a1"
-                  label="ที่อยู่ (บรรทัดที่ 1)"
+                  label="ที่อยู่ 1"
                   autoComplete="off"
+                  placeholder="ใส่ที่อยู่ 1"
                   value={form.location.address1}
                   onChange={(e) => setLoc('address1', e.target.value)}
                 />
                 <TextField
                   id="ev-loc-a2"
-                  label="ที่อยู่ (บรรทัดที่ 2)"
+                  label="ที่อยู่ 2"
                   labelSuffix="(ไม่บังคับ)"
                   autoComplete="off"
+                  placeholder="ใส่ที่อยู่ 2"
                   value={form.location.address2}
                   onChange={(e) => setLoc('address2', e.target.value)}
                 />
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                  <TextField
-                    id="ev-loc-country"
-                    label="ประเทศ"
-                    labelSuffix="(ไม่บังคับ)"
-                    autoComplete="off"
-                    value={form.location.country}
-                    onChange={(e) => setLoc('country', e.target.value)}
-                  />
-                  <TextField
-                    id="ev-loc-state"
-                    label="จังหวัด / รัฐ"
-                    labelSuffix="(ไม่บังคับ)"
-                    autoComplete="off"
-                    value={form.location.state}
-                    onChange={(e) => setLoc('state', e.target.value)}
-                  />
-                  <TextField
-                    id="ev-loc-city"
-                    label="เมือง / อำเภอ"
-                    labelSuffix="(ไม่บังคับ)"
-                    autoComplete="off"
-                    value={form.location.city}
-                    onChange={(e) => setLoc('city', e.target.value)}
-                  />
-                  <TextField
-                    id="ev-loc-zip"
-                    label="รหัสไปรษณีย์"
-                    labelSuffix="(ไม่บังคับ)"
-                    inputMode="numeric"
-                    autoComplete="off"
-                    value={form.location.zip}
-                    onChange={(e) => setLoc('zip', e.target.value)}
-                  />
-                </div>
+                <TextField
+                  id="ev-loc-country"
+                  label="ประเทศ"
+                  labelSuffix="(ไม่บังคับ)"
+                  autoComplete="off"
+                  value={form.location.country}
+                  onChange={(e) => setLoc('country', e.target.value)}
+                />
+                <TextField
+                  id="ev-loc-state"
+                  label="จังหวัด / รัฐ"
+                  labelSuffix="(ไม่บังคับ)"
+                  autoComplete="off"
+                  placeholder="ใส่จังหวัดหรือรัฐ"
+                  value={form.location.state}
+                  onChange={(e) => setLoc('state', e.target.value)}
+                />
+                <TextField
+                  id="ev-loc-city"
+                  label="เมือง / อำเภอ"
+                  labelSuffix="(ไม่บังคับ)"
+                  autoComplete="off"
+                  placeholder="ใส่เมืองหรืออำเภอ"
+                  value={form.location.city}
+                  onChange={(e) => setLoc('city', e.target.value)}
+                />
+                <TextField
+                  id="ev-loc-zip"
+                  label="รหัสไปรษณีย์"
+                  labelSuffix="(ไม่บังคับ)"
+                  inputMode="numeric"
+                  autoComplete="off"
+                  placeholder="ใส่รหัสไปรษณีย์"
+                  value={form.location.zip}
+                  onChange={(e) => setLoc('zip', e.target.value)}
+                />
               </div>
             )}
+          </div>
 
-            {/* มอบหมายสมาชิก / จิตอาสา */}
-            <SwitchRow
+          {/* มอบหมายสมาชิก / อาสาสมัคร */}
+          <div className="space-y-3">
+            <ToggleRow
+              icon={<Users className={iconClass} aria-hidden="true" />}
               label="มอบหมายสมาชิกหรืออาสาสมัคร"
-              description="เลือกคนที่ต้องไปด้วย หรือเปิดรับคนมาช่วย"
               checked={form.assignOn}
               onChange={(v) => set('assignOn', v)}
             />
             {form.assignOn && (
-              <div className="pb-3 space-y-4">
-                <SwitchRow
-                  label="ต้องการอาสาสมัคร"
-                  description="สมาชิกคนอื่นจะเห็นปุ่ม “ฉันจะทำเอง” เพื่อรับงานนี้"
-                  checked={form.needVolunteer}
-                  onChange={(v) => set('needVolunteer', v)}
-                />
-                <FieldGroup label="สมาชิกที่รับผิดชอบ">
-                  <ul className="space-y-1">
-                    {members.map((member) => (
-                      <li key={member.id}>
-                        <label className="flex items-center gap-3 min-h-[52px] px-3 rounded-2xl cursor-pointer hover:bg-slate-50">
-                          <input
-                            type="checkbox"
-                            checked={form.assignees.includes(member.id)}
-                            onChange={() => toggleAssignee(member.id)}
-                            className="w-6 h-6 rounded-md border-slate-400 text-purple-700 focus:ring-purple-600 focus:ring-offset-0"
-                          />
+              <div className="space-y-2 pl-1 sm:pl-9">
+                <div className="flex items-center justify-between gap-3 text-base text-slate-700">
+                  <span>รับความช่วยเหลือที่คุณต้องการ:</span>
+                  <span className="shrink-0 text-slate-500">เลือกแล้ว {form.assignees.length} คน</span>
+                </div>
+
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={form.needVolunteer}
+                  onClick={() => set('needVolunteer', !form.needVolunteer)}
+                  className="flex w-full items-center justify-between gap-3 min-h-[56px] text-left cursor-pointer rounded-xl"
+                >
+                  <span className="flex items-center gap-3">
+                    <span
+                      aria-hidden="true"
+                      className="w-10 h-10 rounded-full bg-emerald-400 text-white flex items-center justify-center"
+                    >
+                      <ThumbsUp className="w-5 h-5 fill-current" />
+                    </span>
+                    <span className="text-base text-slate-900">ต้องการอาสาสมัคร</span>
+                  </span>
+                  <SwitchTrack checked={form.needVolunteer} />
+                </button>
+
+                <ul>
+                  {members.map((member) => (
+                    <li key={member.id}>
+                      <label className="flex items-center justify-between gap-3 min-h-[56px] cursor-pointer">
+                        <span className="flex items-center gap-3 min-w-0">
                           <span
                             aria-hidden="true"
-                            className="w-9 h-9 rounded-full bg-purple-100 text-purple-800 flex items-center justify-center font-bold"
+                            className="w-10 h-10 shrink-0 rounded-full bg-purple-100 text-purple-800 flex items-center justify-center font-bold"
                           >
                             {member.name.slice(0, 1)}
                           </span>
-                          <span className="text-base sm:text-lg text-slate-900">
+                          <span className="text-base text-slate-900 break-words">
                             {member.name} <span className="text-sm text-slate-500">· {member.relation}</span>
                           </span>
-                        </label>
-                      </li>
-                    ))}
-                  </ul>
-                </FieldGroup>
+                        </span>
+                        <input
+                          type="checkbox"
+                          checked={form.assignees.includes(member.id)}
+                          onChange={() => toggleAssignee(member.id)}
+                          className="w-6 h-6 shrink-0 rounded-md border-slate-400 text-purple-700 focus:ring-purple-600 focus:ring-offset-0"
+                        />
+                      </label>
+                    </li>
+                  ))}
+                </ul>
               </div>
             )}
-          </Section>
+          </div>
 
           {/* แนบไฟล์ */}
-          <Section>
-            <FieldGroup label="แนบไฟล์หรือรูปภาพ" hint="เช่น ใบนัด ผลตรวจ แผนที่ แนบได้หลายไฟล์">
-              <AttachmentPicker
-                id="ev-files"
-                value={form.attachments}
-                onChange={(files) => {
-                  files.forEach((f) => uploadedIds.current.add(f.id));
-                  set('attachments', files);
-                }}
-                deferDelete
-              />
-            </FieldGroup>
-          </Section>
+          <div className="space-y-3">
+            <Heading icon={<Paperclip className={iconClass} aria-hidden="true" />}>
+              แนบไฟล์ ({form.attachments.length})
+            </Heading>
+            <AttachmentPicker
+              id="ev-files"
+              variant="box"
+              title="คลิกเพื่ออัปโหลด"
+              value={form.attachments}
+              onChange={(files) => {
+                files.forEach((f) => uploadedIds.current.add(f.id));
+                set('attachments', files);
+              }}
+              deferDelete
+            />
+          </div>
         </div>
       </Modal>
 
