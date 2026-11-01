@@ -7,10 +7,13 @@ import { cn } from '../../lib/cn';
 export const MobileNav: React.FC = () => (
   <nav
     aria-label="เมนูหลักบนมือถือ"
-    className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-md border-t border-slate-200 px-3 pt-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))]"
+    className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-md border-t border-slate-200 px-2 pt-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))]"
   >
-    <ul className="grid grid-cols-3 gap-2 max-w-md mx-auto">
-      {NAV_ITEMS.map(({ to, label, icon: Icon, end }) => (
+    <ul
+      className="grid gap-1 max-w-md mx-auto"
+      style={{ gridTemplateColumns: `repeat(${NAV_ITEMS.length}, minmax(0, 1fr))` }}
+    >
+      {NAV_ITEMS.map(({ to, label, mobileLabel, icon: Icon, end }) => (
         <li key={to}>
           <NavLink
             to={to}
@@ -25,7 +28,9 @@ export const MobileNav: React.FC = () => (
             }
           >
             <Icon className="w-7 h-7 mb-0.5" strokeWidth={2.3} aria-hidden="true" />
-            <span className="text-sm">{label}</span>
+            {/* 5 แท็บต้องพอดีจอ 360px: ใช้ขนาดคงที่ ไม่ขยายตามขนาดตัวอักษรของแอป */}
+            {/* 6 แท็บต้องพอดีจอ 360px: ขยายตามขนาดตัวอักษรของแอป แต่ไม่เกิน 4.2% ของความกว้างจอ ป้ายจึงไม่ชนกัน */}
+            <span className="[font-size:min(0.8333rem,4.2vw)] leading-tight whitespace-nowrap">{mobileLabel ?? label}</span>
           </NavLink>
         </li>
       ))}

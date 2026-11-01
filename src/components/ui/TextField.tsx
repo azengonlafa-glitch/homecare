@@ -8,6 +8,7 @@ interface TextFieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
   labelSuffix?: string;
   hint?: string;
   error?: string;
+  hideLabel?: boolean;
   /** องค์ประกอบด้านขวาในช่อง เช่น ปุ่มแสดงรหัสผ่าน */
   trailing?: React.ReactNode;
 }
@@ -19,11 +20,12 @@ export const TextField: React.FC<TextFieldProps> = ({
   labelSuffix,
   hint,
   error,
+  hideLabel,
   trailing,
   className,
   ...props
 }) => (
-  <Field id={id} label={label} labelSuffix={labelSuffix} hint={hint} error={error}>
+  <Field id={id} label={label} labelSuffix={labelSuffix} hint={hint} error={error} hideLabel={hideLabel}>
     <div className="relative">
       <input
         id={id}

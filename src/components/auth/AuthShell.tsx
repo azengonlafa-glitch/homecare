@@ -57,7 +57,7 @@ export const AuthShell: React.FC<AuthShellProps> = ({
               )
             }
           >
-            Log in (เข้าสู่ระบบ)
+            Log in
           </NavLink>
 
           <NavLink
@@ -71,7 +71,7 @@ export const AuthShell: React.FC<AuthShellProps> = ({
               )
             }
           >
-            Sign up (สมัครสมาชิก)
+            Sign up
           </NavLink>
         </div>
       </div>

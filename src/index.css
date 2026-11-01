@@ -23,6 +23,12 @@
     min-height: 100dvh;
   }
 
+  /* ช่องติ๊กและปุ่มเลือกใช้สีม่วงของแอป (ค่าเริ่มต้นของเบราว์เซอร์เป็นสีน้ำเงิน) */
+  input[type='checkbox'],
+  input[type='radio'] {
+    accent-color: theme('colors.purple.700');
+  }
+
   button, a, input, select {
     touch-action: manipulation;
   }

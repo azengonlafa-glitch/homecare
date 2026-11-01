@@ -12,5 +12,7 @@ export default defineConfig({
     host: true, // รองรับการเปิดดูจากมือถือในเครือข่ายเดียวกัน (LAN)
     port: 5173,
   },
+  // หมายเหตุ: ค่าใน tailwind.config.js ถูกอ่านตอน dev server เริ่มทำงาน
+  // ถ้าแก้ขนาดตัวอักษรใน config ต้องรีสตาร์ท dev server (ไฟล์นี้เปลี่ยน = รีสตาร์ทอัตโนมัติ)
 });
 

@@ -9,13 +9,18 @@ interface FieldProps {
   /** คำอธิบายใต้ป้าย */
   hint?: string;
   error?: string;
+  /** ซ่อนป้ายจากสายตา (ยังอ่านได้ด้วย screen reader) เช่น ช่องวัน/เดือน/ปีที่มีป้ายรวม */
+  hideLabel?: boolean;
   children: React.ReactNode;
 }
 
 /** กรอบมาตรฐานของทุกช่องกรอก: ป้าย + คำอธิบาย + ช่อง + ข้อความผิดพลาด ขนาดอ่านง่าย */
-export const Field: React.FC<FieldProps> = ({ id, label, labelSuffix, hint, error, children }) => (
+export const Field: React.FC<FieldProps> = ({ id, label, labelSuffix, hint, error, hideLabel, children }) => (
   <div className="space-y-2">
-    <label htmlFor={id} className="block text-base sm:text-lg font-bold text-slate-900">
+    <label
+      htmlFor={id}
+      className={cn('block text-base sm:text-lg font-bold text-slate-900', hideLabel && 'sr-only')}
+    >
       {label}
       {labelSuffix && <span className="font-normal text-slate-500"> {labelSuffix}</span>}
     </label>

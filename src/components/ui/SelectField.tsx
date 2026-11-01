@@ -15,6 +15,7 @@ interface SelectFieldProps {
   labelSuffix?: string;
   hint?: string;
   error?: string;
+  hideLabel?: boolean;
   options: SelectOption[];
   placeholder: string;
   value: string;
@@ -35,6 +36,7 @@ export const SelectField: React.FC<SelectFieldProps> = ({
   labelSuffix,
   hint,
   error,
+  hideLabel,
   options,
   placeholder,
   value,
@@ -79,7 +81,7 @@ export const SelectField: React.FC<SelectFieldProps> = ({
   };
 
   return (
-    <Field id={id} label={label} labelSuffix={labelSuffix} hint={hint} error={error}>
+    <Field id={id} label={label} labelSuffix={labelSuffix} hint={hint} error={error} hideLabel={hideLabel}>
       <div ref={containerRef} className="relative">
         {name && <input type="hidden" name={name} value={value} />}
 

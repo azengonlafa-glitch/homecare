@@ -12,16 +12,16 @@ interface TopBarProps {
 export const TopBar: React.FC<TopBarProps> = ({ user, onLogout }) => (
   <header className="sticky top-0 z-20 h-20 bg-white/95 backdrop-blur-md border-b border-slate-200">
     <div className="h-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
-      <div className="md:hidden min-w-0">
+      <div className="md:hidden min-w-0 max-[419px]:[&_span]:hidden">
         <BrandMark />
       </div>
-      <p className="hidden md:block text-base font-medium text-slate-500">ดูแลยาและสุขภาพของครอบครัว</p>
+      <p className="hidden md:block text-base font-medium text-slate-600">ดูแลยาและสุขภาพของครอบครัว</p>
 
       {user ? (
         <div className="flex items-center gap-3 bg-purple-50 border border-purple-200 pl-3 pr-2 py-1.5 rounded-2xl min-w-0">
           <div
             aria-hidden="true"
-            className="w-10 h-10 shrink-0 rounded-full bg-purple-700 text-white flex items-center justify-center text-base font-bold shadow-xs"
+            className="hidden sm:flex w-10 h-10 shrink-0 rounded-full bg-purple-700 text-white items-center justify-center text-base font-bold shadow-xs"
           >
             {user.name ? user.name.slice(0, 1) : 'U'}
           </div>
@@ -32,7 +32,7 @@ export const TopBar: React.FC<TopBarProps> = ({ user, onLogout }) => (
             type="button"
             onClick={onLogout}
             title="ออกจากระบบ"
-            className="min-h-[44px] px-3.5 rounded-xl text-base font-semibold text-slate-600 hover:text-red-600 hover:bg-white cursor-pointer transition-colors"
+            className="min-h-[48px] px-3.5 shrink-0 whitespace-nowrap rounded-xl text-base font-semibold text-slate-600 hover:text-red-600 hover:bg-white cursor-pointer transition-colors"
           >
             ออกจากระบบ
           </button>
