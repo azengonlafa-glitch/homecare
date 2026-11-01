@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Copy, MessageCircle, RefreshCw, Share2 } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
-import { SettingsSubPage } from '../../components/settings/SettingsSubPage';
+import { PageLayout } from '../../components/settings/PageLayout';
 import { ConfirmDialog } from '../../components/settings/ConfirmDialog';
 import { generateInviteCode, loadSettings, saveSettings } from '../../lib/settings';
 
@@ -84,7 +84,7 @@ export const HomeCodeSettingsPage: React.FC = () => {
   };
 
   return (
-    <SettingsSubPage
+    <PageLayout
       title="บ้านและรหัสชวน"
       description="ให้ญาติใช้รหัสนี้เพื่อเข้ามาช่วยดูแลในบ้านเดียวกัน"
       footer={
@@ -139,6 +139,6 @@ export const HomeCodeSettingsPage: React.FC = () => {
         onCancel={() => setConfirmChange(false)}
         onConfirm={handleChangeCode}
       />
-    </SettingsSubPage>
+    </PageLayout>
   );
 };

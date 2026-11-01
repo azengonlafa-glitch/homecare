@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Check } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
-import { SettingsSubPage } from '../../components/settings/SettingsSubPage';
+import { PageLayout } from '../../components/settings/PageLayout';
 import { SavedNote } from '../../components/settings/SavedNote';
 import { cn } from '../../lib/cn';
 import {
@@ -29,7 +29,7 @@ export const FontSizeSettingsPage: React.FC = () => {
   };
 
   return (
-    <SettingsSubPage title="ขนาดตัวอักษร" description="เลือกขนาดที่อ่านสบายที่สุด ใช้ทั้งแอปทันที">
+    <PageLayout title="ขนาดตัวอักษร" description="เลือกขนาดที่อ่านสบายที่สุด ใช้ทั้งแอปทันที">
       <fieldset>
         <legend className="sr-only">ขนาดตัวอักษร</legend>
         <div className="space-y-3">
@@ -84,6 +84,6 @@ export const FontSizeSettingsPage: React.FC = () => {
       </Card>
 
       <SavedNote show={!!status}>{status}</SavedNote>
-    </SettingsSubPage>
+    </PageLayout>
   );
 };

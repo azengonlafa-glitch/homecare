@@ -2,14 +2,14 @@ import React from 'react';
 import { MessageCircle, Phone } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 import { buttonClass } from '../../components/ui/Button';
-import { SettingsSubPage } from '../../components/settings/SettingsSubPage';
+import { PageLayout } from '../../components/settings/PageLayout';
 import { PHARMACY } from '../../lib/config';
 
 const linkClass = 'text-base sm:text-lg font-bold text-purple-700 hover:text-purple-800 underline underline-offset-4 break-all';
 
 /** ตั้งค่า > ร้านยาของเรา: ข้อมูลร้านเดียวกับที่หน้า "ถามเภสัชกร" ใช้ */
 export const PharmacySettingsPage: React.FC = () => (
-  <SettingsSubPage
+  <PageLayout
     title="ร้านยาของเรา"
     description="ติดต่อเภสัชกรประจำร้านได้เมื่อไม่แน่ใจเรื่องยา"
     footer={
@@ -58,5 +58,5 @@ export const PharmacySettingsPage: React.FC = () => (
 
       <p className="mt-6 text-sm text-slate-500">ข้อมูลร้านเป็นข้อมูลสมมติของต้นแบบ</p>
     </Card>
-  </SettingsSubPage>
+  </PageLayout>
 );

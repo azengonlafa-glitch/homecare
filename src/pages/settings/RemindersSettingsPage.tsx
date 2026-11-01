@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Card } from '../../components/ui/Card';
 import { Chip, FieldGroup } from '../../components/ui/ChoiceChips';
-import { SettingsSubPage } from '../../components/settings/SettingsSubPage';
+import { PageLayout } from '../../components/settings/PageLayout';
 import { SwitchRow } from '../../components/settings/SwitchRow';
 import { SavedNote } from '../../components/settings/SavedNote';
 import {
@@ -26,7 +26,7 @@ export const RemindersSettingsPage: React.FC = () => {
   const { reminders } = settings;
 
   return (
-    <SettingsSubPage title="การเตือน" description="เลือกเรื่องที่อยากให้แอปช่วยเตือน">
+    <PageLayout title="การเตือน" description="เลือกเรื่องที่อยากให้แอปช่วยเตือน">
       <Card className="py-2">
         <div className="divide-y divide-slate-200">
           <SwitchRow
@@ -70,6 +70,6 @@ export const RemindersSettingsPage: React.FC = () => {
       </Card>
 
       <SavedNote show={saved} />
-    </SettingsSubPage>
+    </PageLayout>
   );
 };

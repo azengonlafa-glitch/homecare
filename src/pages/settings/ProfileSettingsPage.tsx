@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { TextField } from '../../components/ui/TextField';
-import { SettingsSubPage } from '../../components/settings/SettingsSubPage';
+import { PageLayout } from '../../components/settings/PageLayout';
 import { SavedNote } from '../../components/settings/SavedNote';
 import { CURRENT_MEMBER_ID, loadSettings, saveSettings } from '../../lib/settings';
 
@@ -42,7 +42,7 @@ export const ProfileSettingsPage: React.FC = () => {
 
   return (
     <form onSubmit={handleSubmit} noValidate>
-      <SettingsSubPage
+      <PageLayout
         title="โปรไฟล์ของฉัน"
         description="ตั้งชื่อเล่นที่คนในบ้านจะเห็น"
         footer={
@@ -69,7 +69,7 @@ export const ProfileSettingsPage: React.FC = () => {
           />
           <SavedNote show={saved} />
         </Card>
-      </SettingsSubPage>
+      </PageLayout>
     </form>
   );
 };

@@ -1,11 +1,11 @@
 import React from 'react';
 import { Phone } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
-import { SettingsSubPage } from '../../components/settings/SettingsSubPage';
+import { PageLayout } from '../../components/settings/PageLayout';
 
 /** ตั้งค่า > เกี่ยวกับต้นแบบ */
 export const AboutSettingsPage: React.FC = () => (
-  <SettingsSubPage title="เกี่ยวกับต้นแบบ">
+  <PageLayout title="เกี่ยวกับต้นแบบ">
     <Card>
       <p className="text-base sm:text-lg leading-relaxed text-slate-800 break-words">
         นี่คือต้นแบบ ข้อมูลทั้งหมดเป็นข้อมูลสมมติ ไม่ใช้แทนคำแนะนำของแพทย์หรือเภสัชกร
@@ -28,5 +28,5 @@ export const AboutSettingsPage: React.FC = () => (
         <span>โทร 1669</span>
       </a>
     </Card>
-  </SettingsSubPage>
+  </PageLayout>
 );

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { ChevronRight, LogOut } from 'lucide-react';
-import { PageHeader } from '../components/ui/PageHeader';
+import { PageLayout } from '../components/settings/PageLayout';
 import { Card } from '../components/ui/Card';
 import { Button, buttonClass } from '../components/ui/Button';
 import { ConfirmDialog } from '../components/settings/ConfirmDialog';
@@ -61,8 +61,7 @@ export const SettingsPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <PageHeader title="ตั้งค่า" description="จัดการข้อมูลบ้านของคุณแบบง่าย ๆ" />
+    <PageLayout title="ตั้งค่า" description="จัดการข้อมูลบ้านของคุณแบบง่าย ๆ" back={false}>
 
       <Card className="p-0 overflow-hidden">
         <ul className="divide-y divide-slate-200">
@@ -142,6 +141,6 @@ export const SettingsPage: React.FC = () => {
         onCancel={() => setConfirm(null)}
         onConfirm={handleReset}
       />
-    </div>
+    </PageLayout>
   );
 };

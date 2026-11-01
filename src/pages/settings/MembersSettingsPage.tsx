@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { UserMinus } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 import { Chip } from '../../components/ui/ChoiceChips';
-import { SettingsSubPage } from '../../components/settings/SettingsSubPage';
+import { PageLayout } from '../../components/settings/PageLayout';
 import { ConfirmDialog } from '../../components/settings/ConfirmDialog';
 import { SavedNote } from '../../components/settings/SavedNote';
 import { cn } from '../../lib/cn';
@@ -56,7 +56,7 @@ export const MembersSettingsPage: React.FC = () => {
   };
 
   return (
-    <SettingsSubPage
+    <PageLayout
       title="สมาชิกในบ้าน"
       description="ให้สิทธิ์เท่าที่จำเป็นกับคนในครอบครัว"
     >
@@ -132,6 +132,6 @@ export const MembersSettingsPage: React.FC = () => {
         onCancel={() => setRemoving(null)}
         onConfirm={confirmRemove}
       />
-    </SettingsSubPage>
+    </PageLayout>
   );
 };
