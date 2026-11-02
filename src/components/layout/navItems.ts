@@ -1,4 +1,4 @@
-import { Home, Pill, Calendar, CalendarDays, NotebookPen, Settings, HeartPulse, House } from 'lucide-react';
+import { Pill, Calendar, CalendarDays, NotebookPen, Settings, HeartPulse, House } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 /** home = ระบบบ้าน (ทุกคนในบ้านเห็นสิ่งที่เราทำ) · personal = ส่วนตัว (เห็นเฉพาะเรา) */
@@ -25,12 +25,11 @@ export interface NavItem {
   mobileLabel?: string;
 }
 
-/** รายการเมนูหลัก ใช้ร่วมกันระหว่าง Sidebar และเมนูล่างบนมือถือ */
+/** รายการเมนูหลัก เรียงตามลำดับ: บันทึกอาการ -> ปฏิทิน -> ตั้งค่าบ้าน */
 export const NAV_ITEMS: NavItem[] = [
-  { group: 'home', to: '/', label: 'หน้าหลัก', icon: Home, end: true, hidden: true },
-  { group: 'home', to: '/appointments', label: 'นัดหมอ', icon: Calendar, hidden: true },
-  { group: 'home', to: '/calendar', label: 'ปฏิทิน', icon: CalendarDays, sidebarIcon: true },
   { group: 'home', to: '/journal', label: 'บันทึกอาการ', mobileLabel: 'บันทึก', icon: NotebookPen, sidebarIcon: true },
+  { group: 'home', to: '/calendar', label: 'ปฏิทิน', icon: CalendarDays, sidebarIcon: true },
+  { group: 'home', to: '/appointments', label: 'นัดหมอ', icon: Calendar, hidden: true },
   { group: 'home', to: '/home-settings', label: 'ตั้งค่าบ้าน', mobileLabel: 'บ้าน', icon: House, sidebarIcon: true, ownerOnly: true },
   { group: 'personal', to: '/meds', label: 'ตู้ยา', icon: Pill, sidebarIcon: true },
   { group: 'personal', to: '/health', label: 'ข้อมูลสุขภาพ', mobileLabel: 'สุขภาพ', icon: HeartPulse, sidebarIcon: true },

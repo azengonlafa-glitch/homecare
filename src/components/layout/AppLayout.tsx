@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
 import { MobileNav } from './MobileNav';
@@ -7,6 +7,15 @@ import { ToastProvider } from '../ui/Toast';
 import { SETTINGS_CHANGED_EVENT, loadSettings } from '../../lib/settings';
 
 export const AppLayout: React.FC = () => {
+  const location = useLocation();
+
+  // บันทึกหน้าที่เข้าล่าสุด เพื่อใช้เป็นหน้าเริ่มต้น (default)
+  useEffect(() => {
+    if (location.pathname && location.pathname !== '/') {
+      localStorage.setItem('growa_last_visited_path', location.pathname);
+    }
+  }, [location.pathname]);
+
   // ดึงข้อมูลผู้ใช้จาก localStorage ถ้ามี
   const savedUser = localStorage.getItem('growa_auth_user');
   const user = savedUser ? JSON.parse(savedUser) : null;
