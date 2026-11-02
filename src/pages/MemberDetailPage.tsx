@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
   AlertCircle,
+  Calendar,
   ChevronLeft,
   Clock,
   HeartPulse,
@@ -11,7 +12,6 @@ import {
   Send,
   ShieldCheck,
   Trash2,
-  Users,
 } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -238,7 +238,7 @@ const ScheduleDialog: React.FC<{
 
 // ---------- หน้าหลัก ----------
 
-/** รายละเอียดสมาชิก: ยาและการดูแล + ประวัติสุขภาพ พร้อมระบบขออนุญาตดู/แก้ไขข้อมูล */
+/** รายละเอียดสมาชิก: จัดเลย์เอาต์กระชับพอดีกับจอ พร้อมปรับความสูง 2 คอลัมน์ให้สมดุล */
 export const MemberDetailPage: React.FC = () => {
   const { id = '' } = useParams();
   const toast = useToast();
@@ -328,100 +328,87 @@ export const MemberDetailPage: React.FC = () => {
   };
 
   return (
-    <div className="mx-auto w-full max-w-5xl space-y-6">
-      <Link
-        to="/members"
-        className="inline-flex items-center gap-1.5 text-lg font-bold text-slate-700 hover:text-purple-800 transition-colors"
-      >
-        <ChevronLeft className="w-6 h-6 shrink-0" aria-hidden="true" />
-        <span>สมาชิกในบ้าน</span>
-      </Link>
-
-      {/* บัตรประจำตัวสมาชิก */}
-      <Card className="shadow-xs">
-        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-          <Avatar src={photo} name={member.name} className="h-20 w-20 text-3xl shadow-xs" />
-          <div className="min-w-0 flex-1">
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight break-words">
-              {member.name}
-            </h1>
-            <p className="mt-1 text-base text-slate-700">
-              {isMe ? 'ฉัน' : member.relation} · {record.age ? `${record.age} ปี` : 'ไม่ระบุอายุ'} ·{' '}
-              {record.gender ? GENDER_LABEL[record.gender] : 'ไม่ระบุเพศ'}
-            </p>
-            <p className={cn(roleBadge, 'mt-2')}>
-              <span aria-hidden="true" className={cn('h-2 w-2 rounded-full', ROLE_META[member.role].dot)} />
-              {ROLE_META[member.role].label}
-            </p>
+    <div className="mx-auto w-full max-w-5xl space-y-5">
+      {/* ส่วนหัว: บัตรประจำตัวสมาชิก + สถานะและปุ่มขอสิทธิ์ (รวมในแถวเดียว กระชับ พอดีจอ) */}
+      <Card className="p-4 sm:p-5 shadow-xs">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div className="flex items-center gap-3.5 min-w-0">
+            <Link
+              to="/members"
+              title="กลับไปหน้ารายชื่อสมาชิก"
+              className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-purple-50 text-purple-700 hover:bg-purple-100 transition-colors"
+            >
+              <ChevronLeft className="w-6 h-6" aria-hidden="true" />
+            </Link>
+            <Avatar src={photo} name={member.name} className="h-14 w-14 sm:h-16 sm:w-16 text-2xl shadow-xs shrink-0" />
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight break-words">
+                  {member.name}
+                </h1>
+                <span className={roleBadge}>
+                  <span aria-hidden="true" className={cn('h-2 w-2 rounded-full', ROLE_META[member.role].dot)} />
+                  {ROLE_META[member.role].label}
+                </span>
+              </div>
+              <p className="mt-0.5 text-sm sm:text-base text-slate-600">
+                {isMe ? 'ฉัน' : member.relation} · {record.age ? `${record.age} ปี` : 'ไม่ระบุอายุ'} ·{' '}
+                {record.gender ? GENDER_LABEL[record.gender] : 'ไม่ระบุเพศ'}
+              </p>
+            </div>
           </div>
+
+          {/* สิทธิ์เข้าถึงและปุ่มการกระทำ */}
+          {!isMe && (
+            <div className="flex flex-wrap items-center gap-2 shrink-0 md:border-l md:border-slate-200 md:pl-5">
+              {editable ? (
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-800 text-sm font-bold border border-emerald-200">
+                    <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                    <span>แก้ไขได้{latestEditRequest?.decision === 'once' ? ' (ครั้งนี้)' : ''}</span>
+                  </span>
+                  <Button size="sm" onClick={() => setDialog('schedule')}>
+                    <PencilLine className="w-4 h-4" aria-hidden="true" />
+                    <span>แก้ไขตาราง</span>
+                  </Button>
+                </div>
+              ) : latestEditRequest?.decision === 'pending' ? (
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 text-amber-800 text-sm font-bold border border-amber-200">
+                    <span>รอ {member.name} อนุมัติ</span>
+                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <Button size="sm" onClick={() => answerAsTarget('once')}>
+                      อนุญาตครั้งนี้
+                    </Button>
+                    <Button size="sm" variant="soft" onClick={() => answerAsTarget('always')}>
+                      อนุญาตตลอด
+                    </Button>
+                    <Button size="sm" variant="neutral" onClick={() => answerAsTarget('denied')}>
+                      ไม่อนุญาต
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <Button size="sm" onClick={() => setDialog('edit')}>
+                  <Send className="w-4 h-4" aria-hidden="true" />
+                  <span>ขออนุญาตแก้ไขข้อมูล</span>
+                </Button>
+              )}
+            </div>
+          )}
+
+          {isMe && (
+            <Link
+              to="/meds"
+              className="inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-purple-50 hover:bg-purple-100 border border-purple-200 px-4 text-sm font-bold text-purple-900 transition-colors"
+            >
+              <Pill className="w-4 h-4" />
+              <span>ไปที่ยาและการดูแล</span>
+            </Link>
+          )}
         </div>
       </Card>
-
-      {/* สถานะสิทธิ์การเข้าถึง */}
-      {!isMe && (
-        <Card
-          className={cn(
-            'shadow-xs',
-            editable
-              ? 'border-emerald-200 bg-emerald-50/60'
-              : latestEditRequest?.decision === 'pending'
-                ? 'border-amber-200 bg-amber-50/60'
-                : 'border-slate-200'
-          )}
-        >
-          <SectionTitle icon={ShieldCheck}>สิทธิ์เข้าถึงข้อมูล</SectionTitle>
-
-          {editable ? (
-            <div className="space-y-3 mt-3">
-              <p className="text-base font-bold text-emerald-900">
-                คุณแก้ไขข้อมูลและจัดตารางยาของ {member.name} ได้
-                {latestEditRequest?.decision === 'once' && ' (อนุญาตครั้งนี้)'}
-              </p>
-              <Button fullWidth onClick={() => setDialog('schedule')}>
-                <PencilLine className="w-5 h-5" aria-hidden="true" />
-                <span>แก้ไขตารางยาและการดูแล</span>
-              </Button>
-            </div>
-          ) : latestEditRequest?.decision === 'pending' ? (
-            <div className="space-y-3 mt-3">
-              <p className="text-base font-bold text-amber-900">
-                ส่งคำขอไปแล้ว · รอ {member.name} อนุมัติ
-              </p>
-              <p className="text-base text-slate-700">“{latestEditRequest.message}”</p>
-              <p className="text-sm text-slate-600">
-                ต้นแบบนี้ยังไม่มีเซิร์ฟเวอร์ ส่งคำตอบแทน {member.name} เพื่อทดลองต่อได้เลย
-              </p>
-              <div className="grid gap-2 sm:grid-cols-3">
-                <Button size="sm" onClick={() => answerAsTarget('once')}>
-                  อนุญาตครั้งนี้
-                </Button>
-                <Button size="sm" variant="soft" onClick={() => answerAsTarget('always')}>
-                  อนุญาตตลอด
-                </Button>
-                <Button size="sm" variant="neutral" onClick={() => answerAsTarget('denied')}>
-                  ไม่อนุญาต
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-3 mt-3">
-              {latestEditRequest?.decision === 'denied' && (
-                <p className="text-base font-bold text-red-800">
-                  {member.name} ไม่อนุญาตให้แก้ไขข้อมูล (ตอบเมื่อ{' '}
-                  {new Date(latestEditRequest.decidedAt ?? latestEditRequest.createdAt).toLocaleDateString('th-TH')})
-                </p>
-              )}
-              <p className="text-base text-slate-700">
-                {member.name} ยังไม่ได้ให้สิทธิ์แก้ไขข้อมูล ถ้าต้องจัดตารางยาหรือสิ่งดูแลให้ ส่งคำขอไปก่อนได้
-              </p>
-              <Button fullWidth onClick={() => setDialog('edit')}>
-                <Send className="w-5 h-5" aria-hidden="true" />
-                <span>ขออนุญาตแก้ไขข้อมูล</span>
-              </Button>
-            </div>
-          )}
-        </Card>
-      )}
 
       {/* ข้อมูลถูกซ่อน */}
       {!viewable ? (
@@ -440,11 +427,13 @@ export const MemberDetailPage: React.FC = () => {
           )}
         </Card>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          {/* คอลัมน์ซ้าย: ยาและการดูแล */}
-          <div className="lg:col-span-6 space-y-6">
+        /* สองคอลัมน์ปรับสมดุลความสูงให้พอดีกับจอ */
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+          {/* คอลัมน์ซ้าย: ยาและการดูแล + ประวัติการรักษา */}
+          <div className="lg:col-span-6 space-y-5">
+            {/* ยาและการดูแล */}
             <Card className="shadow-xs">
-              <div className="flex items-center justify-between gap-3 mb-4">
+              <div className="flex items-center justify-between gap-3 mb-3.5">
                 <SectionTitle icon={Pill}>ยาและการดูแล</SectionTitle>
                 {editable && (
                   <Button size="sm" variant="soft" onClick={() => setDialog('schedule')}>
@@ -455,17 +444,17 @@ export const MemberDetailPage: React.FC = () => {
               </div>
 
               {meds.length === 0 ? (
-                <div className="py-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                <div className="py-7 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
                   <p className="text-base text-slate-600">ยังไม่มีรายการยาหรือการดูแลที่บันทึกไว้</p>
                 </div>
               ) : (
                 <ul className="divide-y divide-slate-100">
                   {meds.map((med: MemberMed) => (
-                    <li key={med.id} className="py-4 first:pt-0 last:pb-0">
-                      <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                    <li key={med.id} className="py-3.5 first:pt-0 last:pb-0">
+                      <div className="flex flex-wrap items-center gap-2 mb-1">
                         <p className="text-base sm:text-lg font-bold text-slate-900 break-words">{med.name}</p>
                         {med.form && (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-100 text-purple-800 border border-purple-200">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-purple-100 text-purple-800 border border-purple-200">
                             {med.form}
                           </span>
                         )}
@@ -476,18 +465,18 @@ export const MemberDetailPage: React.FC = () => {
                         )}
                       </div>
 
-                      <p className="text-sm sm:text-base font-medium text-slate-700">
+                      <p className="text-sm font-medium text-slate-600">
                         ครั้งละ {med.dose}
                         {med.instruction ? ` · ${med.instruction}` : ''}
                       </p>
 
-                      <ul className="mt-2.5 flex flex-wrap gap-2">
+                      <ul className="mt-2 flex flex-wrap gap-2">
                         {med.periods.map((p: DosePeriod) => (
                           <li
                             key={p}
                             className="inline-flex items-center gap-1.5 rounded-full border border-purple-200 bg-purple-50 px-3 py-1 text-sm font-bold text-purple-900"
                           >
-                            <Clock className="w-3.5 h-3.5 text-purple-600" aria-hidden="true" />
+                            <Clock className="w-3.5 h-3.5 text-purple-600 shrink-0" aria-hidden="true" />
                             <span>{PERIOD_LABEL[p]} · {med.times[p] ?? DEFAULT_TIME[p]} น.</span>
                           </li>
                         ))}
@@ -497,15 +486,38 @@ export const MemberDetailPage: React.FC = () => {
                 </ul>
               )}
             </Card>
+
+            {/* ประวัติการรักษาและการพบแพทย์ (จัดไว้คอลัมน์ซ้ายเพื่อเกลี่ยความสูงให้พอดีกับจอ) */}
+            <Card className="shadow-xs">
+              <SectionTitle icon={Calendar}>ประวัติการรักษา / พบแพทย์</SectionTitle>
+
+              {record.health.history.length === 0 ? (
+                <p className="mt-3 text-sm text-slate-500 py-4 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                  ยังไม่มีประวัติการรักษาที่บันทึกไว้
+                </p>
+              ) : (
+                <ul className="mt-3.5 space-y-2.5">
+                  {record.health.history.map((h) => (
+                    <li key={h.id} className="rounded-xl border border-slate-200 p-3.5 bg-slate-50/50">
+                      <p className="text-xs font-semibold text-slate-500">
+                        {new Date(h.at).toLocaleDateString('th-TH', { day: 'numeric', month: 'long', year: 'numeric' })}
+                      </p>
+                      <p className="text-base font-bold text-slate-900 break-words mt-0.5">{h.label}</p>
+                      <p className="text-sm text-slate-600 break-words mt-0.5">{h.detail}</p>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Card>
           </div>
 
-          {/* คอลัมน์ขวา: ประวัติสุขภาพ */}
-          <div className="lg:col-span-6 space-y-6">
+          {/* คอลัมน์ขวา: ประวัติสุขภาพ (สัญญาณชีพ, โรคประจำตัว, แพ้ยา, บันทึก) */}
+          <div className="lg:col-span-6 space-y-5">
             <Card className="shadow-xs">
               <SectionTitle icon={HeartPulse}>ประวัติสุขภาพ</SectionTitle>
 
               {/* Vitals */}
-              <div className="grid gap-3 sm:grid-cols-2 mt-4">
+              <div className="grid gap-3 sm:grid-cols-2 mt-3.5">
                 <div className="rounded-2xl bg-gradient-to-br from-slate-50 to-purple-50/30 p-4 border border-slate-100">
                   <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">ความดันล่าสุด</p>
                   <p className="mt-1 text-2xl font-extrabold text-slate-900 tabular-nums">
@@ -530,12 +542,12 @@ export const MemberDetailPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="mt-5 space-y-4 pt-4 border-t border-slate-100">
+              <div className="mt-4 space-y-4 pt-4 border-t border-slate-100">
                 <div>
                   <p className="text-sm font-bold text-slate-700">โรคประจำตัว</p>
                   <div className="mt-2 flex flex-wrap gap-2">
                     {record.health.conditions.length === 0 ? (
-                      <span className="text-sm text-slate-500">ไม่มีประวัติโรคประจำตัว</span>
+                      <span className="text-sm text-slate-500">ไม่มีข้อมูล</span>
                     ) : (
                       record.health.conditions.map((c) => (
                         <span key={c} className="rounded-full bg-red-50 border border-red-200 px-3 py-1 text-sm font-bold text-red-800">
@@ -565,70 +577,25 @@ export const MemberDetailPage: React.FC = () => {
                 {record.health.note && (
                   <div>
                     <p className="text-sm font-bold text-slate-700">บันทึกเพิ่มเติม</p>
-                    <p className="mt-1 text-base text-slate-700 bg-slate-50 p-3 rounded-xl border border-slate-200 break-words">
+                    <p className="mt-1.5 text-base text-slate-700 bg-slate-50 p-3.5 rounded-xl border border-slate-200 break-words">
                       {record.health.note}
                     </p>
                   </div>
                 )}
-
-                <div>
-                  <p className="text-sm font-bold text-slate-700">ประวัติการรักษาและการพบแพทย์</p>
-                  {record.health.history.length === 0 ? (
-                    <p className="mt-1 text-sm text-slate-500">ยังไม่มีประวัติการรักษา</p>
-                  ) : (
-                    <ul className="mt-2.5 space-y-2.5">
-                      {record.health.history.map((h) => (
-                        <li key={h.id} className="rounded-xl border border-slate-200 p-3.5 bg-slate-50/50">
-                          <p className="text-xs font-semibold text-slate-500">
-                            {new Date(h.at).toLocaleDateString('th-TH', { day: 'numeric', month: 'long', year: 'numeric' })}
-                          </p>
-                          <p className="text-base font-bold text-slate-900 break-words mt-0.5">{h.label}</p>
-                          <p className="text-sm text-slate-600 break-words mt-0.5">{h.detail}</p>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
               </div>
             </Card>
           </div>
         </div>
       )}
 
-      {isMe && !record.sharing.shareData && (
-        <Card className="flex flex-col gap-3 border-amber-200 bg-amber-50/70 sm:flex-row sm:items-center sm:justify-between shadow-xs">
-          <p className="text-base font-semibold text-amber-900">
-            ตอนนี้คุณซ่อนข้อมูลนี้จากคนในบ้าน — คนอื่นจะเห็นเพียงชื่อ อายุ และบทบาท
-          </p>
-          <Link
-            to="/settings/privacy"
-            className="inline-flex min-h-[48px] shrink-0 items-center justify-center rounded-xl border border-amber-300 bg-white px-5 text-base font-bold text-amber-900 hover:bg-amber-100 transition-colors"
-          >
-            เปิดให้ดูข้อมูล
-          </Link>
-        </Card>
-      )}
-
-      {isMe && (
-        <Card className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between shadow-xs">
-          <p className="text-base text-slate-700">รายการยาและการดูแลของคุณเอง สามารถเพิ่มหรือแก้ไขได้ที่หน้ายาและการดูแล</p>
-          <Link
-            to="/meds"
-            className="inline-flex min-h-[48px] shrink-0 items-center justify-center rounded-xl border border-purple-200 bg-purple-50 px-5 text-base font-bold text-purple-900 hover:bg-purple-100 transition-colors"
-          >
-            ไปที่ยาและการดูแล
-          </Link>
-        </Card>
-      )}
-
+      {/* หมายเหตุด้านล่างแบบข้อความกระชับ ไม่กินเนื้อที่จอ */}
       {!isMe && (
-        <Card className="flex items-start gap-3 shadow-xs">
-          <Users className="mt-0.5 h-6 w-6 shrink-0 text-purple-700" aria-hidden="true" />
-          <p className="text-base text-slate-700">
-            ข้อมูลนี้เป็นของ {member.name} ถ้าต้องการให้คนอื่นเข้าถึงข้อมูลของคุณเอง ตั้งได้ที่ ตั้งค่า ›
-            ความเป็นส่วนตัว
-          </p>
-        </Card>
+        <p className="text-xs sm:text-sm text-center text-slate-500 pt-2 pb-4">
+          ข้อมูลนี้เป็นของ {member.name} · ตั้งค่าสิทธิ์เข้าถึงข้อมูลของคุณได้ที่{' '}
+          <Link to="/settings/privacy" className="text-purple-700 underline font-semibold hover:text-purple-900">
+            ตั้งค่า › ความเป็นส่วนตัว
+          </Link>
+        </p>
       )}
 
       {dialog === 'view' && (
