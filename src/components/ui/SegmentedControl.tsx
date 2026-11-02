@@ -37,7 +37,7 @@ export function SegmentedControl<T extends string>({
             <label
               key={option.value}
               className={cn(
-                'flex min-h-[48px] cursor-pointer items-center justify-center gap-1 rounded-xl px-1 text-center text-base font-bold transition-colors',
+                'flex min-h-[48px] cursor-pointer flex-row items-center justify-center gap-1.5 rounded-xl px-3 text-center text-base font-bold transition-colors whitespace-nowrap',
                 'focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-purple-600',
                 selected ? 'bg-purple-700 text-white' : 'text-slate-700 hover:bg-white'
               )}

@@ -207,7 +207,7 @@ export const PrivacySettingsPage: React.FC = () => {
                           name={`editor-${m.id}`}
                           legend={`สิทธิ์แก้ไขข้อมูลของฉันสำหรับ ${m.name}`}
                           options={[
-                            { value: 'allow', label: '✓ อนุญาต' },
+                            { value: 'allow', label: 'อนุญาต' },
                             { value: 'block', label: 'ห้าม' },
                           ]}
                           value={editorChoice(m.id)}
