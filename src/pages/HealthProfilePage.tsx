@@ -146,7 +146,7 @@ export const HealthProfilePage: React.FC = () => {
   };
 
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-6">
+    <div className="mx-auto w-full max-w-5xl space-y-6">
       <PageHeader title="ข้อมูลสุขภาพ" description="ประวัติส่วนตัวของคุณ แก้ไขได้ และดูวิเคราะห์เทียบกับคนสุขภาพดี" />
 
       <div

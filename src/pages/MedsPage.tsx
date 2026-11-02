@@ -143,7 +143,7 @@ export const MedsPage: React.FC = () => {
   const stockAlerts = alerts.filter((a) => a.kind !== 'missed');
 
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-6">
+    <div className="mx-auto w-full max-w-5xl space-y-6">
       <PageHeader
         eyebrow="ส่วนตัว"
         title="ยาและการดูแล"

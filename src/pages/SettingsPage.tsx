@@ -5,7 +5,9 @@ import { PageLayout } from '../components/settings/PageLayout';
 import { Card } from '../components/ui/Card';
 import { Button, buttonClass } from '../components/ui/Button';
 import { ConfirmDialog } from '../components/settings/ConfirmDialog';
-import { fontScaleLabel, loadSettings, resetSettings } from '../lib/settings';
+import { CURRENT_MEMBER_ID, fontScaleLabel, loadSettings, resetSettings } from '../lib/settings';
+import { loadMemberRecord } from '../lib/members';
+import { pendingIncoming } from '../lib/access';
 import { resetDemoState } from '../lib/demo';
 import { FEEDBACK_URL } from '../lib/config';
 
@@ -40,6 +42,16 @@ export const SettingsPage: React.FC = () => {
   const [settings] = useState(loadSettings);
   const [confirm, setConfirm] = useState<'logout' | 'reset' | null>(null);
 
+  // สรุปการตั้งค่าความเป็นส่วนตัว (ข้อมูลของฉันเอง)
+  const myPrivacy = loadMemberRecord(CURRENT_MEMBER_ID).sharing;
+  const privacySummary = !myPrivacy.shareData
+    ? 'ซ่อนข้อมูลของฉันจากคนในบ้าน'
+    : myPrivacy.editPolicy === 'all'
+      ? 'ให้ดูได้ทุกคน · ให้ทุกคนแก้ไขได้'
+      : `ให้ดูได้ทุกคน · แก้ไขได้ ${myPrivacy.allowedEditors.length} คน`;
+
+  const pendingRequests = pendingIncoming().length;
+
   const enabledReminders = [
     settings.reminders.lowStock,
     settings.reminders.doseWindow,
@@ -71,6 +83,13 @@ export const SettingsPage: React.FC = () => {
               enabledReminders > 0
                 ? `เปิด ${enabledReminders} จาก 3 อย่าง · เตือนยาเหลือ ${settings.reminders.lowStockDays} วัน`
                 : 'ปิดการเตือนทั้งหมด'
+            }
+          />
+          <SettingsRow
+            to="/settings/privacy"
+            label="ความเป็นส่วนตัว"
+            value={
+              pendingRequests > 0 ? `${privacySummary} · มี ${pendingRequests} คำขอรออนุมัติ` : privacySummary
             }
           />
           <SettingsRow

@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { AlertTriangle, Bell, BellRing, CheckCircle2 } from 'lucide-react';
+import { AlertTriangle, Bell, BellRing, CheckCircle2, ShieldCheck, Users } from 'lucide-react';
 import { useMedAlerts } from '../../lib/medAlerts';
+import { memberNameById, pendingIncoming, useAccessRequests } from '../../lib/access';
 import { cn } from '../../lib/cn';
 
 const supportsNotification = typeof window !== 'undefined' && 'Notification' in window;
@@ -9,6 +10,8 @@ const supportsNotification = typeof window !== 'undefined' && 'Notification' in 
 /** กระดิ่งแจ้งเตือนบนแถบบน: ลืมกินยา และยาใกล้หมด/หมดแล้ว (ส่งแจ้งเตือนบนเครื่องได้ถ้าอนุญาต) */
 export const NotificationBell: React.FC = () => {
   const alerts = useMedAlerts({ notify: true });
+  const accessRequests = useAccessRequests();
+  const incoming = pendingIncoming(accessRequests);
   const [open, setOpen] = useState(false);
   const [permission, setPermission] = useState(supportsNotification ? Notification.permission : 'denied');
   const rootRef = useRef<HTMLDivElement>(null);
@@ -33,7 +36,7 @@ export const NotificationBell: React.FC = () => {
     setPermission(result);
   };
 
-  const count = alerts.length;
+  const count = alerts.length + incoming.length;
 
   return (
     <div ref={rootRef} className="relative">
@@ -70,12 +73,37 @@ export const NotificationBell: React.FC = () => {
             </Link>
           </div>
 
+          {incoming.length > 0 && (
+            <ul className="px-2 pb-2">
+              {incoming.map((req) => (
+                <li key={req.id}>
+                  <Link
+                    to="/settings/privacy"
+                    onClick={() => setOpen(false)}
+                    className="flex items-start gap-3 rounded-xl px-2 py-3 hover:bg-amber-50"
+                  >
+                    <ShieldCheck className="w-5 h-5 mt-0.5 shrink-0 text-amber-700" aria-hidden="true" />
+                    <span className="min-w-0">
+                      <span className="block text-base font-bold text-slate-900 break-words">
+                        {memberNameById(req.requesterId)} ขออนุญาต{req.scope === 'edit' ? 'แก้ไขข้อมูล' : 'ดูข้อมูล'}
+                      </span>
+                      <span className="block text-sm text-slate-600 break-words">{req.message}</span>
+                      <span className="mt-1 inline-block text-xs font-bold text-purple-800">
+                        แตะเพื่อเลือก อนุญาตครั้งนี้ / อนุญาตตลอด / ไม่อนุญาต
+                      </span>
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+
           {count === 0 ? (
             <p className="flex items-center gap-2 px-4 pb-4 text-base text-slate-600">
               <CheckCircle2 className="w-5 h-5 text-emerald-600" aria-hidden="true" />
               ไม่มีเรื่องต้องจัดการตอนนี้
             </p>
-          ) : (
+          ) : alerts.length === 0 ? null : (
             <ul className="max-h-[60vh] overflow-y-auto px-2 pb-2">
               {alerts.map((a) => (
                 <li key={a.key}>
@@ -95,6 +123,18 @@ export const NotificationBell: React.FC = () => {
                     <span className="min-w-0">
                       <span className="block text-base font-bold text-slate-900 break-words">{a.title}</span>
                       <span className="block text-sm text-slate-600 break-words">{a.body}</span>
+                      {a.kind === 'missed' && a.rounds > 1 && (
+                        <span className="mt-1 inline-block rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-700">
+                          เตือนครั้งที่ {a.round} จาก {a.rounds}
+                          {a.nextTime ? ` · ซ้ำอีก ${a.nextTime} น.` : ''}
+                        </span>
+                      )}
+                      {a.sharedWithFamily && (
+                        <span className="mt-1 flex items-center gap-1 text-xs font-bold text-purple-800">
+                          <Users className="w-4 h-4 shrink-0" aria-hidden="true" />
+                          แจ้งทุกคนในบ้านแล้ว
+                        </span>
+                      )}
                     </span>
                   </Link>
                 </li>

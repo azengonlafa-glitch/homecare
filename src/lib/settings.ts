@@ -14,6 +14,8 @@ export type FontScale = 'normal' | 'large' | 'xlarge';
 /** บทบาทในบ้าน: owner มีได้คนเดียว (ผู้สร้างบ้านหรือผู้ที่ได้รับมอบ) */
 export type MemberRole = 'owner' | 'member' | 'external';
 export type LowStockDays = 3 | 5 | 7 | 10;
+/** เพศของสมาชิก (ใช้แสดงบนบัตรสมาชิก) */
+export type Gender = 'male' | 'female' | 'other';
 
 export interface HouseholdMember {
   id: string;
@@ -21,6 +23,12 @@ export interface HouseholdMember {
   /** ความสัมพันธ์กับเจ้าของบ้าน เช่น ลูกสาว พี่ชาย */
   relation: string;
   role: MemberRole;
+  /** อายุ (ปี) ไม่ระบุ = null */
+  age?: number | null;
+  /** เพศ ว่าง = ไม่ระบุ */
+  gender?: Gender | '';
+  /** รูปโปรไฟล์ (data URL ที่ย่อแล้ว) ว่าง = ใช้ตัวอักษรแรกของชื่อ */
+  photo?: string;
 }
 
 export interface ReminderSettings {
@@ -32,6 +40,12 @@ export interface ReminderSettings {
   appointment: boolean;
   /** เตือนเมื่อยาเหลือกี่วัน (ค่าเริ่มต้น 7) */
   lowStockDays: LowStockDays;
+  /** เตือนซ้ำได้กี่ครั้งต่อมื้อยา (1–10 ครั้ง ตั้งได้ตามต้องการ) */
+  repeatCount: number;
+  /** เว้นระยะระหว่างการเตือนแต่ละครั้ง (นาที) */
+  repeatIntervalMinutes: number;
+  /** ตั้งแต่การเตือนครั้งที่ 2 ถ้ายังไม่กินยา ให้แจ้งทุกคนในบ้านด้วย */
+  escalateToFamily: boolean;
 }
 
 /** ข้อมูลส่วนตัวในหน้า "โปรไฟล์ของฉัน" (นอกเหนือจากชื่อเล่น) */
@@ -93,6 +107,12 @@ export const FONT_SCALES: { value: FontScale; label: string; px: number }[] = [
 ];
 
 export const LOW_STOCK_DAY_OPTIONS: LowStockDays[] = [3, 5, 7, 10];
+
+/** จำนวนครั้งที่เตือนซ้ำได้ต่อมื้อ (ผู้ใช้ตั้งเท่าไรก็ได้ในช่วงนี้) */
+export const REPEAT_COUNT_MIN = 1;
+export const REPEAT_COUNT_MAX = 10;
+/** ตัวเลือก "เว้นกี่นาทีต่อครั้ง" ถ้าค่าที่บันทึกไว้ไม่อยู่ในลิสต์ หน้าตั้งค่าจะแสดงค่านั้นเพิ่มเอง */
+export const REPEAT_INTERVAL_OPTIONS = [5, 10, 15, 30, 60];
 
 export interface RoleMeta {
   label: string;
@@ -232,7 +252,7 @@ export function defaultSettings(): AppSettings {
       { id: 'chai', name: 'พี่ชัย', relation: 'พี่ชาย', role: 'member' },
       { id: 'daeng', name: 'ป้าแดง', relation: 'ป้า', role: 'external' },
     ],
-    reminders: { lowStock: true, doseWindow: true, appointment: true, lowStockDays: 7 },
+    reminders: { lowStock: true, doseWindow: true, appointment: true, lowStockDays: 7, repeatCount: 3, escalateToFamily: true, repeatIntervalMinutes: 15 },
     fontScale: 'normal',
   };
 }
@@ -262,6 +282,15 @@ export function loadSettings(): AppSettings {
         doseWindow: !!reminders.doseWindow,
         appointment: !!reminders.appointment,
         lowStockDays: isLowStockDays(reminders.lowStockDays) ? reminders.lowStockDays : 7,
+        repeatCount:
+          typeof reminders.repeatCount === 'number'
+            ? Math.min(REPEAT_COUNT_MAX, Math.max(REPEAT_COUNT_MIN, Math.round(reminders.repeatCount)))
+            : 3,
+        escalateToFamily: reminders.escalateToFamily !== false,
+        repeatIntervalMinutes:
+          typeof reminders.repeatIntervalMinutes === 'number'
+            ? Math.min(120, Math.max(1, Math.round(reminders.repeatIntervalMinutes)))
+            : 15,
       },
       fontScale: isFontScale(parsed.fontScale) ? parsed.fontScale : 'normal',
       profile: { ...base.profile, ...(parsed.profile ?? {}) },

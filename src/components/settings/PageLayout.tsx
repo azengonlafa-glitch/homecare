@@ -10,37 +10,65 @@ interface PageLayoutProps {
   children: React.ReactNode;
   /** ปุ่มสำคัญของหน้า วางต่อท้ายเนื้อหาโดยตรง (ไม่ติดขอบล่างของจอ) */
   footer?: React.ReactNode;
-  /** ใช้ความกว้างมากขึ้นบนจอใหญ่ (สำหรับหน้าฟอร์มยาว ๆ ที่จัดเป็น 2 คอลัมน์) */
+  /** ใช้ความกว้างมากขึ้นบนจอใหญ่ (สำหรับหน้าฟอร์มยาว ๆ หรือหน้าที่มีหลายคอลัมน์) */
   wide?: boolean;
+  /** รูปแบบการจัดคอลัมน์: 1 คอลัมน์, 2 คอลัมน์, หรือ custom (ให้หน้าที่เรียกกำหนด grid เอง) */
+  columns?: 1 | 2 | 'custom';
 }
 
 /**
  * เลย์เอาต์กลางของหน้าตั้งค่าทุกหน้า
- * - เนื้อหากว้างสูงสุด 560px จัดกึ่งกลาง ขอบซ้ายขวาเท่ากันทุกหน้า
- * - ปุ่มย้อนกลับ "‹ ตั้งค่า" อยู่ตำแหน่งเดียวกันเสมอ (บนสุดของเนื้อหา)
+ * - ปรับสัดส่วนให้พอดีกับจอ: บนมือถือเต็มความกว้าง บนแท็บเล็ต/คอมพิวเตอร์ขยายให้พอดีกับหน้าจอ
+ * - ปุ่มย้อนกลับ "‹ ตั้งค่า" อยู่ตำแหน่งเดียวกันเสมอ
  */
-export const PageLayout: React.FC<PageLayoutProps> = ({ title, description, back = true, children, footer, wide = false }) => (
-  <div className={wide ? 'mx-auto w-full max-w-[560px] lg:max-w-5xl' : 'mx-auto w-full max-w-[560px]'}>
-    {back && (
-      <Link
-        to="/settings"
-        aria-label="ย้อนกลับไปหน้าตั้งค่า"
-        className="inline-flex items-center gap-1 min-h-[48px] pl-1 pr-4 -ml-1 rounded-xl text-lg font-semibold text-slate-700 hover:text-purple-800 hover:bg-purple-50 transition-colors"
-      >
-        <ChevronLeft className="w-6 h-6 shrink-0" aria-hidden="true" />
-        <span>ตั้งค่า</span>
-      </Link>
-    )}
+export const PageLayout: React.FC<PageLayoutProps> = ({
+  title,
+  description,
+  back = true,
+  children,
+  footer,
+  wide = false,
+  columns,
+}) => {
+  const containerClass = wide
+    ? 'mx-auto w-full max-w-5xl xl:max-w-6xl'
+    : 'mx-auto w-full max-w-3xl';
 
-    <header className="mt-1 mb-6 min-w-0">
-      <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight break-words">{title}</h1>
-      {description && <p className="mt-2 text-base text-slate-600 break-words">{description}</p>}
-    </header>
+  const renderContent = () => {
+    if (columns === 'custom') {
+      return children;
+    }
+    if (columns === 2 || (wide && columns !== 1)) {
+      return (
+        <div className="space-y-6 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-6 lg:items-start">
+          {children}
+        </div>
+      );
+    }
+    return <div className="space-y-6">{children}</div>;
+  };
 
-    <div className={wide ? 'space-y-5 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-5 lg:items-start' : 'space-y-5'}>
-      {children}
+  return (
+    <div className={containerClass}>
+      {back && (
+        <Link
+          to="/settings"
+          aria-label="ย้อนกลับไปหน้าตั้งค่า"
+          className="inline-flex items-center gap-1.5 min-h-[48px] pl-1 pr-4 -ml-1 rounded-xl text-lg font-bold text-slate-700 hover:text-purple-800 hover:bg-purple-50 transition-colors"
+        >
+          <ChevronLeft className="w-6 h-6 shrink-0" aria-hidden="true" />
+          <span>ตั้งค่า</span>
+        </Link>
+      )}
+
+      <header className="mt-1 mb-6 min-w-0">
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight break-words">{title}</h1>
+        {description && <p className="mt-2 text-base text-slate-600 break-words">{description}</p>}
+      </header>
+
+      {renderContent()}
+
+      {footer && <div className={wide ? 'mt-6 lg:ml-auto lg:max-w-md' : 'mt-6'}>{footer}</div>}
     </div>
-
-    {footer && <div className={wide ? 'mt-6 lg:ml-auto lg:max-w-[560px]' : 'mt-6'}>{footer}</div>}
-  </div>
-);
+  );
+};

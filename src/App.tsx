@@ -12,7 +12,10 @@ import { OnboardingPage } from './pages/OnboardingPage';
 import { RequireOnboarding } from './components/auth/RequireOnboarding';
 import { HomeSettingsPage } from './pages/HomeSettingsPage';
 import { HealthProfilePage } from './pages/HealthProfilePage';
+import { MembersPage } from './pages/MembersPage';
+import { MemberDetailPage } from './pages/MemberDetailPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { PrivacySettingsPage } from './pages/settings/PrivacySettingsPage';
 import { ProfileSettingsPage } from './pages/settings/ProfileSettingsPage';
 import { RemindersSettingsPage } from './pages/settings/RemindersSettingsPage';
 import { FontSizeSettingsPage } from './pages/settings/FontSizeSettingsPage';
@@ -53,6 +56,8 @@ export const App: React.FC = () => {
           <Route path="appointments" element={<AppointmentsPage />} />
           <Route path="meds" element={<MedsPage />} />
           <Route path="home-settings" element={<HomeSettingsPage />} />
+          <Route path="members" element={<MembersPage />} />
+          <Route path="members/:id" element={<MemberDetailPage />} />
           <Route path="health" element={<HealthProfilePage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
@@ -69,6 +74,7 @@ export const App: React.FC = () => {
           <Route index element={<SettingsPage />} />
           <Route path="profile" element={<ProfileSettingsPage />} />
           <Route path="reminders" element={<RemindersSettingsPage />} />
+          <Route path="privacy" element={<PrivacySettingsPage />} />
           <Route path="font-size" element={<FontSizeSettingsPage />} />
         </Route>
       </Routes>

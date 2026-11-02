@@ -8,6 +8,11 @@ import { ConfirmDialog } from '../components/settings/ConfirmDialog';
 import { MoodPickerModal } from '../components/journal/MoodPickerModal';
 import { PostComposerModal, type PostDraft } from '../components/journal/PostComposerModal';
 import { PostCard } from '../components/journal/PostCard';
+import { ReminderPanel } from '../components/journal/ReminderPanel';
+import { useToast } from '../components/ui/Toast';
+import { useMedAlerts, type MedAlert } from '../lib/medAlerts';
+import { applyDoseStatus, loadMeds, saveMeds } from '../lib/meds';
+import { CURRENT_MEMBER_ID, loadSettings } from '../lib/settings';
 import { SYMPTOMS, type MoodKey } from '../data/journalOptions';
 import { deleteFiles } from '../lib/fileStore';
 import { loadHomeData } from '../lib/storage';
@@ -43,6 +48,24 @@ const quickButton =
 export const JournalPage: React.FC = () => {
   const user = useMemo(currentJournalUser, []);
   const [posts, setPosts] = useState<JournalPost[]>(loadPosts);
+  const alerts = useMedAlerts();
+  const toast = useToast();
+
+  /** บันทึกว่ากินยามื้อที่เตือนอยู่แล้ว (หยุดการเตือนมื้อนั้นทันที) */
+  const handleTakeDose = (alert: MedAlert) => {
+    if (!alert.period) return;
+    const state = loadMeds();
+    const med = state.meds.find((m) => m.id === alert.medId);
+    if (!med) return;
+    const settings = loadSettings();
+    saveMeds(
+      applyDoseStatus(state, med, alert.period, 'taken', {
+        id: CURRENT_MEMBER_ID,
+        name: settings.nickname || 'ฉัน',
+      })
+    );
+    toast.show(`บันทึกว่า${med.name} กินแล้ว`);
+  };
 
   const [step, setStep] = useState<Step>(null);
   const [guided, setGuided] = useState(false);
@@ -231,6 +254,9 @@ export const JournalPage: React.FC = () => {
         title="บันทึกอาการ"
         description="โพสต์อาการและความรู้สึกให้คนในบ้านตามดู และย้อนดูการเปลี่ยนแปลงได้ภายหลัง"
       />
+
+      {/* การแจ้งเตือนเรื่องยาที่ค้างอยู่ (ถ้ามี) */}
+      <ReminderPanel alerts={alerts} onTake={handleTakeDose} />
 
       {/* กล่องเริ่มโพสต์ */}
       <Card className="p-4 sm:p-6">

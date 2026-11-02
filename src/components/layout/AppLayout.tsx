@@ -34,7 +34,7 @@ export const AppLayout: React.FC = () => {
 
   return (
     <ToastProvider>
-      <div className="min-h-dvh bg-slate-50 text-slate-900 md:flex">
+      <div className="min-h-dvh bg-slate-50 text-slate-900 lg:flex">
         <a
           href="#main-content"
           className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:px-4 focus:py-2 focus:rounded-xl focus:bg-purple-700 focus:text-white"
@@ -42,13 +42,14 @@ export const AppLayout: React.FC = () => {
           ข้ามไปที่เนื้อหาหลัก
         </a>
 
-        {/* Sidebar ซ้าย (แท็บเล็ตขึ้นไป) */}
+        {/* Sidebar ซ้าย (แท็บเล็ต/คอมพิวเตอร์) */}
         <Sidebar />
 
         <div className="flex-1 min-w-0 flex flex-col">
           <TopBar user={user} photo={photo} onLogout={handleLogout} />
 
-          <main id="main-content" className="flex-1 w-full max-w-6xl mx-auto p-4 sm:p-6 lg:p-8 pb-28 md:pb-8">
+          {/* ระยะขอบ: เว้นที่ให้เมนูล่างบนมือถือ (pb-28) และลดเหลือ pb-8 บนจอใหญ่ */}
+          <main id="main-content" className="flex-1 w-full max-w-6xl mx-auto p-4 sm:px-6 sm:pt-6 lg:px-8 lg:pt-8 pb-28 lg:pb-8">
             <Outlet />
           </main>
         </div>
