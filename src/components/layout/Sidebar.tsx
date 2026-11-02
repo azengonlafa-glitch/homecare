@@ -42,10 +42,10 @@ export const Sidebar: React.FC = () => {
                       end={end}
                       className={({ isActive }) =>
                         cn(
-                          'flex items-center gap-3 min-h-[54px] px-4 rounded-2xl text-lg transition-all',
+                          'flex items-center gap-3 min-h-[54px] px-4 rounded-2xl text-lg transition-all duration-200',
                           isActive
                             ? 'bg-purple-100 text-purple-900 font-bold shadow-xs'
-                            : 'font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                            : 'font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 hover:translate-x-0.5'
                         )
                       }
                     >

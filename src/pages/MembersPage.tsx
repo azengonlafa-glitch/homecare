@@ -31,8 +31,8 @@ const MemberTile: React.FC<{ member: HouseholdMember; record: MemberRecord; view
     <Link
       to={`/members/${member.id}`}
       className={cn(
-        'group flex aspect-square flex-col items-center justify-center gap-1 overflow-hidden rounded-3xl border-2 bg-white p-3 text-center transition-all',
-        'hover:border-purple-300 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600',
+        'group flex aspect-square flex-col items-center justify-center gap-1 overflow-hidden rounded-3xl border-2 bg-white p-3 text-center hover-lift',
+        'hover:border-purple-300 hover:shadow-lg active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600',
         isMe ? 'border-purple-300 bg-purple-50/60' : 'border-slate-200'
       )}
     >
@@ -101,7 +101,7 @@ export const MembersPage: React.FC = () => {
         </Link>
       )}
 
-      <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
+      <ul className="stagger grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
         {settings.members.map((member) => {
           const record = records[member.id];
           if (!record) return null;

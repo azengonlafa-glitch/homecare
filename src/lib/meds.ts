@@ -475,15 +475,62 @@ export function normalizeMed(raw: Partial<Medication> & { id: string; name: stri
   };
 }
 
-export const emptyMeds = (): MedsState => ({ meds: [], logs: [] });
+export const defaultSampleMeds: Medication[] = [
+  normalizeMed({
+    id: 'sample-med-1',
+    name: 'ยาลดความดัน (Amlodipine 5 mg)',
+    form: 'tablet',
+    perDose: 1,
+    unit: 'เม็ด',
+    meal: 'after',
+    periods: ['morning'],
+    times: { morning: '07:30' },
+    remaining: 28,
+    lowStockDays: 7,
+    condition: 'ความดันโลหิตสูง',
+    active: true,
+  }),
+  normalizeMed({
+    id: 'sample-med-2',
+    name: 'ยาเบาหวาน (Metformin 500 mg)',
+    form: 'tablet',
+    perDose: 1,
+    unit: 'เม็ด',
+    meal: 'with',
+    periods: ['morning', 'evening'],
+    times: { morning: '07:30', evening: '18:30' },
+    remaining: 35,
+    lowStockDays: 7,
+    condition: 'เบาหวานชนิดที่ 2',
+    active: true,
+  }),
+  normalizeMed({
+    id: 'sample-med-3',
+    name: 'ยาฉีดลดเบาหวาน (Insulin)',
+    form: 'injection',
+    customForm: 'ยาฉีดอินซูลิน',
+    perDose: 10,
+    unit: 'ยูนิต',
+    meal: 'before',
+    periods: ['bedtime'],
+    times: { bedtime: '21:00' },
+    remaining: 15,
+    lowStockDays: 5,
+    condition: 'เบาหวานชนิดที่ 2',
+    active: true,
+  }),
+];
+
+export const emptyMeds = (): MedsState => ({ meds: defaultSampleMeds, logs: [] });
 
 export function loadMeds(): MedsState {
   try {
     const raw = localStorage.getItem(MEDS_KEY);
     if (raw) {
       const parsed = JSON.parse(raw) as { meds?: Medication[]; logs?: DoseLog[] };
+      const medsList = Array.isArray(parsed.meds) ? parsed.meds.filter((m) => m?.id && m.name).map(normalizeMed) : [];
       return {
-        meds: Array.isArray(parsed.meds) ? parsed.meds.filter((m) => m?.id && m.name).map(normalizeMed) : [],
+        meds: medsList.length > 0 ? medsList : defaultSampleMeds,
         logs: Array.isArray(parsed.logs) ? parsed.logs : [],
       };
     }

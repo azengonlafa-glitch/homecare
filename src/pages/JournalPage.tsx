@@ -330,7 +330,7 @@ export const JournalPage: React.FC = () => {
               <h2 id={`day-${label}`} className="text-lg font-bold text-slate-700 mb-3">
                 {label}
               </h2>
-              <div className="space-y-4">
+              <div className="stagger space-y-4">
                 {items.map((post) => (
                   <PostCard
                     key={post.id}

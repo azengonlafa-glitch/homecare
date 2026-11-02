@@ -29,9 +29,9 @@ export const MobileNav: React.FC = () => {
               aria-label={mobileLabel ?? label}
               className={({ isActive }) =>
                 cn(
-                  'flex aspect-square w-full max-w-[3.25rem] items-center justify-center rounded-full transition-all duration-200',
+                  'flex aspect-square w-full max-w-[3.25rem] items-center justify-center rounded-full transition-all duration-200 hover:-translate-y-0.5 active:scale-95',
                   isActive
-                    ? 'bg-gradient-to-br from-violet-500 via-purple-600 to-purple-700 text-white shadow-[0_0_16px_rgba(147,51,234,0.45)]'
+                    ? 'anim-glow bg-gradient-to-br from-violet-500 via-purple-600 to-purple-700 text-white'
                     : 'bg-slate-100 text-slate-700 hover:bg-purple-50 hover:text-purple-800 active:bg-purple-100'
                 )
               }

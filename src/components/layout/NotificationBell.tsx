@@ -48,9 +48,14 @@ export const NotificationBell: React.FC = () => {
         onClick={() => setOpen((v) => !v)}
         className="relative inline-flex items-center justify-center w-12 h-12 rounded-2xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 cursor-pointer"
       >
-        {count ? <BellRing className="w-6 h-6" aria-hidden="true" /> : <Bell className="w-6 h-6" aria-hidden="true" />}
+        {count ? (
+          /* สั่นเบา ๆ ครั้งเดียวเมื่อมีรายการใหม่ (คีย์เปลี่ยนตามจำนวน) */
+          <BellRing key={count} className="anim-swing w-6 h-6" aria-hidden="true" />
+        ) : (
+          <Bell className="w-6 h-6" aria-hidden="true" />
+        )}
         {count > 0 && (
-          <span className="absolute -top-1 -right-1 min-w-6 h-6 px-1.5 rounded-full bg-red-600 text-white text-sm font-bold flex items-center justify-center">
+          <span className="anim-pop absolute -top-1 -right-1 min-w-6 h-6 px-1.5 rounded-full bg-red-600 text-white text-sm font-bold flex items-center justify-center">
             {count > 9 ? '9+' : count}
           </span>
         )}

@@ -115,7 +115,7 @@ export const ReminderPanel: React.FC<ReminderPanelProps> = ({ alerts, onTake, cl
         </div>
       </div>
 
-      <ul className="mt-4 space-y-3">
+      <ul className="stagger mt-4 space-y-3">
         {alerts.map((alert) => (
           <AlertRow key={alert.key} alert={alert} onTake={onTake} />
         ))}

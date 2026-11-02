@@ -1,4 +1,4 @@
-import { loadMeds, type DosePeriod } from './meds';
+import { formatMedForm, instructionText, loadMeds, type DosePeriod } from './meds';
 import { loadOnboarding } from './onboarding';
 import { CURRENT_MEMBER_ID, loadSettings, type Gender, type HouseholdMember } from './settings';
 
@@ -21,6 +21,9 @@ export interface MemberMed {
   dose: string;
   periods: DosePeriod[];
   times: Partial<Record<DosePeriod, string>>;
+  form?: string;
+  condition?: string;
+  instruction?: string;
 }
 
 export interface HealthHistoryItem {
@@ -102,6 +105,9 @@ function seedRecord(id: string): MemberRecord {
           dose: `${m.perDose} ${m.unit}`,
           periods: m.periods,
           times: m.times,
+          form: formatMedForm(m),
+          condition: m.condition,
+          instruction: instructionText(m),
         }));
       return {
         ...base,
@@ -137,7 +143,16 @@ function seedRecord(id: string): MemberRecord {
           ],
         },
         meds: [
-          { id: 'mint-m1', name: 'ยาลดความดัน (Amlodipine 5 mg)', dose: '1 เม็ด', periods: ['morning'], times: { morning: '07:30' } },
+          {
+            id: 'mint-m1',
+            name: 'ยาลดความดัน (Amlodipine 5 mg)',
+            dose: '1 เม็ด',
+            form: 'ยาเม็ด',
+            condition: 'ความดันโลหิตสูง',
+            instruction: 'หลังอาหารเช้า',
+            periods: ['morning'],
+            times: { morning: '07:30' },
+          },
         ],
       };
     case 'chai':
@@ -157,7 +172,26 @@ function seedRecord(id: string): MemberRecord {
           ],
         },
         meds: [
-          { id: 'chai-m1', name: 'Metformin 500 mg', dose: '1 เม็ด', periods: ['morning', 'evening'], times: { morning: '08:00', evening: '18:30' } },
+          {
+            id: 'chai-m1',
+            name: 'ยาเบาหวาน (Metformin 500 mg)',
+            dose: '1 เม็ด',
+            form: 'ยาเม็ด',
+            condition: 'เบาหวานชนิดที่ 2',
+            instruction: 'พร้อมอาหารเช้าและเย็น',
+            periods: ['morning', 'evening'],
+            times: { morning: '08:00', evening: '18:30' },
+          },
+          {
+            id: 'chai-m2',
+            name: 'ยาฉีดลดเบาหวาน (Insulin)',
+            dose: '10 ยูนิต',
+            form: 'ยาฉีด',
+            condition: 'เบาหวานชนิดที่ 2',
+            instruction: 'ฉีดก่อนนอน',
+            periods: ['bedtime'],
+            times: { bedtime: '21:00' },
+          },
         ],
       };
     case 'daeng':
@@ -168,13 +202,24 @@ function seedRecord(id: string): MemberRecord {
         health: {
           conditions: ['ข้อเข่าเสื่อม'],
           allergies: ['แพ้ฝุ่น'],
-          bloodPressure: '145/92',
-          bloodSugar: '101',
-          note: 'เดินเบา ๆ วันละ 20 นาที',
-          history: [{ id: 'daeng-h1', at: '2026-08-21', label: 'กายภาพบำบัดเข่า', detail: 'ทำต่อเนื่อง 4 ครั้ง อาการดีขึ้น' }],
+          bloodPressure: '138/88',
+          bloodSugar: '102',
+          note: 'ทำกายภาพบำบัดหัวเข่าสัปดาห์ละ 2 ครั้ง',
+          history: [
+            { id: 'daeng-h1', at: '2026-08-20', label: 'ตรวจข้อเข่ากับแพทย์ออร์โธปิดิกส์', detail: 'แนะนำออกกำลังกายเบา ๆ และทายาแก้ปวด' },
+          ],
         },
         meds: [
-          { id: 'daeng-m1', name: 'ยาแก้ปวดข้อ (Celecoxib 200 mg)', dose: '1 แคปซูล', periods: ['evening'], times: { evening: '19:00' } },
+          {
+            id: 'daeng-m1',
+            name: 'ยานวดบรรเทาปวดข้อ (Glucosamine Cream)',
+            dose: 'ทาบาง ๆ',
+            form: 'ยาทา/ครีม',
+            condition: 'ข้อเข่าเสื่อม',
+            instruction: 'ทาบริเวณหัวเข่า เช้าและก่อนนอน',
+            periods: ['morning', 'bedtime'],
+            times: { morning: '08:00', bedtime: '21:00' },
+          },
         ],
       };
     default:

@@ -22,13 +22,16 @@ const SettingsRow: React.FC<SettingsRowProps> = ({ to, label, value }) => (
   <li>
     <Link
       to={to}
-      className="flex items-center gap-3 min-h-[72px] px-5 py-4 hover:bg-purple-50 active:bg-purple-100 transition-colors"
+      className="group flex items-center gap-3 min-h-[72px] px-5 py-4 hover:bg-purple-50 active:bg-purple-100 transition-colors"
     >
       <span className="flex-1 min-w-0">
         <span className="block text-base sm:text-lg font-bold text-slate-900 break-words">{label}</span>
         {value && <span className="block mt-0.5 text-sm text-slate-600 break-words">{value}</span>}
       </span>
-      <ChevronRight className="w-6 h-6 shrink-0 text-slate-500" aria-hidden="true" />
+      <ChevronRight
+        className="w-6 h-6 shrink-0 text-slate-500 transition-transform duration-200 group-hover:translate-x-1"
+        aria-hidden="true"
+      />
     </Link>
   </li>
 );

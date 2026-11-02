@@ -50,7 +50,10 @@ export const AppLayout: React.FC = () => {
 
           {/* ระยะขอบ: เว้นที่ให้เมนูล่างบนมือถือ (pb-28) และลดเหลือ pb-8 บนจอใหญ่ */}
           <main id="main-content" className="flex-1 w-full max-w-6xl mx-auto p-4 sm:px-6 sm:pt-6 lg:px-8 lg:pt-8 pb-28 lg:pb-8">
-            <Outlet />
+            {/* เปลี่ยนหน้าเมื่อไรเนื้อหาจะค่อย ๆ เลื่อนขึ้นมาเบา ๆ */}
+            <div key={location.pathname} className="anim-page">
+              <Outlet />
+            </div>
           </main>
         </div>
 
