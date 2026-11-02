@@ -83,7 +83,7 @@ const MedGridCard: React.FC<{ med: Medication; onOpen: (m: Medication) => void }
         'group relative flex flex-col rounded-2xl border-2 overflow-hidden text-left',
         'transition-shadow hover:shadow-lg active:scale-95',
         !med.active && 'opacity-60',
-        level === 'danger' ? 'border-red-300' : level === 'low' ? 'border-amber-300' : 'border-transparent',
+        level === 'critical' ? 'border-red-300' : level === 'low' ? 'border-amber-300' : 'border-transparent',
         'shadow-sm bg-white'
       )}
       aria-label={`${med.name} — กดเพื่อดูรายละเอียด`}
@@ -112,10 +112,10 @@ const MedGridCard: React.FC<{ med: Medication; onOpen: (m: Medication) => void }
           <span
             className={cn(
               'absolute top-2 right-2 px-2 py-0.5 rounded-full text-xs font-bold',
-              level === 'danger' ? 'bg-red-600 text-white' : 'bg-amber-500 text-white'
+              level === 'critical' ? 'bg-red-600 text-white' : 'bg-amber-500 text-white'
             )}
           >
-            {level === 'danger' ? 'ยาหมดแล้ว!' : 'ใกล้หมด'}
+            {level === 'critical' ? 'ยาหมดแล้ว!' : 'ใกล้หมด'}
           </span>
         )}
       </div>
@@ -134,7 +134,7 @@ const MedGridCard: React.FC<{ med: Medication; onOpen: (m: Medication) => void }
           <span className="text-xs font-semibold text-slate-700">
             เหลือ {formatQty(med.remaining)} {med.unit}
           </span>
-          <StockBadge med={med} compact />
+          <StockBadge med={med} />
         </div>
       </div>
     </button>
