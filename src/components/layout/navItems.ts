@@ -31,7 +31,7 @@ export const NAV_ITEMS: NavItem[] = [
   { group: 'home', to: '/calendar', label: 'ปฏิทิน', icon: CalendarDays, sidebarIcon: true },
   { group: 'home', to: '/appointments', label: 'นัดหมอ', icon: Calendar, hidden: true },
   { group: 'home', to: '/home-settings', label: 'ตั้งค่าบ้าน', mobileLabel: 'บ้าน', icon: House, sidebarIcon: true, ownerOnly: true },
-  { group: 'personal', to: '/meds', label: 'ตู้ยา', icon: Pill, sidebarIcon: true },
+  { group: 'personal', to: '/meds', label: 'ยาและการดูแล', mobileLabel: 'ยา/ดูแล', icon: Pill, sidebarIcon: true },
   { group: 'personal', to: '/health', label: 'ข้อมูลสุขภาพ', mobileLabel: 'สุขภาพ', icon: HeartPulse, sidebarIcon: true },
   { group: 'personal', to: '/settings', label: 'ตั้งค่าส่วนตัว', mobileLabel: 'ตั้งค่า', icon: Settings, sidebarIcon: true },
 ];

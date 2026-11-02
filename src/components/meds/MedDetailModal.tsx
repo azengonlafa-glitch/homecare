@@ -7,10 +7,10 @@ import { StockBadge } from './StockBadge';
 import { drugById } from '../../data/drugDb';
 import {
   DOSE_STATUS_LABEL,
-  FORM_OPTIONS,
   PERIOD_LABEL,
   dayStates,
   endDateOf,
+  formatMedForm,
   formatQty,
   historyOf,
   instructionText,
@@ -186,7 +186,7 @@ export const MedDetailModal: React.FC<MedDetailModalProps> = ({ med, logs, onEdi
             <Row label="วิธีกิน">{instructionText(med)}</Row>
             <Row label="เวลา">{timesText}</Row>
             <Row label="วัน">{weekdaysText(med.weekdays)}</Row>
-            <Row label="รูปแบบ">{FORM_OPTIONS.find((f) => f.value === med.form)?.label ?? '-'}</Row>
+            <Row label="รูปแบบ">{formatMedForm(med)}</Row>
             <Row label="เริ่มใช้">{thaiDate(med.startDate)}</Row>
             <Row label="ระยะเวลา">
               {end ? `${med.durationDays} วัน (ถึง ${thaiDate(end)})` : 'ใช้ต่อเนื่อง'}

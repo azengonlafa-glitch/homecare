@@ -33,7 +33,7 @@ type Tab = 'today' | 'cabinet' | 'report';
 
 const TABS: { value: Tab; label: string; icon: React.ReactNode }[] = [
   { value: 'today', label: 'วันนี้', icon: <ClipboardCheck className="w-5 h-5" aria-hidden="true" /> },
-  { value: 'cabinet', label: 'ตู้ยา', icon: <Pill className="w-5 h-5" aria-hidden="true" /> },
+  { value: 'cabinet', label: 'รายการยา/ดูแล', icon: <Pill className="w-5 h-5" aria-hidden="true" /> },
   { value: 'report', label: 'รายงาน', icon: <BarChart3 className="w-5 h-5" aria-hidden="true" /> },
 ];
 
@@ -146,13 +146,13 @@ export const MedsPage: React.FC = () => {
     <div className="mx-auto w-full max-w-3xl space-y-6">
       <PageHeader
         eyebrow="ส่วนตัว"
-        title="ตู้ยา"
-        description="ตารางกินยา รายการยา และรายงานการใช้ยาของคุณ เห็นเฉพาะคุณคนเดียว"
+        title="ยาและการดูแล"
+        description="ตารางใช้ยา ยาฉีดเบาหวาน สิ่งดูแลสุขภาพ และการแจ้งเตือน เห็นเฉพาะคุณคนเดียว"
         action={
           hasMeds ? (
             <Button type="button" onClick={() => setForm({ mode: 'new' })} className="w-full sm:w-auto">
               <Plus className="w-5 h-5" aria-hidden="true" />
-              <span>เพิ่มยา</span>
+              <span>เพิ่มยา / การดูแล</span>
             </Button>
           ) : undefined
         }
@@ -161,13 +161,13 @@ export const MedsPage: React.FC = () => {
       {!hasMeds ? (
         <Card className="py-14 px-6 text-center">
           <Pill className="w-14 h-14 text-purple-300 mx-auto mb-4" aria-hidden="true" />
-          <p className="text-xl font-bold text-slate-900">ยังไม่มียาในตู้</p>
+          <p className="text-xl font-bold text-slate-900">ยังไม่มีรายการยาหรือการดูแล</p>
           <p className="mt-2 text-base text-slate-600">
-            เพิ่มยาตัวแรก หรือถ่ายรูปซองยาให้ช่วยกรอก แล้วระบบจะทำตารางกินยาและเตือนเมื่อยาใกล้หมดให้
+            เพิ่มยา ยาฉีดเบาหวาน หรือสิ่งดูแล หรือถ่ายรูปซองยาให้ช่วยกรอก เพื่อสร้างตารางและแจ้งเตือนเมื่อใกล้หมด
           </p>
           <Button type="button" className="mt-6" onClick={() => setForm({ mode: 'new' })}>
             <Plus className="w-5 h-5" aria-hidden="true" />
-            <span>เพิ่มยาตัวแรก</span>
+            <span>เพิ่มรายการแรก</span>
           </Button>
         </Card>
       ) : (

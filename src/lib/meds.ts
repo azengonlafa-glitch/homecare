@@ -16,6 +16,8 @@ export interface Medication {
   /** ชื่อยาและขนาด เช่น Metformin 500 mg */
   name: string;
   form: MedForm;
+  /** รูปแบบอื่น ๆ ที่ผู้ใช้ระบุเองเมื่อ form === 'other' */
+  customForm?: string;
   /** ใช้ครั้งละกี่หน่วย */
   perDose: number;
   unit: string;
@@ -97,12 +99,19 @@ export const FORM_OPTIONS: { value: MedForm; label: string; unit: string }[] = [
   { value: 'tablet', label: 'ยาเม็ด', unit: 'เม็ด' },
   { value: 'capsule', label: 'แคปซูล', unit: 'แคปซูล' },
   { value: 'liquid', label: 'ยาน้ำ', unit: 'ช้อนชา' },
-  { value: 'injection', label: 'ยาฉีด', unit: 'เข็ม' },
+  { value: 'injection', label: 'ยาฉีด', unit: 'ยูนิต' },
   { value: 'topical', label: 'ยาทา/ครีม', unit: 'ครั้ง' },
   { value: 'drops', label: 'ยาหยอด', unit: 'หยด' },
   { value: 'spray', label: 'ยาพ่น', unit: 'พ่น' },
-  { value: 'other', label: 'อื่น ๆ', unit: 'เม็ด' },
+  { value: 'other', label: 'อื่น ๆ', unit: 'ชิ้น' },
 ];
+
+export const formatMedForm = (m: { form: MedForm; customForm?: string }): string => {
+  if (m.form === 'other' && m.customForm && m.customForm.trim()) {
+    return m.customForm.trim();
+  }
+  return FORM_OPTIONS.find((f) => f.value === m.form)?.label ?? 'อื่น ๆ';
+};
 
 export const UNIT_OPTIONS = [
   'เม็ด',
@@ -113,10 +122,13 @@ export const UNIT_OPTIONS = [
   'หยด',
   'พ่น',
   'เข็ม',
+  'ยูนิต',
   'หลอด',
   'ซอง',
+  'แผ่น',
   'ชิ้น',
   'ครั้ง',
+  'โดส',
 ].map((u) => ({ value: u, label: u }));
 
 export const DOSE_STATUS_LABEL: Record<DoseStatus, string> = {
@@ -437,6 +449,7 @@ export function normalizeMed(raw: Partial<Medication> & { id: string; name: stri
     id: raw.id,
     name: raw.name,
     form: raw.form ?? 'tablet',
+    customForm: typeof raw.customForm === 'string' ? raw.customForm : undefined,
     perDose: raw.perDose ?? 1,
     unit: raw.unit ?? 'เม็ด',
     meal: raw.meal ?? 'any',

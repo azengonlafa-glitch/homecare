@@ -4,9 +4,9 @@ import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { StockBadge } from './StockBadge';
 import {
-  FORM_OPTIONS,
   PERIODS,
   PERIOD_LABEL,
+  formatMedForm,
   formatQty,
   instructionText,
   stockLevel,
@@ -24,7 +24,7 @@ interface MedCabinetProps {
 
 const MedCard: React.FC<{ med: Medication } & Omit<MedCabinetProps, 'meds'>> = ({ med, onOpen, onEdit, onRefill }) => {
   const level = stockLevel(med);
-  const formLabel = FORM_OPTIONS.find((f) => f.value === med.form)?.label;
+  const formLabel = formatMedForm(med);
   const times = med.periods.map((p) => `${PERIOD_LABEL[p]}${med.times[p] ? ` ${med.times[p]}` : ''}`).join(' · ');
   const schedule = [times, med.weekdays.length > 0 && med.weekdays.length < 7 ? weekdaysText(med.weekdays) : '']
     .filter(Boolean)

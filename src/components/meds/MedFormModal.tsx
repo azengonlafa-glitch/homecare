@@ -44,6 +44,7 @@ interface MedFormModalProps {
 interface FormState {
   name: string;
   form: MedForm;
+  customForm: string;
   drugRef: string;
   condition: string;
   perDose: string;
@@ -72,6 +73,7 @@ const unitFor = (form: MedForm) => FORM_OPTIONS.find((f) => f.value === form)?.u
 const fromMed = (m: Medication | null, lowDays: number): FormState => ({
   name: m?.name ?? '',
   form: m?.form ?? 'tablet',
+  customForm: m?.customForm ?? '',
   drugRef: m?.drugRef ?? '',
   condition: m?.condition ?? '',
   perDose: m ? formatQty(m.perDose) : '1',
@@ -302,6 +304,7 @@ const FormDialog: React.FC<Omit<MedFormModalProps, 'open'>> = ({ initial, defaul
     onSave({
       name: form.name.trim(),
       form: form.form,
+      customForm: form.form === 'other' ? form.customForm.trim() : undefined,
       drugRef: form.drugRef || autoMatch?.id || '',
       condition: form.condition.trim(),
       perDose,
@@ -334,7 +337,7 @@ const FormDialog: React.FC<Omit<MedFormModalProps, 'open'>> = ({ initial, defaul
       <Modal
         open
         onClose={requestClose}
-        title={initial ? 'แก้ไขยา' : 'เพิ่มยา'}
+        title={initial ? 'แก้ไขข้อมูลยา / การดูแล' : 'เพิ่มยา / การดูแล'}
         initialFocusSelector="#med-name"
         footer={
           <div className="grid grid-cols-2 gap-3">
@@ -342,7 +345,7 @@ const FormDialog: React.FC<Omit<MedFormModalProps, 'open'>> = ({ initial, defaul
               ยกเลิก
             </Button>
             <Button fullWidth onClick={submit}>
-              {initial ? 'บันทึกการแก้ไข' : 'บันทึกยา'}
+              {initial ? 'บันทึกการแก้ไข' : 'บันทึก'}
             </Button>
           </div>
         }
@@ -398,14 +401,14 @@ const FormDialog: React.FC<Omit<MedFormModalProps, 'open'>> = ({ initial, defaul
             )}
           </div>
 
-          <SectionBox title="ยาอะไร">
+          <SectionBox title="ยาหรือการดูแล">
             <div className="relative">
               <TextField
                 id="med-name"
-                label="ชื่อยาและขนาดยา"
-                hint="พิมพ์ชื่อยา จะมีรายการจากฐานข้อมูลยาให้เลือก"
+                label="ชื่อยา หรือสิ่งที่ใช้ดูแล"
+                hint="พิมพ์ชื่อยา ยาฉีด หรือสิ่งดูแล เช่น Metformin 500 mg หรือ ยาฉีดอินซูลิน"
                 autoComplete="off"
-                placeholder="เช่น Metformin 500 mg"
+                placeholder="เช่น Metformin 500 mg, ยาฉีดอินซูลิน, แผ่นตรวจ"
                 value={form.name}
                 onFocus={() => setNameFocused(true)}
                 onBlur={() => window.setTimeout(() => setNameFocused(false), 150)}
@@ -439,7 +442,7 @@ const FormDialog: React.FC<Omit<MedFormModalProps, 'open'>> = ({ initial, defaul
               )}
             </div>
 
-            <FieldGroup label="รูปแบบยา">
+            <FieldGroup label="รูปแบบยา / สิ่งที่ใช้ดูแล">
               <div className="flex flex-wrap gap-2">
                 {FORM_OPTIONS.map((o) => (
                   <Chip key={o.value} selected={form.form === o.value} onClick={() => changeForm(o.value)}>
@@ -447,6 +450,21 @@ const FormDialog: React.FC<Omit<MedFormModalProps, 'open'>> = ({ initial, defaul
                   </Chip>
                 ))}
               </div>
+
+              {/* เมื่อกด "อื่น ๆ" จะมีช่องข้อความให้ใส่ */}
+              {form.form === 'other' && (
+                <div className="mt-3 animate-in fade-in slide-in-from-top-1 duration-150">
+                  <TextField
+                    id="med-custom-form"
+                    name="custom-form"
+                    label="ระบุรูปแบบหรือวิธีใช้อื่น ๆ"
+                    placeholder="เช่น แผ่นแปะผิวหนัง, ยาฉีดอินซูลินใต้ผิวหนัง, อาหารทางการแพทย์"
+                    value={form.customForm}
+                    onChange={(e) => setForm((prev) => ({ ...prev, customForm: e.target.value }))}
+                    autoFocus
+                  />
+                </div>
+              )}
             </FieldGroup>
 
             <div className="space-y-2">
