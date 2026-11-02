@@ -35,7 +35,7 @@ interface MedDetailModalProps {
   onClose: () => void;
 }
 
-export const DAY_STYLE: Record<DayState, { cls: string; label: string }> = {
+const DAY_STYLE: Record<DayState, { cls: string; label: string }> = {
   all: { cls: 'bg-emerald-500', label: 'ครบ' },
   partial: { cls: 'bg-amber-400', label: 'ไม่ครบ' },
   missed: { cls: 'bg-red-500', label: 'ไม่ได้กิน/ไม่ได้บันทึก' },

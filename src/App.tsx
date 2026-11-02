@@ -20,6 +20,8 @@ import { ProfileSettingsPage } from './pages/settings/ProfileSettingsPage';
 import { RemindersSettingsPage } from './pages/settings/RemindersSettingsPage';
 import { FontSizeSettingsPage } from './pages/settings/FontSizeSettingsPage';
 
+import { ErrorBoundary } from './components/ui/ErrorBoundary';
+
 /** นำทางไปยังหน้าล่าสุดที่ผู้ใช้เคยเข้าชม (ถ้ายังไม่เคยเข้า ให้เปิดหน้าบันทึกอาการเป็นค่าเริ่มต้น) */
 const DefaultRouteRedirect: React.FC = () => {
   const lastPath = localStorage.getItem('growa_last_visited_path');
@@ -29,8 +31,9 @@ const DefaultRouteRedirect: React.FC = () => {
 
 export const App: React.FC = () => {
   return (
-    <BrowserRouter>
-      <Routes>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <Routes>
         {/* หน้า Login และ Sign up แบบ Clean UI */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignUpPage />} />
@@ -79,6 +82,7 @@ export const App: React.FC = () => {
         </Route>
       </Routes>
     </BrowserRouter>
+  </ErrorBoundary>
   );
 };
 

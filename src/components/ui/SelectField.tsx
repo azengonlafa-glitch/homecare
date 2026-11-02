@@ -101,7 +101,7 @@ export const SelectField: React.FC<SelectFieldProps> = ({
             className
           )}
         >
-          <span className={cn('truncate text-base sm:text-lg', !selectedOption && 'text-slate-400')}>
+          <span className={cn('truncate text-base sm:text-lg', !selectedOption ? 'text-slate-600' : 'text-slate-900 font-semibold')}>
             {selectedOption ? selectedOption.label : placeholder}
           </span>
           <ChevronDown

@@ -11,7 +11,7 @@ interface AvatarProps {
 /** รูปโปรไฟล์วงกลม ถ้าไม่มีรูปแสดงตัวอักษรแรกของชื่อ */
 export const Avatar: React.FC<AvatarProps> = ({ src, name, className }) =>
   src ? (
-    <img src={src} alt="" className={cn('rounded-full object-cover shrink-0', className)} />
+    <img src={src} alt="" width="64" height="64" loading="lazy" decoding="async" className={cn('rounded-full object-cover shrink-0', className)} />
   ) : (
     <span
       aria-hidden="true"

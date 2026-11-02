@@ -16,9 +16,12 @@ export const AppLayout: React.FC = () => {
     }
   }, [location.pathname]);
 
-  // ดึงข้อมูลผู้ใช้จาก localStorage ถ้ามี
+  // ดึงข้อมูลผู้ใช้จาก localStorage หรือ fallback จากการตั้งค่าในแอป
   const savedUser = localStorage.getItem('growa_auth_user');
-  const user = savedUser ? JSON.parse(savedUser) : null;
+  const currentSettings = loadSettings();
+  const user = savedUser
+    ? JSON.parse(savedUser)
+    : { name: currentSettings.nickname || currentSettings.profile.firstName || 'ผู้ใช้ทั่วไป', email: '' };
 
   const [photo, setPhoto] = useState(() => loadSettings().profile.photo);
   useEffect(() => {

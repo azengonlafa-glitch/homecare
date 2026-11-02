@@ -44,7 +44,7 @@ export const describedBy = (id: string, hint?: string, error?: string) =>
 /** สไตล์ช่องกรอกแบบแคปซูล ขนาดใหญ่ขึ้น เต็มตา สัมผัสง่าย */
 export const fieldControlClass = (hasError?: boolean) =>
   cn(
-    'w-full min-h-[54px] sm:min-h-[58px] px-6 py-3 bg-white border rounded-2xl sm:rounded-full text-lg text-slate-900 placeholder-slate-400',
+    'w-full min-h-[54px] sm:min-h-[58px] px-6 py-3 bg-white border rounded-2xl sm:rounded-full text-lg text-slate-900 placeholder-slate-500',
     'focus:outline-none focus:ring-2 focus:ring-purple-600 focus:border-transparent transition-all shadow-xs',
     hasError ? 'border-red-500' : 'border-slate-300'
   );

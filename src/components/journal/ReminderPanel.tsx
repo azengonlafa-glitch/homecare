@@ -13,6 +13,13 @@ interface ReminderPanelProps {
   className?: string;
 }
 
+const formatLateMinutes = (mins: number) => {
+  if (mins < 60) return `เลยเวลา ${mins} นาที`;
+  const hours = Math.floor(mins / 60);
+  const remaining = mins % 60;
+  return remaining > 0 ? `เลยเวลา ${hours} ชั่วโมง ${remaining} นาที` : `เลยเวลา ${hours} ชั่วโมง`;
+};
+
 const metaChip = 'inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-sm font-semibold';
 
 /** แถวการเตือน 1 รายการ: บอกว่าเลยเวลามาเท่าไร เตือนครั้งที่เท่าไร และแจ้งคนในบ้านแล้วหรือยัง */
@@ -44,7 +51,7 @@ const AlertRow: React.FC<{ alert: MedAlert; onTake: (alert: MedAlert) => void }>
             {missed && alert.minutesLate !== undefined && (
               <span className={cn(metaChip, 'border-red-300 bg-white text-red-800')}>
                 <Clock className="w-4 h-4" aria-hidden="true" />
-                เลยเวลา {alert.minutesLate} นาที
+                {formatLateMinutes(alert.minutesLate)}
               </span>
             )}
             {missed && alert.rounds > 1 && (
