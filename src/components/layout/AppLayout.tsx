@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Outlet, useLocation } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
 import { MobileNav } from './MobileNav';
@@ -8,6 +8,7 @@ import { SETTINGS_CHANGED_EVENT, loadSettings } from '../../lib/settings';
 
 export const AppLayout: React.FC = () => {
   const location = useLocation();
+  const navigate = useNavigate();
 
   // บันทึกหน้าที่เข้าล่าสุด เพื่อใช้เป็นหน้าเริ่มต้น (default)
   useEffect(() => {
@@ -16,12 +17,16 @@ export const AppLayout: React.FC = () => {
     }
   }, [location.pathname]);
 
-  // ดึงข้อมูลผู้ใช้จาก localStorage หรือ fallback จากการตั้งค่าในแอป
-  const savedUser = localStorage.getItem('growa_auth_user');
-  const currentSettings = loadSettings();
-  const user = savedUser
-    ? JSON.parse(savedUser)
-    : { name: currentSettings.nickname || currentSettings.profile.firstName || 'ผู้ใช้ทั่วไป', email: '' };
+  // ดึงข้อมูลผู้ใช้จาก localStorage (ถ้าไม่ได้ล็อกอิน จะเป็น null เพื่อให้แสดงปุ่มเข้าสู่ระบบ)
+  const [user, setUser] = useState<{ name?: string; email?: string } | null>(() => {
+    const saved = localStorage.getItem('growa_auth_user');
+    return saved ? JSON.parse(saved) : null;
+  });
+
+  useEffect(() => {
+    const saved = localStorage.getItem('growa_auth_user');
+    setUser(saved ? JSON.parse(saved) : null);
+  }, [location.pathname]);
 
   const [photo, setPhoto] = useState(() => loadSettings().profile.photo);
   useEffect(() => {
@@ -32,7 +37,8 @@ export const AppLayout: React.FC = () => {
 
   const handleLogout = () => {
     localStorage.removeItem('growa_auth_user');
-    window.location.reload();
+    setUser(null);
+    navigate('/login', { replace: true });
   };
 
   return (
