@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthShell } from '../components/auth/AuthShell';
 import { SocialButtons } from '../components/auth/SocialButtons';
@@ -7,23 +7,74 @@ import { TextField } from '../components/ui/TextField';
 import { Button } from '../components/ui/Button';
 import { pathAfterLogin } from '../lib/homeSetup';
 import { resetDemoState } from '../lib/demo';
+import { cloudEnabled } from '../cloud/client';
+import { readAuthUser } from '../cloud/identity';
+import { explainError, sendPasswordReset, signInWithEmail, signInWithProvider } from '../cloud/engine';
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // เข้าสู่ระบบอยู่แล้ว (เช่น กลับมาจาก Google หรือจากลิงก์ยืนยันอีเมล): ไปต่อได้เลย
+  useEffect(() => {
+    if (cloudEnabled && readAuthUser()?.id) navigate(pathAfterLogin(), { replace: true });
+  }, [navigate]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // จำลองการเข้าสู่ระบบ บันทึกลง localStorage ตามแนวทาง Prototype
-    localStorage.setItem('growa_auth_user', JSON.stringify({ email: email || 'user@example.com' }));
-    navigate(pathAfterLogin());
+    if (!cloudEnabled) {
+      localStorage.setItem('growa_auth_user', JSON.stringify({ email: email || 'user@example.com' }));
+      navigate(pathAfterLogin());
+      return;
+    }
+    setError('');
+    setNotice('');
+    setBusy(true);
+    try {
+      await signInWithEmail(email, password);
+      // โหลดหน้าใหม่เพื่อดึงข้อมูลของบัญชีนี้ลงเครื่อง
+      window.location.assign('/');
+    } catch (err) {
+      setError(explainError(err));
+      setBusy(false);
+    }
+  };
+
+  const handleProvider = async (provider: 'google' | 'apple') => {
+    if (!cloudEnabled) {
+      navigate(pathAfterLogin());
+      return;
+    }
+    setError('');
+    try {
+      await signInWithProvider(provider);
+    } catch (err) {
+      setError(explainError(err));
+    }
+  };
+
+  const handleForgot = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!cloudEnabled) return;
+    if (!email.trim()) {
+      setError('กรอกอีเมลก่อน แล้วกด “ลืมรหัสผ่าน” อีกครั้ง');
+      return;
+    }
+    setError('');
+    try {
+      await sendPasswordReset(email);
+      setNotice('ส่งลิงก์ตั้งรหัสผ่านใหม่ไปที่อีเมลแล้ว');
+    } catch (err) {
+      setError(explainError(err));
+    }
   };
 
   const handleDemoLogin = () => {
-    // เข้าสู่ระบบแบบ Demo: เริ่มใหม่ทุกครั้ง แล้วพาไปหน้าเข้าร่วม/สร้างบ้านก่อน จากนั้นกรอกข้อมูลพื้นฐาน
     resetDemoState();
     localStorage.setItem(
       'growa_auth_user',
@@ -37,17 +88,17 @@ export const LoginPage: React.FC = () => {
       onBack={() => navigate('/')}
       backLabel="กลับหน้าหลัก"
       headerExtra={
-        <button
-          type="button"
-          onClick={handleDemoLogin}
-          title="กดเพื่อเข้าใช้งานแบบ Demo ทันทีสำหรับทดสอบ"
-          className="min-h-[42px] text-sm sm:text-base font-bold bg-purple-100 hover:bg-purple-200 active:bg-purple-300 text-purple-900 px-4 py-1.5 rounded-full border border-purple-300 transition-colors cursor-pointer flex items-center gap-1.5 shadow-xs"
-        >
-          <span>⚡</span>
-          <span>Demo</span>
-        </button>
+        cloudEnabled ? undefined : (
+          <button
+            type="button"
+            onClick={handleDemoLogin}
+            className="min-h-[42px] text-sm sm:text-base font-bold bg-purple-100 hover:bg-purple-200 active:bg-purple-300 text-purple-900 px-4 py-1.5 rounded-full border border-purple-300 transition-colors cursor-pointer"
+          >
+            Demo
+          </button>
+        )
       }
-      title="Sign in to your account"
+      title="เข้าสู่ระบบ"
       subtitle="เข้าสู่ระบบเพื่อดูแลยาของครอบครัว"
     >
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -56,10 +107,10 @@ export const LoginPage: React.FC = () => {
           name="email"
           type="email"
           autoComplete="email"
-          label="E-mail"
+          label="อีเมล"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="Enter your e-mail"
+          placeholder="กรอกอีเมลของคุณ"
           required
         />
 
@@ -68,47 +119,52 @@ export const LoginPage: React.FC = () => {
           name="password"
           type={showPassword ? 'text' : 'password'}
           autoComplete="current-password"
-          label="Password"
+          label="รหัสผ่าน"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          placeholder="Enter your password"
+          placeholder="กรอกรหัสผ่าน"
           required
           trailing={<PasswordToggle visible={showPassword} onToggle={() => setShowPassword(!showPassword)} />}
         />
 
-        <div className="flex items-center justify-between gap-4 text-base sm:text-lg pt-1">
-          <label className="flex items-center gap-3 cursor-pointer select-none min-h-[48px]">
-            <input
-              type="checkbox"
-              checked={rememberMe}
-              onChange={(e) => setRememberMe(e.target.checked)}
-              className="w-5 h-5 rounded border-slate-300 text-purple-600 focus:ring-purple-500 focus:ring-offset-0 cursor-pointer"
-            />
-            <span className="text-slate-700 font-medium">Remember me</span>
-          </label>
-          <a
-            href="#forgot-password"
-            onClick={(e) => {
-              e.preventDefault();
-              alert('ระบบต้นแบบ: ติดต่อผู้ดูแลครอบครัวเพื่อรีเซ็ตรหัสผ่าน');
-            }}
-            className="text-purple-700 hover:text-purple-800 font-bold transition-colors"
-          >
-            Forgot password?
-          </a>
-        </div>
+        {cloudEnabled && (
+          <div className="flex justify-end">
+            <a
+              href="#forgot-password"
+              onClick={handleForgot}
+              className="text-purple-700 hover:text-purple-800 font-bold transition-colors"
+            >
+              ลืมรหัสผ่าน?
+            </a>
+          </div>
+        )}
 
-        <Button type="submit" fullWidth size="md">
-          Sign in
+        {error && (
+          <p role="alert" className="text-base font-semibold text-red-700">
+            {error}
+          </p>
+        )}
+        {notice && (
+          <p role="status" className="text-base font-semibold text-emerald-700">
+            {notice}
+          </p>
+        )}
+
+        <Button type="submit" fullWidth size="md" disabled={busy}>
+          {busy ? 'กำลังเข้าสู่ระบบ…' : 'เข้าสู่ระบบ'}
         </Button>
       </form>
 
-      <SocialButtons labelPrefix="Sign in with" onClick={handleSubmit} />
+      <SocialButtons
+        labelPrefix="เข้าสู่ระบบด้วย"
+        onSelect={handleProvider}
+        providers={cloudEnabled ? ['google'] : ['google', 'apple']}
+      />
 
       <p className="text-center text-base sm:text-lg text-slate-700 mt-8">
-        Don’t have an account?{' '}
+        ยังไม่มีบัญชี?{' '}
         <Link to="/signup" className="text-purple-700 font-bold hover:text-purple-800 underline underline-offset-4 transition-colors">
-          Sign up for free
+          สมัครสมาชิกฟรี
         </Link>
       </p>
     </AuthShell>

@@ -47,6 +47,66 @@
   }
 }
 
+/* ---------- อนิเมชันเบา ๆ ของแอป ----------
+   ใช้เฉพาะ opacity/transform จึงไม่กระตุกและไม่กินแรงเครื่อง
+   ถ้าผู้ใช้ตั้ง "ลดการเคลื่อนไหว" ไว้ ทุกอย่างจะหยุดนิ่งทันที (ดู prefers-reduced-motion ด้านบน) */
+@keyframes ui-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes ui-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.97) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes ui-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes ui-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(147, 51, 234, 0.45);
+  }
+  50% {
+    box-shadow: 0 0 0 7px rgba(147, 51, 234, 0);
+  }
+}
+
+@keyframes ui-swing {
+  0%,
+  100% {
+    transform: rotate(0);
+  }
+  20% {
+    transform: rotate(-12deg);
+  }
+  45% {
+    transform: rotate(10deg);
+  }
+  70% {
+    transform: rotate(-5deg);
+  }
+}
+
 @layer utilities {
   /* ซ่อนแถบเลื่อนของแถบตัวกรองแนวนอน แต่ยังเลื่อนได้ */
   .scrollbar-none {
@@ -55,5 +115,69 @@
   }
   .scrollbar-none::-webkit-scrollbar {
     display: none;
+  }
+
+  /* เปลี่ยนหน้า: เนื้อหาใหม่ค่อย ๆ เลื่อนขึ้นมา */
+  .anim-page {
+    animation: ui-fade-up 0.28s cubic-bezier(0.22, 0.9, 0.3, 1) both;
+  }
+
+  .anim-fade-up {
+    animation: ui-fade-up 0.3s cubic-bezier(0.22, 0.9, 0.3, 1) both;
+  }
+
+  .anim-pop {
+    animation: ui-pop 0.22s cubic-bezier(0.22, 0.9, 0.3, 1) both;
+  }
+
+  .anim-fade {
+    animation: ui-fade 0.22s ease-out both;
+  }
+
+  /* เรืองแสงเป็นจังหวะเบา ๆ ใช้กับสิ่งที่ active อยู่ */
+  .anim-glow {
+    animation: ui-glow 2.6s ease-in-out infinite;
+  }
+
+  /* สั่นครั้งเดียว เช่นกระดิ่งเมื่อมีแจ้งเตือนใหม่ */
+  .anim-swing {
+    animation: ui-swing 0.9s ease-in-out 1;
+  }
+
+  /* ยกขึ้นเล็กน้อยตอนชี้ (ใช้กับการ์ดที่กดได้) */
+  .hover-lift {
+    transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+  }
+  .hover-lift:hover {
+    transform: translateY(-3px);
+  }
+
+  /* รายการที่ค่อย ๆ ไล่โผล่ทีละชิ้น (สูงสุด 8 ชิ้นแรก) */
+  .stagger > * {
+    animation: ui-fade-up 0.34s cubic-bezier(0.22, 0.9, 0.3, 1) both;
+  }
+  .stagger > *:nth-child(1) {
+    animation-delay: 0.02s;
+  }
+  .stagger > *:nth-child(2) {
+    animation-delay: 0.06s;
+  }
+  .stagger > *:nth-child(3) {
+    animation-delay: 0.1s;
+  }
+  .stagger > *:nth-child(4) {
+    animation-delay: 0.14s;
+  }
+  .stagger > *:nth-child(5) {
+    animation-delay: 0.18s;
+  }
+  .stagger > *:nth-child(6) {
+    animation-delay: 0.22s;
+  }
+  .stagger > *:nth-child(7) {
+    animation-delay: 0.26s;
+  }
+  .stagger > *:nth-child(8) {
+    animation-delay: 0.3s;
   }
 }

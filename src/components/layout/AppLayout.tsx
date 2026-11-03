@@ -1,23 +1,55 @@
-import React from 'react';
-import { Outlet } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
 import { MobileNav } from './MobileNav';
 import { ToastProvider } from '../ui/Toast';
+import { SETTINGS_CHANGED_EVENT, loadSettings } from '../../lib/settings';
+import { cloudEnabled } from '../../cloud/client';
+import { signOutAll } from '../../cloud/engine';
 
 export const AppLayout: React.FC = () => {
-  // ดึงข้อมูลผู้ใช้จาก localStorage ถ้ามี
-  const savedUser = localStorage.getItem('growa_auth_user');
-  const user = savedUser ? JSON.parse(savedUser) : null;
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // บันทึกหน้าที่เข้าล่าสุด เพื่อใช้เป็นหน้าเริ่มต้น (default)
+  useEffect(() => {
+    if (location.pathname && location.pathname !== '/') {
+      localStorage.setItem('growa_last_visited_path', location.pathname);
+    }
+  }, [location.pathname]);
+
+  // ดึงข้อมูลผู้ใช้จาก localStorage (ถ้าไม่ได้ล็อกอิน จะเป็น null เพื่อให้แสดงปุ่มเข้าสู่ระบบ)
+  const [user, setUser] = useState<{ name?: string; email?: string } | null>(() => {
+    const saved = localStorage.getItem('growa_auth_user');
+    return saved ? JSON.parse(saved) : null;
+  });
+
+  useEffect(() => {
+    const saved = localStorage.getItem('growa_auth_user');
+    setUser(saved ? JSON.parse(saved) : null);
+  }, [location.pathname]);
+
+  const [photo, setPhoto] = useState(() => loadSettings().profile.photo);
+  useEffect(() => {
+    const sync = () => setPhoto(loadSettings().profile.photo);
+    window.addEventListener(SETTINGS_CHANGED_EVENT, sync);
+    return () => window.removeEventListener(SETTINGS_CHANGED_EVENT, sync);
+  }, []);
 
   const handleLogout = () => {
+    if (cloudEnabled) {
+      void signOutAll();
+      return;
+    }
     localStorage.removeItem('growa_auth_user');
-    window.location.reload();
+    setUser(null);
+    navigate('/login', { replace: true });
   };
 
   return (
     <ToastProvider>
-      <div className="min-h-dvh bg-slate-50 text-slate-900 md:flex">
+      <div className="min-h-dvh bg-slate-50 text-slate-900 lg:flex">
         <a
           href="#main-content"
           className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:px-4 focus:py-2 focus:rounded-xl focus:bg-purple-700 focus:text-white"
@@ -25,14 +57,18 @@ export const AppLayout: React.FC = () => {
           ข้ามไปที่เนื้อหาหลัก
         </a>
 
-        {/* Sidebar ซ้าย (แท็บเล็ตขึ้นไป) */}
+        {/* Sidebar ซ้าย (แท็บเล็ต/คอมพิวเตอร์) */}
         <Sidebar />
 
         <div className="flex-1 min-w-0 flex flex-col">
-          <TopBar user={user} onLogout={handleLogout} />
+          <TopBar user={user} photo={photo} onLogout={handleLogout} />
 
-          <main id="main-content" className="flex-1 w-full max-w-6xl mx-auto p-4 sm:p-6 lg:p-8 pb-28 md:pb-8">
-            <Outlet />
+          {/* ระยะขอบ: เว้นที่ให้เมนูล่างบนมือถือ (pb-28) และลดเหลือ pb-8 บนจอใหญ่ */}
+          <main id="main-content" className="flex-1 w-full max-w-6xl mx-auto p-4 sm:px-6 sm:pt-6 lg:px-8 lg:pt-8 pb-28 lg:pb-8">
+            {/* เปลี่ยนหน้าเมื่อไรเนื้อหาจะค่อย ๆ เลื่อนขึ้นมาเบา ๆ */}
+            <div key={location.pathname} className="anim-page">
+              <Outlet />
+            </div>
           </main>
         </div>
 

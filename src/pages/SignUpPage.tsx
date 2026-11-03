@@ -6,6 +6,8 @@ import { PasswordToggle } from '../components/auth/PasswordToggle';
 import { TextField } from '../components/ui/TextField';
 import { Button } from '../components/ui/Button';
 import { pathAfterLogin } from '../lib/homeSetup';
+import { cloudEnabled } from '../cloud/client';
+import { explainError, signInWithProvider, signUpWithEmail } from '../cloud/engine';
 
 export const SignUpPage: React.FC = () => {
   const navigate = useNavigate();
@@ -14,26 +16,76 @@ export const SignUpPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const [confirmSent, setConfirmSent] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
     if (!agreeTerms) {
-      alert('กรุณากดยอมรับข้อกำหนดการใช้งานเพื่อดำเนินการต่อ');
+      setError('กรุณายอมรับข้อกำหนดการใช้งานเพื่อดำเนินการต่อ');
       return;
     }
-    // บันทึกสถานะผู้ใช้จำลองลงใน localStorage
-    localStorage.setItem(
-      'growa_auth_user',
-      JSON.stringify({ name: fullName || 'ผู้ใช้ใหม่', email: email || 'user@example.com' })
-    );
-    navigate(pathAfterLogin());
+    if (!cloudEnabled) {
+      localStorage.setItem(
+        'growa_auth_user',
+        JSON.stringify({ name: fullName || 'ผู้ใช้ใหม่', email: email || 'user@example.com' })
+      );
+      navigate(pathAfterLogin());
+      return;
+    }
+    if (password.length < 6) {
+      setError('รหัสผ่านต้องยาวอย่างน้อย 6 ตัวอักษร');
+      return;
+    }
+    setBusy(true);
+    try {
+      const { needsConfirm } = await signUpWithEmail(email, password, fullName);
+      if (needsConfirm) {
+        setConfirmSent(true);
+        setBusy(false);
+        return;
+      }
+      window.location.assign('/');
+    } catch (err) {
+      setError(explainError(err));
+      setBusy(false);
+    }
   };
+
+  const handleProvider = async (provider: 'google' | 'apple') => {
+    if (!cloudEnabled) {
+      navigate(pathAfterLogin());
+      return;
+    }
+    try {
+      await signInWithProvider(provider);
+    } catch (err) {
+      setError(explainError(err));
+    }
+  };
+
+  if (confirmSent) {
+    return (
+      <AuthShell
+        onBack={() => navigate('/login')}
+        backLabel="ย้อนกลับไปหน้าเข้าสู่ระบบ"
+        title="ตรวจอีเมลของคุณ"
+        subtitle={`เราส่งลิงก์ยืนยันไปที่ ${email} แล้ว กดลิงก์ในอีเมลเพื่อเปิดใช้งานบัญชี`}
+      >
+        <Link to="/login" className="block text-center text-purple-700 font-bold underline underline-offset-4">
+          กลับไปหน้าเข้าสู่ระบบ
+        </Link>
+      </AuthShell>
+    );
+  }
 
   return (
     <AuthShell
       onBack={() => navigate('/login')}
       backLabel="ย้อนกลับไปหน้าเข้าสู่ระบบ"
-      title="Create your account"
+      title="สร้างบัญชี"
       subtitle="เริ่มต้นดูแลสุขภาพและยาของคนในครอบครัว"
     >
       <form onSubmit={handleSubmit} className="space-y-5">
@@ -42,10 +94,10 @@ export const SignUpPage: React.FC = () => {
           name="name"
           type="text"
           autoComplete="name"
-          label="Full name"
+          label="ชื่อ"
           value={fullName}
           onChange={(e) => setFullName(e.target.value)}
-          placeholder="Enter your name"
+          placeholder="ชื่อที่ให้คนในบ้านเห็น"
           required
         />
 
@@ -54,10 +106,10 @@ export const SignUpPage: React.FC = () => {
           name="email"
           type="email"
           autoComplete="email"
-          label="E-mail"
+          label="อีเมล"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="Enter your e-mail"
+          placeholder="กรอกอีเมลของคุณ"
           required
         />
 
@@ -66,10 +118,10 @@ export const SignUpPage: React.FC = () => {
           name="password"
           type={showPassword ? 'text' : 'password'}
           autoComplete="new-password"
-          label="Password"
+          label="รหัสผ่าน"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          placeholder="Create a password"
+          placeholder="อย่างน้อย 6 ตัวอักษร"
           required
           trailing={<PasswordToggle visible={showPassword} onToggle={() => setShowPassword(!showPassword)} />}
         />
@@ -83,22 +135,33 @@ export const SignUpPage: React.FC = () => {
               className="mt-1 w-5 h-5 rounded border-slate-300 text-purple-600 focus:ring-purple-500 focus:ring-offset-0 cursor-pointer shrink-0"
             />
             <span className="text-slate-700 leading-snug">
-              I agree to the <span className="text-purple-700 font-bold">Terms of Service</span> & <span className="text-purple-700 font-bold">Privacy Policy</span>
+              ฉันยอมรับ <span className="text-purple-700 font-bold">ข้อกำหนดการใช้งาน</span> และ{' '}
+              <span className="text-purple-700 font-bold">นโยบายความเป็นส่วนตัว</span>
             </span>
           </label>
         </div>
 
-        <Button type="submit" fullWidth size="md">
-          Sign up for free
+        {error && (
+          <p role="alert" className="text-base font-semibold text-red-700">
+            {error}
+          </p>
+        )}
+
+        <Button type="submit" fullWidth size="md" disabled={busy}>
+          {busy ? 'กำลังสร้างบัญชี…' : 'สมัครสมาชิกฟรี'}
         </Button>
       </form>
 
-      <SocialButtons labelPrefix="Sign up with" onClick={handleSubmit} />
+      <SocialButtons
+        labelPrefix="สมัครด้วย"
+        onSelect={handleProvider}
+        providers={cloudEnabled ? ['google'] : ['google', 'apple']}
+      />
 
       <p className="text-center text-base sm:text-lg text-slate-700 mt-8">
-        Already have an account?{' '}
+        มีบัญชีอยู่แล้ว?{' '}
         <Link to="/login" className="text-purple-700 font-bold hover:text-purple-800 underline underline-offset-4 transition-colors">
-          Sign in
+          เข้าสู่ระบบ
         </Link>
       </p>
     </AuthShell>

@@ -5,9 +5,14 @@ import { PageLayout } from '../components/settings/PageLayout';
 import { Card } from '../components/ui/Card';
 import { Button, buttonClass } from '../components/ui/Button';
 import { ConfirmDialog } from '../components/settings/ConfirmDialog';
-import { fontScaleLabel, getCurrentMember, loadSettings, resetSettings } from '../lib/settings';
+import { CURRENT_MEMBER_ID, fontScaleLabel, loadSettings, resetSettings } from '../lib/settings';
+import { loadMemberRecord } from '../lib/members';
+import { pendingIncoming } from '../lib/access';
 import { resetDemoState } from '../lib/demo';
-import { FEEDBACK_URL, PHARMACY } from '../lib/config';
+import { FEEDBACK_URL } from '../lib/config';
+import { cloudEnabled } from '../cloud/client';
+import { explainError, getCtx, leaveHome, signOutAll } from '../cloud/engine';
+import { useToast } from '../components/ui/Toast';
 
 interface SettingsRowProps {
   to: string;
@@ -20,13 +25,16 @@ const SettingsRow: React.FC<SettingsRowProps> = ({ to, label, value }) => (
   <li>
     <Link
       to={to}
-      className="flex items-center gap-3 min-h-[72px] px-5 py-4 hover:bg-purple-50 active:bg-purple-100 transition-colors"
+      className="group flex items-center gap-3 min-h-[72px] px-5 py-4 hover:bg-purple-50 active:bg-purple-100 transition-colors"
     >
       <span className="flex-1 min-w-0">
         <span className="block text-base sm:text-lg font-bold text-slate-900 break-words">{label}</span>
         {value && <span className="block mt-0.5 text-sm text-slate-600 break-words">{value}</span>}
       </span>
-      <ChevronRight className="w-6 h-6 shrink-0 text-slate-500" aria-hidden="true" />
+      <ChevronRight
+        className="w-6 h-6 shrink-0 text-slate-500 transition-transform duration-200 group-hover:translate-x-1"
+        aria-hidden="true"
+      />
     </Link>
   </li>
 );
@@ -35,22 +43,46 @@ export const SettingsPage: React.FC = () => {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   // เครื่องมือทดสอบแสดงเฉพาะเมื่อ URL มี ?test=1
-  const isTestMode = params.get('test') === '1';
+  const isTestMode = !cloudEnabled && params.get('test') === '1';
 
   const [settings] = useState(loadSettings);
-  const [confirm, setConfirm] = useState<'logout' | 'reset' | null>(null);
+  const [confirm, setConfirm] = useState<'logout' | 'reset' | 'leave' | null>(null);
 
-  const currentMember = getCurrentMember(settings);
-  const canManageMembers = currentMember?.permission === 'edit';
+  // สรุปการตั้งค่าความเป็นส่วนตัว (ข้อมูลของฉันเอง)
+  const myPrivacy = loadMemberRecord(CURRENT_MEMBER_ID).sharing;
+  const privacySummary = !myPrivacy.shareData
+    ? 'ซ่อนข้อมูลของฉันจากคนในบ้าน'
+    : myPrivacy.editPolicy === 'all'
+      ? 'ให้ดูได้ทุกคน · ให้ทุกคนแก้ไขได้'
+      : `ให้ดูได้ทุกคน · แก้ไขได้ ${myPrivacy.allowedEditors.length} คน`;
+
+  const pendingRequests = pendingIncoming().length;
+
   const enabledReminders = [
     settings.reminders.lowStock,
     settings.reminders.doseWindow,
     settings.reminders.appointment,
   ].filter(Boolean).length;
 
+  const toast = useToast();
+  const canLeaveHome = cloudEnabled && getCtx()?.homeId && getCtx()?.role !== 'owner';
+
   const handleLogout = () => {
+    if (cloudEnabled) {
+      void signOutAll();
+      return;
+    }
     localStorage.removeItem('growa_auth_user');
     navigate('/login', { replace: true });
+  };
+
+  const handleLeaveHome = async () => {
+    try {
+      await leaveHome();
+    } catch (err) {
+      setConfirm(null);
+      toast.show(explainError(err), { tone: 'error' });
+    }
   };
 
   const handleReset = () => {
@@ -66,12 +98,6 @@ export const SettingsPage: React.FC = () => {
       <Card className="p-0 overflow-hidden">
         <ul className="divide-y divide-slate-200">
           <SettingsRow to="/settings/profile" label="โปรไฟล์ของฉัน" value={settings.nickname} />
-          <SettingsRow to="/settings/home" label="บ้านและรหัสชวน" value={settings.homeName} />
-          <SettingsRow
-            to="/settings/members"
-            label="สมาชิกในบ้าน"
-            value={`${settings.members.length} คน${canManageMembers ? '' : ' · คุณดูได้อย่างเดียว'}`}
-          />
           <SettingsRow
             to="/settings/reminders"
             label="การเตือน"
@@ -82,19 +108,23 @@ export const SettingsPage: React.FC = () => {
             }
           />
           <SettingsRow
+            to="/settings/privacy"
+            label="ความเป็นส่วนตัว"
+            value={
+              pendingRequests > 0 ? `${privacySummary} · มี ${pendingRequests} คำขอรออนุมัติ` : privacySummary
+            }
+          />
+          <SettingsRow
             to="/settings/font-size"
             label="ขนาดตัวอักษร"
             value={fontScaleLabel(settings.fontScale)}
           />
-          <SettingsRow to="/settings/pharmacy" label="ร้านยาของเรา" value={PHARMACY.name} />
-          <SettingsRow to="/settings/about" label="เกี่ยวกับต้นแบบ" />
         </ul>
       </Card>
 
       {isTestMode && (
         <Card className="border-dashed border-2 border-slate-300 bg-slate-50/60">
-          <p className="text-sm font-bold text-slate-600 uppercase tracking-wide">เครื่องมือทดสอบ</p>
-          <p className="mt-1 text-sm text-slate-600">แสดงเฉพาะเมื่อเปิดลิงก์ด้วย ?test=1</p>
+          <p className="text-sm font-bold text-slate-600">เครื่องมือสำหรับผู้พัฒนา</p>
 
           <div className="mt-4 space-y-3">
             <Button variant="neutral" fullWidth onClick={() => setConfirm('reset')}>
@@ -120,15 +150,33 @@ export const SettingsPage: React.FC = () => {
           className="w-full inline-flex items-center justify-center gap-2 min-h-[58px] px-6 rounded-2xl sm:rounded-full bg-red-600 hover:bg-red-700 active:bg-red-800 text-white text-lg font-bold shadow-sm shadow-red-200 transition-colors cursor-pointer"
         >
           <LogOut className="w-6 h-6" aria-hidden="true" />
-          <span>ออกจากบ้าน</span>
+          <span>ออกจากระบบ</span>
         </button>
+        {canLeaveHome && (
+          <button
+            type="button"
+            onClick={() => setConfirm('leave')}
+            className="mt-3 w-full min-h-[52px] px-6 rounded-2xl border border-slate-300 bg-white text-base font-bold text-slate-700 hover:bg-slate-50 cursor-pointer"
+          >
+            ออกจากบ้านนี้
+          </button>
+        )}
       </div>
 
       <ConfirmDialog
-        open={confirm === 'logout'}
-        title="ออกจากบ้าน?"
-        message="คุณจะออกจากระบบและกลับไปหน้าเข้าสู่ระบบ ข้อมูลของบ้านและสมาชิกยังอยู่ครบ เข้ามาใหม่ได้ด้วยบัญชีเดิม"
+        open={confirm === 'leave'}
+        title="ออกจากบ้านนี้?"
+        message="คุณจะไม่เห็นข้อมูลของบ้านนี้อีก และต้องใช้รหัสเชิญใหม่หากต้องการกลับเข้ามา ข้อมูลสุขภาพส่วนตัวของคุณยังอยู่"
         confirmLabel="ออกจากบ้าน"
+        onCancel={() => setConfirm(null)}
+        onConfirm={handleLeaveHome}
+      />
+
+      <ConfirmDialog
+        open={confirm === 'logout'}
+        title="ออกจากระบบ?"
+        message="คุณจะกลับไปหน้าเข้าสู่ระบบ ข้อมูลของบ้านและสมาชิกยังอยู่ครบ เข้ามาใหม่ได้ด้วยบัญชีเดิม"
+        confirmLabel="ออกจากระบบ"
         onCancel={() => setConfirm(null)}
         onConfirm={handleLogout}
       />

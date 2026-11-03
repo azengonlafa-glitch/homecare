@@ -1,3 +1,4 @@
+import { queueSync } from '../cloud/queue';
 import type { Attachment } from './onboarding';
 import type { MoodKey } from '../data/journalOptions';
 
@@ -48,8 +49,8 @@ export function currentJournalUser(): JournalUser {
   try {
     const saved = localStorage.getItem('growa_auth_user');
     if (saved) {
-      const user = JSON.parse(saved) as { name?: string; email?: string };
-      const id = user.email || 'guest';
+      const user = JSON.parse(saved) as { id?: string; name?: string; email?: string };
+      const id = user.id || user.email || 'guest';
       return { id, name: user.name || user.email?.split('@')[0] || 'ฉัน' };
     }
   } catch {
@@ -78,6 +79,7 @@ export function savePosts(posts: JournalPost[]): void {
   } catch (err) {
     console.error('Failed to save journal to localStorage', err);
   }
+  queueSync('journal');
 }
 
 export function clearJournal(): void {

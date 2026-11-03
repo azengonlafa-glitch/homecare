@@ -1,10 +1,13 @@
+import { queueSync } from '../cloud/queue';
+import { cloudEnabled } from '../cloud/client';
 const ONBOARDING_KEY = 'growa_onboarding_v1';
 
 /**
  * ปุ่มข้ามขั้นตอนกรอกข้อมูลพื้นฐาน สำหรับช่วงพัฒนาเท่านั้น
  * TODO(dev): ตั้งเป็น false หรือลบทิ้งก่อนใช้งานจริง (ลบ guard ที่เกี่ยวกับ `skipped` ด้วย)
  */
-export const ENABLE_DEV_SKIP = true;
+export const ENABLE_DEV_SKIP = !cloudEnabled;
+export const ONBOARDING_CHANGED_EVENT = 'growa-onboarding-changed';
 
 /** ข้อมูลไฟล์ที่แนบ (ตัวไฟล์จริงเก็บใน IndexedDB ผ่าน lib/fileStore.ts) */
 export interface Attachment {
@@ -39,6 +42,10 @@ export interface OnboardingProfile {
   smoking: string;
   alcohol: string;
   exercise: string;
+  /** ค่าตรวจล่าสุด (ไม่บังคับ ใช้วิเคราะห์ในหน้าข้อมูลสุขภาพ) ความดันตัวบน/ล่าง mmHg และน้ำตาลตอนอดอาหาร mg/dL */
+  systolic: string;
+  diastolic: string;
+  fastingGlucose: string;
   // 3 ประวัติการแพ้
   noAllergies: boolean;
   drugAllergies: DrugAllergy[];
@@ -90,6 +97,9 @@ export const emptyProfile: OnboardingProfile = {
   smoking: '',
   alcohol: '',
   exercise: '',
+  systolic: '',
+  diastolic: '',
+  fastingGlucose: '',
   noAllergies: false,
   drugAllergies: [],
   otherAllergies: [],
@@ -136,6 +146,8 @@ export function saveOnboarding(state: OnboardingState): void {
   } catch (err) {
     console.error('Failed to save onboarding to localStorage', err);
   }
+  queueSync('onboarding');
+  window.dispatchEvent(new Event(ONBOARDING_CHANGED_EVENT));
 }
 
 /** ผ่านด่านกรอกข้อมูลพื้นฐานแล้ว (กรอกครบ หรือกดข้ามตอน dev) */

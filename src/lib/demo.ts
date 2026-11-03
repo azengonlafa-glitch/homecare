@@ -4,6 +4,7 @@ import { clearAllFiles } from './fileStore';
 import { resetHomeData } from './storage';
 import { clearJournal } from './journal';
 import { clearCalendar } from './calendar';
+import { clearMeds } from './meds';
 
 /**
  * เริ่มต้น Demo ใหม่ตั้งแต่ศูนย์: ล้างการตั้งค่าบ้าน ข้อมูลพื้นฐาน ไฟล์แนบ บันทึกอาการ กิจกรรมในปฏิทิน และข้อมูลบ้านตัวอย่าง
@@ -15,5 +16,6 @@ export function resetDemoState(): void {
   void clearAllFiles();
   clearJournal();
   clearCalendar();
+  clearMeds();
   resetHomeData();
 }

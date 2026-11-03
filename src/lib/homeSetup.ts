@@ -1,3 +1,6 @@
+import { cloudEnabled } from '../cloud/client';
+import { hasHome } from '../cloud/engine';
+
 const SETUP_KEY = 'growa_home_setup_v1';
 
 export interface HomeSetup {
@@ -11,6 +14,8 @@ export interface HomeSetup {
 }
 
 export function loadHomeSetup(): HomeSetup | null {
+  // โหมดคลาวด์: ถือว่าตั้งค่าบ้านแล้วเมื่อเป็นสมาชิกของบ้านบนเซิร์ฟเวอร์
+  if (cloudEnabled) return hasHome() ? { mode: 'join' } : null;
   try {
     const item = localStorage.getItem(SETUP_KEY);
     return item ? (JSON.parse(item) as HomeSetup) : null;
