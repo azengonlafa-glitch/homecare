@@ -5,6 +5,8 @@ import { TopBar } from './TopBar';
 import { MobileNav } from './MobileNav';
 import { ToastProvider } from '../ui/Toast';
 import { SETTINGS_CHANGED_EVENT, loadSettings } from '../../lib/settings';
+import { cloudEnabled } from '../../cloud/client';
+import { signOutAll } from '../../cloud/engine';
 
 export const AppLayout: React.FC = () => {
   const location = useLocation();
@@ -36,6 +38,10 @@ export const AppLayout: React.FC = () => {
   }, []);
 
   const handleLogout = () => {
+    if (cloudEnabled) {
+      void signOutAll();
+      return;
+    }
     localStorage.removeItem('growa_auth_user');
     setUser(null);
     navigate('/login', { replace: true });

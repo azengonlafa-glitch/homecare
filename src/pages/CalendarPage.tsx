@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronDown, ChevronLeft, ChevronRight, Flag, Plus, Search, X } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -22,6 +22,7 @@ import {
   type Occurrence,
 } from '../lib/calendar';
 import { cn } from '../lib/cn';
+import { CLOUD_UPDATED_EVENT } from '../cloud/queue';
 
 /** ชื่อวัน (เริ่มที่วันอาทิตย์) ตัวเต็มสำหรับ screen reader ตัวย่อสำหรับแสดงผล */
 const WEEKDAYS = [
@@ -107,6 +108,13 @@ export const CalendarPage: React.FC = () => {
   const [month, setMonth] = useState(() => startOfMonth(new Date()));
   const [selected, setSelected] = useState(() => new Date());
   const [events, setEvents] = useState<CalendarEvent[]>(loadEvents);
+
+  // เมื่อคนอื่นในบ้านเพิ่ม/แก้กิจกรรม ให้โหลดรายการใหม่
+  useEffect(() => {
+    const reload = () => setEvents(loadEvents());
+    window.addEventListener(CLOUD_UPDATED_EVENT, reload);
+    return () => window.removeEventListener(CLOUD_UPDATED_EVENT, reload);
+  }, []);
   const [form, setForm] = useState<FormState>(null);
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<EventFilter>('all');

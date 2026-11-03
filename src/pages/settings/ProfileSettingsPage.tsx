@@ -23,6 +23,9 @@ const PROVINCE_OPTIONS = [
 ];
 
 const phonePattern = /^0\d{8,9}$/;
+import { cloudEnabled } from '../../cloud/client';
+import { changeLoginEmail, explainError } from '../../cloud/engine';
+
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 interface FormState extends UserProfile {
@@ -33,8 +36,8 @@ const SectionTitle: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   <h2 className="text-lg font-bold text-slate-900 mb-4">{children}</h2>
 );
 
-/** หน้าต่างเปลี่ยนอีเมล (ต้นแบบ: ยังไม่ส่งอีเมลยืนยันจริง) */
-const EmailDialog: React.FC<{ current: string; onClose: () => void; onUse: (email: string) => void }> = ({
+/** หน้าต่างเปลี่ยนอีเมล */
+const EmailDialog: React.FC<{ current: string; onClose: () => void; onUse: (email: string) => void | Promise<void> }> = ({
   current,
   onClose,
   onUse,
@@ -82,7 +85,7 @@ const EmailDialog: React.FC<{ current: string; onClose: () => void; onUse: (emai
           name="email"
           type="email"
           label="อีเมลใหม่"
-          hint="ต้นแบบนี้ยังไม่ส่งอีเมลยืนยัน อีเมลจะถูกบันทึกเมื่อกด “บันทึก” ในหน้าโปรไฟล์"
+          hint={cloudEnabled ? 'เราจะส่งลิงก์ยืนยันไปที่อีเมลใหม่ อีเมลเข้าสู่ระบบจะเปลี่ยนเมื่อกดลิงก์' : 'อีเมลจะถูกบันทึกเมื่อกด “บันทึก” ในหน้าโปรไฟล์'}
           autoComplete="email"
           value={value}
           error={error}
@@ -403,7 +406,16 @@ export const ProfileSettingsPage: React.FC = () => {
         <EmailDialog
           current={form.email}
           onClose={() => setEmailOpen(false)}
-          onUse={(email) => {
+          onUse={async (email) => {
+            if (cloudEnabled) {
+              try {
+                await changeLoginEmail(email);
+                toast.show('ส่งลิงก์ยืนยันไปที่อีเมลใหม่แล้ว');
+              } catch (err) {
+                toast.show(explainError(err), { tone: 'error' });
+                return;
+              }
+            }
             set('email', email);
             setEmailOpen(false);
           }}

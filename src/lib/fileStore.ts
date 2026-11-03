@@ -1,4 +1,6 @@
 import type { Attachment } from './onboarding';
+import { cloudEnabled } from '../cloud/client';
+import { canUseRemoteFiles, downloadAttachment, removeAttachment, uploadAttachment } from '../cloud/engine';
 
 /**
  * เก็บไฟล์ที่ผู้ใช้แนบไว้ใน IndexedDB ของเบราว์เซอร์
@@ -55,16 +57,81 @@ export async function saveFile(file: File): Promise<Attachment> {
   if (file.size > MAX_FILE_BYTES) throw new Error('too-large');
   const id = newId();
   await run('readwrite', (store) => store.put(file, id));
+  if (cloudEnabled) {
+    // อัปโหลดขึ้นคลาวด์เพื่อให้คนในบ้านเห็นไฟล์เดียวกัน ถ้าส่งไม่สำเร็จจะลองใหม่ภายหลัง
+    try {
+      if (!canUseRemoteFiles()) throw new Error('no_home');
+      await uploadAttachment(id, file);
+    } catch {
+      addPending(id);
+    }
+  }
   return { id, name: file.name, type: file.type, size: file.size };
 }
 
 export async function getFile(id: string): Promise<Blob | undefined> {
-  return run<Blob | undefined>('readonly', (store) => store.get(id));
+  const local = await run<Blob | undefined>('readonly', (store) => store.get(id));
+  if (local || !cloudEnabled) return local;
+  // ไฟล์ที่คนอื่นอัปโหลด: ดึงจากคลาวด์แล้วเก็บไว้ในเครื่อง
+  const remote = await downloadAttachment(id);
+  if (!remote) return undefined;
+  try {
+    await run('readwrite', (store) => store.put(remote, id));
+  } catch {
+    // เก็บแคชไม่ได้: ใช้ไฟล์ที่ดึงมาได้เลย
+  }
+  return remote;
+}
+
+// ---------- ไฟล์ที่ยังอัปโหลดไม่สำเร็จ ----------
+
+const PENDING_KEY = 'growa_pending_uploads_v1';
+
+function readPending(): string[] {
+  try {
+    const raw = localStorage.getItem(PENDING_KEY);
+    return raw ? (JSON.parse(raw) as string[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function writePending(ids: string[]) {
+  try {
+    localStorage.setItem(PENDING_KEY, JSON.stringify(ids));
+  } catch {
+    // ข้ามได้
+  }
+}
+
+const addPending = (id: string) => writePending([...new Set([...readPending(), id])]);
+
+/** อัปโหลดไฟล์ที่ค้างอยู่ (เรียกตอนเปิดแอปและเมื่อกลับมาออนไลน์) */
+export async function retryPendingUploads(): Promise<void> {
+  if (!cloudEnabled || !canUseRemoteFiles()) return;
+  const remaining: string[] = [];
+  for (const id of readPending()) {
+    try {
+      const blob = await run<Blob | undefined>('readonly', (store) => store.get(id));
+      if (blob) await uploadAttachment(id, blob);
+    } catch {
+      remaining.push(id);
+    }
+  }
+  writePending(remaining);
+}
+
+if (cloudEnabled && typeof window !== 'undefined') {
+  window.addEventListener('online', () => void retryPendingUploads());
 }
 
 export async function deleteFile(id: string): Promise<void> {
   try {
     await run('readwrite', (store) => store.delete(id));
+    if (cloudEnabled) {
+      writePending(readPending().filter((p) => p !== id));
+      void removeAttachment(id).catch(() => undefined);
+    }
   } catch {
     // ลบไม่สำเร็จไม่กระทบการใช้งาน
   }

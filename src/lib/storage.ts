@@ -1,4 +1,10 @@
-import { HomeData, initialHomeData } from '../data/mockData';
+import { HomeData, initialHomeData as demoHomeData } from '../data/mockData';
+import { cloudEnabled } from '../cloud/client';
+
+/** โหมดคลาวด์ไม่ใช้ข้อมูลตัวอย่าง */
+const initialHomeData: HomeData = cloudEnabled
+  ? { homeName: '', patients: [], medications: [], appointments: [] }
+  : demoHomeData;
 
 const STORAGE_KEY = 'growa_homecare_data_v1';
 

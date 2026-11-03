@@ -9,7 +9,7 @@ import { LoginPage } from './pages/LoginPage';
 import { SignUpPage } from './pages/SignUpPage';
 import { HomeSetupPage } from './pages/HomeSetupPage';
 import { OnboardingPage } from './pages/OnboardingPage';
-import { RequireOnboarding } from './components/auth/RequireOnboarding';
+import { RequireAuth, RequireOnboarding } from './components/auth/RequireOnboarding';
 import { HomeSettingsPage } from './pages/HomeSettingsPage';
 import { HealthProfilePage } from './pages/HealthProfilePage';
 import { MembersPage } from './pages/MembersPage';
@@ -34,15 +34,15 @@ export const App: React.FC = () => {
     <ErrorBoundary>
       <BrowserRouter>
         <Routes>
-        {/* หน้า Login และ Sign up แบบ Clean UI */}
+        {/* เข้าสู่ระบบและสมัครสมาชิก */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignUpPage />} />
 
         {/* หลังเข้าสู่ระบบ: เข้าร่วมบ้านด้วยรหัสเชิญ หรือสร้างบ้านใหม่ */}
-        <Route path="/setup" element={<HomeSetupPage />} />
+        <Route path="/setup" element={<RequireAuth><HomeSetupPage /></RequireAuth>} />
 
-        {/* ต่อจากนั้น: กรอกข้อมูลสุขภาพพื้นฐาน 7 ขั้น (บังคับ ยกเว้นกดข้ามตอน dev) */}
-        <Route path="/onboarding" element={<OnboardingPage />} />
+        {/* ต่อจากนั้น: กรอกข้อมูลสุขภาพพื้นฐาน 7 ขั้น (บังคับ) */}
+        <Route path="/onboarding" element={<RequireAuth><OnboardingPage /></RequireAuth>} />
 
         {/* หน้าจอหลักของระบบ (ตั้ง default เป็นหน้าล่าสุดที่เข้าชม) */}
         <Route

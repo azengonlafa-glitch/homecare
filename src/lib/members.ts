@@ -1,5 +1,7 @@
-import { formatMedForm, instructionText, loadMeds, type DosePeriod } from './meds';
-import { loadOnboarding } from './onboarding';
+import { MEDS_CHANGED_EVENT, formatMedForm, instructionText, loadMeds, type DosePeriod } from './meds';
+import { loadOnboarding, ONBOARDING_CHANGED_EVENT, isOnboardingDone } from './onboarding';
+import { cloudEnabled } from '../cloud/client';
+import { queueSync } from '../cloud/queue';
 import { CURRENT_MEMBER_ID, loadSettings, type Gender, type HouseholdMember } from './settings';
 
 /** การเปิดเผยข้อมูลของเจ้าของข้อมูล: ให้ดูได้ไหม และให้ใครแก้ไขได้ */
@@ -82,7 +84,16 @@ const sharingFor = (id: string): MemberSharing => ({
   blockedEditors: [],
 });
 
-/** ข้อมูลตัวอย่างของสมาชิกในบ้าน (ต้นแบบยังไม่มีเซิร์ฟเวอร์) */
+const GENDER_FROM_LABEL: Record<string, Gender> = { ชาย: 'male', หญิง: 'female', 'อื่น ๆ': 'other' };
+
+/** อายุและเพศของตัวเองจากข้อมูลพื้นฐานที่กรอกไว้ */
+function ownIdentity(profile: ReturnType<typeof loadOnboarding>['profile']): { age: number | null; gender: Gender | '' } {
+  const year = Number(profile.birthYear);
+  const age = /^\d{4}$/.test(profile.birthYear) ? new Date().getFullYear() + 543 - year : null;
+  return { age: age !== null && age >= 0 && age <= 120 ? age : null, gender: GENDER_FROM_LABEL[profile.gender] ?? '' };
+}
+
+/** ข้อมูลของสมาชิกในบ้าน (โหมดต้นแบบใช้ข้อมูลตัวอย่าง โหมดคลาวด์ใช้ข้อมูลจริงเท่านั้น) */
 function seedRecord(id: string): MemberRecord {
   const base: MemberRecord = {
     id,
@@ -94,8 +105,10 @@ function seedRecord(id: string): MemberRecord {
     meds: [],
   };
 
+  if (cloudEnabled && id !== CURRENT_MEMBER_ID) return base;
+
   switch (id) {
-    case 'me': {
+    case CURRENT_MEMBER_ID: {
       const profile = loadOnboarding().profile;
       const meds = loadMeds().meds
         .filter((m) => m.active)
@@ -111,8 +124,7 @@ function seedRecord(id: string): MemberRecord {
         }));
       return {
         ...base,
-        age: 68,
-        gender: 'female',
+        ...(cloudEnabled ? ownIdentity(profile) : { age: 68, gender: 'female' as Gender }),
         health: {
           conditions: profile.noConditions ? [] : profile.conditions ?? [],
           allergies: profile.noAllergies
@@ -239,7 +251,16 @@ export function loadMemberRecords(): Record<string, MemberRecord> {
 
   const result: Record<string, MemberRecord> = {};
   for (const member of loadSettings().members) {
-    result[member.id] = { ...seedRecord(member.id), ...(stored[member.id] ?? {}), id: member.id };
+    let record: MemberRecord = { ...seedRecord(member.id), ...(stored[member.id] ?? {}), id: member.id };
+    if (cloudEnabled) {
+      if (member.id === CURRENT_MEMBER_ID) {
+        // ข้อมูลสุขภาพของตัวเองอ้างอิงจากข้อมูลพื้นฐานเสมอ เพื่อให้คนในบ้านเห็นข้อมูลล่าสุด
+        const fresh = seedRecord(member.id);
+        record = { ...record, age: fresh.age, gender: fresh.gender, health: { ...record.health, ...fresh.health, note: record.health.note, history: record.health.history } };
+      }
+      if (member.photo) record = { ...record, photo: member.photo };
+    }
+    result[member.id] = record;
   }
   // เก็บข้อมูลของสมาชิกที่ยังอยู่ในบ้านเท่านั้น
   try {
@@ -262,7 +283,39 @@ export function saveMemberRecord(record: MemberRecord): void {
   } catch (err) {
     console.error('Failed to save member record', err);
   }
+  queueSync('records', [record.id]);
   window.dispatchEvent(new Event(MEMBERS_CHANGED_EVENT));
+}
+
+/**
+ * เผยแพร่ข้อมูลของตัวเอง (สุขภาพ + สรุปตารางยา) ให้คนในบ้านเห็น
+ * เรียกเมื่อกรอกข้อมูลพื้นฐานหรือแก้ตู้ยา (เฉพาะโหมดคลาวด์)
+ */
+let publishTimer: number | undefined;
+function publishOwnRecord(): void {
+  if (!cloudEnabled || !isOnboardingDone()) return;
+  window.clearTimeout(publishTimer);
+  publishTimer = window.setTimeout(() => {
+    const mine = loadMemberRecord(CURRENT_MEMBER_ID);
+    const meds = loadMeds()
+      .meds.filter((m) => m.active)
+      .map<MemberMed>((m) => ({
+        id: m.id,
+        name: m.name,
+        dose: `${m.perDose} ${m.unit}`,
+        periods: m.periods,
+        times: m.times,
+        form: formatMedForm(m),
+        condition: m.condition,
+        instruction: instructionText(m),
+      }));
+    saveMemberRecord({ ...mine, meds });
+  }, 600);
+}
+
+if (typeof window !== 'undefined' && cloudEnabled) {
+  window.addEventListener(ONBOARDING_CHANGED_EVENT, publishOwnRecord);
+  window.addEventListener(MEDS_CHANGED_EVENT, publishOwnRecord);
 }
 
 /** ชื่อ + ข้อมูลพื้นฐานของสมาชิกคนหนึ่ง */

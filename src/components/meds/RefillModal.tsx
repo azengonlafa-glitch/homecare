@@ -14,7 +14,7 @@ interface RefillModalProps {
   onClose: () => void;
 }
 
-/** ขอเติมยา: สร้างข้อความพร้อมส่งให้ร้านยา คัดลอก เปิดไลน์ หรือโทร แล้วกดบันทึกว่าขอแล้ว (ต้นแบบ ยังไม่ส่งออเดอร์จริง) */
+/** ขอเติมยา: สร้างข้อความพร้อมส่งให้ร้านยา คัดลอก เปิดไลน์ หรือโทร แล้วกดบันทึกว่าขอแล้ว */
 export const RefillModal: React.FC<RefillModalProps> = ({ med, homeName, onMarkRequested, onClose }) => {
   const toast = useToast();
   if (!med) return null;
@@ -88,7 +88,6 @@ export const RefillModal: React.FC<RefillModalProps> = ({ med, homeName, onMarkR
             <span>โทร {PHARMACY.phoneLabel}</span>
           </a>
         </div>
-        <p className="text-sm text-slate-500">ข้อมูลร้านยาเป็นข้อมูลสมมติของต้นแบบ</p>
       </div>
     </Modal>
   );

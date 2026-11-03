@@ -6,7 +6,7 @@ import { cn } from '../../lib/cn';
 interface AuthShellProps {
   onBack: () => void;
   backLabel: string;
-  /** องค์ประกอบเพิ่มเติมข้างป้ายชื่อแอป เช่น ปุ่ม Demo */
+  /** องค์ประกอบเพิ่มเติมข้างป้ายชื่อแอป เช่น ปุ่มลัด */
   headerExtra?: React.ReactNode;
   title: string;
   subtitle: string;
@@ -24,7 +24,7 @@ export const AuthShell: React.FC<AuthShellProps> = ({
 }) => (
   <div className="min-h-dvh w-full bg-[#FAF5FF]/40 sm:bg-slate-100/70 flex items-center justify-center p-4 sm:p-8 md:p-12">
     <div className="w-full max-w-xl md:max-w-[580px] bg-white rounded-3xl p-6 sm:p-10 md:p-12 shadow-xl shadow-purple-900/5 sm:border sm:border-slate-200/80 transition-all">
-      {/* แถวบนสุด: ปุ่มย้อนกลับ, ปุ่ม Demo และชื่อแอป */}
+      {/* แถวบนสุด: ปุ่มย้อนกลับและชื่อแอป */}
       <div className="flex items-center justify-between gap-3 mb-6">
         <button
           type="button"
@@ -57,7 +57,7 @@ export const AuthShell: React.FC<AuthShellProps> = ({
               )
             }
           >
-            Log in
+            เข้าสู่ระบบ
           </NavLink>
 
           <NavLink
@@ -71,7 +71,7 @@ export const AuthShell: React.FC<AuthShellProps> = ({
               )
             }
           >
-            Sign up
+            สมัครสมาชิก
           </NavLink>
         </div>
       </div>

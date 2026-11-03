@@ -1,10 +1,13 @@
+import { queueSync } from '../cloud/queue';
+import { cloudEnabled } from '../cloud/client';
 const ONBOARDING_KEY = 'growa_onboarding_v1';
 
 /**
  * ปุ่มข้ามขั้นตอนกรอกข้อมูลพื้นฐาน สำหรับช่วงพัฒนาเท่านั้น
  * TODO(dev): ตั้งเป็น false หรือลบทิ้งก่อนใช้งานจริง (ลบ guard ที่เกี่ยวกับ `skipped` ด้วย)
  */
-export const ENABLE_DEV_SKIP = true;
+export const ENABLE_DEV_SKIP = !cloudEnabled;
+export const ONBOARDING_CHANGED_EVENT = 'growa-onboarding-changed';
 
 /** ข้อมูลไฟล์ที่แนบ (ตัวไฟล์จริงเก็บใน IndexedDB ผ่าน lib/fileStore.ts) */
 export interface Attachment {
@@ -143,6 +146,8 @@ export function saveOnboarding(state: OnboardingState): void {
   } catch (err) {
     console.error('Failed to save onboarding to localStorage', err);
   }
+  queueSync('onboarding');
+  window.dispatchEvent(new Event(ONBOARDING_CHANGED_EVENT));
 }
 
 /** ผ่านด่านกรอกข้อมูลพื้นฐานแล้ว (กรอกครบ หรือกดข้ามตอน dev) */

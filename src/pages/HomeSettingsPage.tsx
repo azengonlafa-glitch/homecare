@@ -15,6 +15,15 @@ import { COUNTRIES, DEFAULT_COUNTRY, THAI_PROVINCES } from '../data/addressOptio
 import { MEDICAL_CONDITIONS } from '../data/medicalConditions';
 import { TIME_ZONE_OPTIONS } from '../data/timeZones';
 import { deleteFiles } from '../lib/fileStore';
+import { cloudEnabled } from '../cloud/client';
+import {
+  deleteHome as cloudDeleteHome,
+  explainError,
+  regenerateInvite,
+  removeMember as cloudRemoveMember,
+  setMemberRole as cloudSetMemberRole,
+  transferOwnership as cloudTransferOwnership,
+} from '../cloud/engine';
 import { loadEvents, clearCalendar } from '../lib/calendar';
 import { clearJournal } from '../lib/journal';
 import { copyToClipboard } from '../lib/clipboard';
@@ -46,7 +55,8 @@ const PROVINCE_OPTIONS = [
 ];
 
 /** "482 916" เพื่อให้อ่านและบอกต่อได้ง่าย */
-const formatCode = (code: string) => `${code.slice(0, 3)} ${code.slice(3)}`;
+const formatCode = (code: string) =>
+  code.length === 8 ? `${code.slice(0, 4)} ${code.slice(4)}` : `${code.slice(0, 3)} ${code.slice(3)}`;
 
 /** ป้ายบทบาทแบบ Discord: จุดสี + ชื่อบทบาท */
 const RoleChip: React.FC<{ role: MemberRole; className?: string }> = ({ role, className }) => (
@@ -320,8 +330,24 @@ export const HomeSettingsPage: React.FC = () => {
     window.open(`https://line.me/R/msg/text/?${encodeURIComponent(shareText)}`, '_blank', 'noopener,noreferrer');
   };
 
-  const handleChangeCode = () => {
-    commit({ ...settings, inviteCode: generateInviteCode() });
+  /** ทำรายการกับเซิร์ฟเวอร์ แล้วโหลดข้อมูลบ้านล่าสุดมาแสดง (ถ้าล้มเหลวจะแจ้งเหตุผล) */
+  const runCloud = async (action: () => Promise<unknown>): Promise<boolean> => {
+    try {
+      await action();
+      setSettings(loadSettings());
+      return true;
+    } catch (err) {
+      toast.show(explainError(err), { tone: 'error' });
+      return false;
+    }
+  };
+
+  const handleChangeCode = async () => {
+    if (cloudEnabled) {
+      if (!(await runCloud(regenerateInvite))) return;
+    } else {
+      commit({ ...settings, inviteCode: generateInviteCode() });
+    }
     setCopied(false);
     setConfirmChange(false);
     toast.show('เปลี่ยนรหัสใหม่แล้ว');
@@ -330,20 +356,28 @@ export const HomeSettingsPage: React.FC = () => {
   // ----- สมาชิก -----
   const [roleChange, setRoleChange] = useState<{ member: HouseholdMember; role: MemberRole } | null>(null);
 
-  const changeRole = (member: HouseholdMember, role: MemberRole) => {
+  const changeRole = async (member: HouseholdMember, role: MemberRole) => {
     // ผู้ดูแลหลักมีได้คนเดียว: ต้องเตือนก่อนมอบ เพราะเราจะเสียบทบาทนี้ไป
     if (role === 'owner') {
       setRoleChange({ member, role });
       return;
     }
-    commit({ ...settings, members: settings.members.map((m) => (m.id === member.id ? { ...m, role } : m)) });
+    if (cloudEnabled) {
+      if (!(await runCloud(() => cloudSetMemberRole(member.id, role as 'member' | 'external')))) return;
+    } else {
+      commit({ ...settings, members: settings.members.map((m) => (m.id === member.id ? { ...m, role } : m)) });
+    }
     toast.show(`ให้บทบาท “${ROLE_META[role].label}” กับ ${member.name} แล้ว`);
   };
 
-  const confirmRemoveMember = () => {
+  const confirmRemoveMember = async () => {
     if (!removingMember) return;
     const name = removingMember.name;
-    commit({ ...settings, members: settings.members.filter((m) => m.id !== removingMember.id) });
+    if (cloudEnabled) {
+      if (!(await runCloud(() => cloudRemoveMember(removingMember.id)))) return;
+    } else {
+      commit({ ...settings, members: settings.members.filter((m) => m.id !== removingMember.id) });
+    }
     setRemovingMember(null);
     toast.show(`นำ ${name} ออกจากบ้านแล้ว`);
   };
@@ -351,19 +385,23 @@ export const HomeSettingsPage: React.FC = () => {
   // ----- จัดการบ้าน -----
   const otherMembers = settings.members.filter((m) => m.role !== 'owner');
 
-  const transferOwnership = (targetId: string) => {
+  const transferOwnership = async (targetId: string) => {
     const target = settings.members.find((m) => m.id === targetId);
     if (!target) return;
-    commit({
-      ...settings,
-      members: settings.members.map((m) =>
-        m.id === target.id
-          ? { ...m, role: 'owner' as const }
-          : m.role === 'owner'
-            ? { ...m, role: 'member' as const }
-            : m
-      ),
-    });
+    if (cloudEnabled) {
+      if (!(await runCloud(() => cloudTransferOwnership(target.id)))) return;
+    } else {
+      commit({
+        ...settings,
+        members: settings.members.map((m) =>
+          m.id === target.id
+            ? { ...m, role: 'owner' as const }
+            : m.role === 'owner'
+              ? { ...m, role: 'member' as const }
+              : m
+        ),
+      });
+    }
     setTransferOpen(false);
     setTransferTo('');
     setRoleChange(null);
@@ -376,7 +414,13 @@ export const HomeSettingsPage: React.FC = () => {
     toast.show(active ? 'เปิดใช้งานบ้านอีกครั้งแล้ว' : 'ปิดใช้งานบ้านชั่วคราวแล้ว');
   };
 
-  const handleDeleteHome = () => {
+  const handleDeleteHome = async () => {
+    if (cloudEnabled) {
+      if (!(await runCloud(cloudDeleteHome))) return;
+      void deleteFiles(loadEvents().flatMap((ev) => ev.attachments));
+      navigate('/setup', { replace: true });
+      return;
+    }
     // ลบข้อมูลของบ้าน (กิจกรรม บันทึกอาการ) แต่เก็บโปรไฟล์ส่วนตัวและข้อมูลสุขภาพของเราไว้
     void deleteFiles(loadEvents().flatMap((ev) => ev.attachments));
     clearCalendar();

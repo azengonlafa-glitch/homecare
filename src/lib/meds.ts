@@ -1,3 +1,5 @@
+import { queueSync } from '../cloud/queue';
+import { cloudEnabled } from '../cloud/client';
 import type { Attachment } from './onboarding';
 import { addDays, parseKey } from './calendar';
 
@@ -521,7 +523,7 @@ export const defaultSampleMeds: Medication[] = [
   }),
 ];
 
-export const emptyMeds = (): MedsState => ({ meds: defaultSampleMeds, logs: [] });
+export const emptyMeds = (): MedsState => ({ meds: cloudEnabled ? [] : defaultSampleMeds, logs: [] });
 
 export function loadMeds(): MedsState {
   try {
@@ -530,7 +532,7 @@ export function loadMeds(): MedsState {
       const parsed = JSON.parse(raw) as { meds?: Medication[]; logs?: DoseLog[] };
       const medsList = Array.isArray(parsed.meds) ? parsed.meds.filter((m) => m?.id && m.name).map(normalizeMed) : [];
       return {
-        meds: medsList.length > 0 ? medsList : defaultSampleMeds,
+        meds: medsList.length > 0 || cloudEnabled ? medsList : defaultSampleMeds,
         logs: Array.isArray(parsed.logs) ? parsed.logs : [],
       };
     }
@@ -552,6 +554,7 @@ export function saveMeds(state: MedsState): void {
   } catch (err) {
     console.error('Failed to save medications to localStorage', err);
   }
+  queueSync('meds');
   window.dispatchEvent(new Event(MEDS_CHANGED_EVENT));
 }
 

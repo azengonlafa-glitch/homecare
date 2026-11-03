@@ -1,3 +1,5 @@
+import { queueSync } from '../cloud/queue';
+import { cloudEnabled } from '../cloud/client';
 import { useEffect, useState } from 'react';
 import type { MemberRecord } from './members';
 import { CURRENT_MEMBER_ID, loadSettings } from './settings';
@@ -62,6 +64,7 @@ export function loadRequests(): AccessRequest[] {
   try {
     const raw = localStorage.getItem(REQUESTS_KEY);
     if (!raw) {
+      if (cloudEnabled) return [];
       const seeded = seedRequests();
       localStorage.setItem(REQUESTS_KEY, JSON.stringify(seeded));
       return seeded;
@@ -79,6 +82,7 @@ function persist(list: AccessRequest[]): void {
   } catch (err) {
     console.error('Failed to save access requests', err);
   }
+  queueSync('access');
   window.dispatchEvent(new Event(ACCESS_CHANGED_EVENT));
 }
 

@@ -1,3 +1,4 @@
+import { queueSync } from '../cloud/queue';
 import { useEffect, useState } from 'react';
 import {
   MEDS_CHANGED_EVENT,
@@ -156,7 +157,7 @@ const readNotified = (): Set<string> => {
   }
 };
 
-/** บันทึกว่าการเตือนครั้งนี้ถูกส่งถึงทุกคนในบ้านแล้ว (ต้นแบบ: เก็บในเครื่อง ยังไม่มีเซิร์ฟเวอร์ส่งจริง) */
+/** บันทึกว่าการเตือนครั้งนี้ถูกส่งถึงทุกคนในบ้านแล้ว  */
 function syncFamilyNotices(alerts: MedAlert[]) {
   const shared = alerts.filter((a) => a.sharedWithFamily);
   if (shared.length === 0) return;
@@ -176,6 +177,7 @@ function syncFamilyNotices(alerts: MedAlert[]) {
       }));
     if (fresh.length === 0) return;
     localStorage.setItem(FAMILY_NOTICE_KEY, JSON.stringify([...fresh, ...existing].slice(0, 50)));
+    queueSync('notices');
   } catch {
     // เก็บไม่ได้ (เช่นพื้นที่เต็ม): ข้ามได้ ไม่ให้กระทบการใช้งาน
   }

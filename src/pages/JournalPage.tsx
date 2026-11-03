@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { HeartPulse, Image as ImageIcon, NotebookPen, PenLine, Smile } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -16,6 +16,8 @@ import { CURRENT_MEMBER_ID, loadSettings } from '../lib/settings';
 import { SYMPTOMS, type MoodKey } from '../data/journalOptions';
 import { deleteFiles } from '../lib/fileStore';
 import { loadHomeData } from '../lib/storage';
+import { cloudEnabled } from '../cloud/client';
+import { CLOUD_UPDATED_EVENT } from '../cloud/queue';
 import {
   SELF_LABEL,
   currentJournalUser,
@@ -79,7 +81,24 @@ export const JournalPage: React.FC = () => {
   const uploadedIds = useRef(new Set<string>());
   const initialSnapshot = useRef('');
 
-  const aboutOptions = useMemo(() => [SELF_LABEL, ...loadHomeData().patients.map((p) => p.name)], []);
+  // เมื่อคนอื่นในบ้านเพิ่ม/แก้โพสต์ ให้โหลดรายการใหม่
+  useEffect(() => {
+    const reload = () => setPosts(loadPosts());
+    window.addEventListener(CLOUD_UPDATED_EVENT, reload);
+    return () => window.removeEventListener(CLOUD_UPDATED_EVENT, reload);
+  }, []);
+
+  const aboutOptions = useMemo(
+    () => [
+      SELF_LABEL,
+      ...(cloudEnabled
+        ? loadSettings()
+            .members.filter((m) => m.id !== CURRENT_MEMBER_ID)
+            .map((m) => m.name)
+        : loadHomeData().patients.map((p) => p.name)),
+    ],
+    []
+  );
 
   const commit = (next: JournalPost[]) => {
     setPosts(next);

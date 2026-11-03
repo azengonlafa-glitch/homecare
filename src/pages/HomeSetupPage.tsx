@@ -9,6 +9,9 @@ import { SelectField, type SelectOption } from '../components/ui/SelectField';
 import { HomeCreatedPanel } from '../components/home/HomeCreatedPanel';
 import { loadHomeData, saveHomeData } from '../lib/storage';
 import { saveHomeSetup } from '../lib/homeSetup';
+import { loadSettings, saveSettings } from '../lib/settings';
+import { cloudEnabled } from '../cloud/client';
+import { createHome, explainError, joinHome } from '../cloud/engine';
 
 const TIME_ZONES: SelectOption[] = [
   { value: 'Asia/Bangkok', label: 'ประเทศไทย (UTC+7)' },
@@ -37,7 +40,7 @@ const readUserName = (): string | null => {
   }
 };
 
-/** สร้างรหัสเชิญ 8 หลักแบบสุ่ม (ต้นแบบ: ยังไม่มีเซิร์ฟเวอร์ตรวจสอบความซ้ำ) */
+/** สร้างรหัสเชิญ 8 หลักแบบสุ่ม  */
 const generateInviteCode = () => {
   const values = crypto.getRandomValues(new Uint32Array(2));
   return String((values[0] % 9000) + 1000) + String((values[1] % 9000) + 1000);
@@ -53,6 +56,10 @@ export const HomeSetupPage: React.FC = () => {
   // ฟอร์มเข้าร่วมบ้าน
   const [inviteCode, setInviteCode] = useState('');
   const [joinError, setJoinError] = useState('');
+  const [joinRelation, setJoinRelation] = useState('');
+  const [createRelation, setCreateRelation] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [createError, setCreateError] = useState('');
 
   // ฟอร์มสร้างบ้าน
   const [homeName, setHomeName] = useState('');
@@ -67,7 +74,7 @@ export const HomeSetupPage: React.FC = () => {
     if (errors[id]) setErrors((prev) => ({ ...prev, [id]: '' }));
   };
 
-  const handleJoin = (e: React.FormEvent) => {
+  const handleJoin = async (e: React.FormEvent) => {
     e.preventDefault();
     const digits = inviteCode.replace(/\D/g, '');
     if (digits.length !== 8) {
@@ -75,12 +82,24 @@ export const HomeSetupPage: React.FC = () => {
       focusField('invite-code');
       return;
     }
-    // ต้นแบบ: ยังไม่มีเซิร์ฟเวอร์ตรวจรหัส จึงบันทึกรหัสไว้ในเครื่องแล้วไปต่อ
+    if (cloudEnabled) {
+      setBusy(true);
+      try {
+        await joinHome(digits, joinRelation.trim());
+        navigate('/onboarding');
+      } catch (err) {
+        setJoinError(explainError(err));
+        focusField('invite-code');
+      } finally {
+        setBusy(false);
+      }
+      return;
+    }
     saveHomeSetup({ mode: 'join', inviteCode: digits });
     navigate('/onboarding');
   };
 
-  const handleCreate = (e: React.FormEvent) => {
+  const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     const next: Record<string, string> = {};
     if (!homeName.trim()) next['home-name'] = 'กรุณากรอกชื่อบ้าน';
@@ -90,6 +109,30 @@ export const HomeSetupPage: React.FC = () => {
     const firstInvalid = ['home-name', 'recipient-first'].find((id) => next[id]);
     if (firstInvalid) {
       focusField(firstInvalid);
+      return;
+    }
+
+    if (cloudEnabled) {
+      setBusy(true);
+      setCreateError('');
+      try {
+        await createHome(homeName.trim(), createRelation.trim());
+        const settings = loadSettings();
+        saveSettings({
+          ...settings,
+          home: {
+            ...settings.home,
+            timeZone,
+            recipient: { firstName: firstName.trim(), lastName: lastName.trim() },
+          },
+        });
+        setCreated({ homeName: homeName.trim(), code: loadSettings().inviteCode });
+        window.scrollTo({ top: 0 });
+      } catch (err) {
+        setCreateError(explainError(err));
+      } finally {
+        setBusy(false);
+      }
       return;
     }
 
@@ -113,12 +156,14 @@ export const HomeSetupPage: React.FC = () => {
       <header className="h-16 border-b border-slate-200 bg-white">
         <div className="h-full max-w-5xl mx-auto px-4 sm:px-6 flex items-center justify-between gap-3">
           <BrandMark />
-          <Link
-            to="/"
-            className="inline-flex items-center shrink-0 whitespace-nowrap min-h-[44px] px-2 text-sm font-semibold text-slate-600 hover:text-slate-900"
-          >
-            ข้ามไปก่อน
-          </Link>
+          {!cloudEnabled && (
+            <Link
+              to="/"
+              className="inline-flex items-center shrink-0 whitespace-nowrap min-h-[44px] px-2 text-sm font-semibold text-slate-600 hover:text-slate-900"
+            >
+              ข้ามไปก่อน
+            </Link>
+          )}
         </div>
       </header>
 
@@ -172,8 +217,19 @@ export const HomeSetupPage: React.FC = () => {
                     error={joinError}
                     className="text-lg tracking-[0.2em] font-semibold"
                   />
-                  <Button type="submit" fullWidth>
-                    เข้าร่วมบ้าน
+                  {cloudEnabled && (
+                    <TextField
+                      id="join-relation"
+                      name="join-relation"
+                      label="คุณเป็นอะไรกับเจ้าของบ้าน (ไม่บังคับ)"
+                      autoComplete="off"
+                      placeholder="เช่น ลูกสาว พี่ชาย พยาบาล"
+                      value={joinRelation}
+                      onChange={(e) => setJoinRelation(e.target.value)}
+                    />
+                  )}
+                  <Button type="submit" fullWidth disabled={busy}>
+                    {busy ? 'กำลังเข้าร่วม…' : 'เข้าร่วมบ้าน'}
                   </Button>
                 </form>
               </Card>
@@ -247,8 +303,24 @@ export const HomeSetupPage: React.FC = () => {
                     onChange={setTimeZone}
                   />
 
-                  <Button type="submit" fullWidth className="mt-2">
-                    สร้างบ้าน
+                  {cloudEnabled && (
+                    <TextField
+                      id="create-relation"
+                      name="create-relation"
+                      label="คุณเป็นอะไรกับผู้ที่เราดูแล (ไม่บังคับ)"
+                      autoComplete="off"
+                      placeholder="เช่น ลูกสาว ภรรยา หรือ ตัวฉันเอง"
+                      value={createRelation}
+                      onChange={(e) => setCreateRelation(e.target.value)}
+                    />
+                  )}
+                  {createError && (
+                    <p role="alert" className="text-base font-semibold text-red-700">
+                      {createError}
+                    </p>
+                  )}
+                  <Button type="submit" fullWidth className="mt-2" disabled={busy}>
+                    {busy ? 'กำลังสร้างบ้าน…' : 'สร้างบ้าน'}
                   </Button>
                 </form>
               </Card>

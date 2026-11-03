@@ -3,6 +3,9 @@ import { loadHomeSetup } from './homeSetup';
 import { loadOnboarding } from './onboarding';
 import { DEFAULT_COUNTRY } from '../data/addressOptions';
 import { DEFAULT_TIME_ZONE } from '../data/timeZones';
+import { cloudEnabled } from '../cloud/client';
+import { CURRENT_MEMBER_ID as CLOUD_MEMBER_ID } from '../cloud/identity';
+import { queueSync } from '../cloud/queue';
 
 /**
  * ข้อมูลหน้าตั้งค่าของต้นแบบ เก็บใน localStorage (ยังไม่มีเซิร์ฟเวอร์)
@@ -83,6 +86,8 @@ export interface HomeInfo {
   conditions: string[];
   /** false = ปิดใช้งานบ้านชั่วคราว */
   active: boolean;
+  /** ผู้ที่บ้านนี้ดูแล (ตั้งตอนสร้างบ้าน) */
+  recipient?: { firstName: string; lastName: string };
 }
 
 export interface AppSettings {
@@ -98,7 +103,7 @@ export interface AppSettings {
 }
 
 /** ผู้ใช้ที่กำลังใช้งานอยู่ (เจ้าของบัญชีนี้) */
-export const CURRENT_MEMBER_ID = 'me';
+export const CURRENT_MEMBER_ID = CLOUD_MEMBER_ID;
 
 export const FONT_SCALES: { value: FontScale; label: string; px: number }[] = [
   { value: 'normal', label: 'ปกติ', px: 18 },
@@ -152,6 +157,8 @@ function normalizeMembers(raw: unknown[], fallback: HouseholdMember[]): Househol
     return { ...rest, role } as HouseholdMember;
   });
   if (members.length === 0) return fallback;
+  // โหมดคลาวด์: บทบาทมาจากเซิร์ฟเวอร์ ไม่ต้องเดาเจ้าของบ้านเอง
+  if (cloudEnabled) return members;
   const firstOwner = members.findIndex((m) => m.role === 'owner');
   const ownerIndex = firstOwner >= 0 ? firstOwner : Math.max(0, members.findIndex((m) => m.id === CURRENT_MEMBER_ID));
   return members.map((m, i) =>
@@ -214,7 +221,7 @@ const readAuthName = (): string => {
 const readHomeName = (): string => {
   const fromHomeData = loadHomeData().homeName?.trim();
   const fromSetup = loadHomeSetup()?.homeName?.trim();
-  return fromHomeData || fromSetup || 'บ้านสุขใจ (ครอบครัว)';
+  return fromHomeData || fromSetup || (cloudEnabled ? '' : 'บ้านสุขใจ (ครอบครัว)');
 };
 
 /** สร้างรหัสชวน 6 หลักแบบสุ่ม (ต้นแบบ: ยังไม่มีเซิร์ฟเวอร์ตรวจความซ้ำ) */
@@ -245,13 +252,15 @@ export function defaultSettings(): AppSettings {
     home: defaultHome(),
     nickname,
     homeName: readHomeName(),
-    inviteCode: DEFAULT_INVITE_CODE,
-    members: [
-      { id: CURRENT_MEMBER_ID, name: nickname, relation: 'ฉัน', role: 'owner' },
-      { id: 'mint', name: 'น้องมิ้นท์', relation: 'ลูกสาว', role: 'member' },
-      { id: 'chai', name: 'พี่ชัย', relation: 'พี่ชาย', role: 'member' },
-      { id: 'daeng', name: 'ป้าแดง', relation: 'ป้า', role: 'external' },
-    ],
+    inviteCode: cloudEnabled ? '' : DEFAULT_INVITE_CODE,
+    members: cloudEnabled
+      ? [{ id: CURRENT_MEMBER_ID, name: nickname, relation: 'ฉัน', role: 'member' }]
+      : [
+          { id: CURRENT_MEMBER_ID, name: nickname, relation: 'ฉัน', role: 'owner' },
+          { id: 'mint', name: 'น้องมิ้นท์', relation: 'ลูกสาว', role: 'member' },
+          { id: 'chai', name: 'พี่ชัย', relation: 'พี่ชาย', role: 'member' },
+          { id: 'daeng', name: 'ป้าแดง', relation: 'ป้า', role: 'external' },
+        ],
     reminders: { lowStock: true, doseWindow: true, appointment: true, lowStockDays: 7, repeatCount: 3, escalateToFamily: true, repeatIntervalMinutes: 15 },
     fontScale: 'normal',
   };
@@ -275,7 +284,7 @@ export function loadSettings(): AppSettings {
         typeof parsed.nickname === 'string' && parsed.nickname.trim() ? parsed.nickname : base.nickname,
       homeName:
         typeof parsed.homeName === 'string' && parsed.homeName.trim() ? parsed.homeName : base.homeName,
-      inviteCode: /^\d{6}$/.test(parsed.inviteCode ?? '') ? parsed.inviteCode! : base.inviteCode,
+      inviteCode: /^\d{6,8}$/.test(parsed.inviteCode ?? '') ? parsed.inviteCode! : base.inviteCode,
       members,
       reminders: {
         lowStock: !!reminders.lowStock,
@@ -312,6 +321,7 @@ export function saveSettings(settings: AppSettings): AppSettings {
   }
   // แจ้งส่วนอื่นของแอป (เช่นแถบบน) ให้อัปเดตรูปและชื่อ
   window.dispatchEvent(new Event(SETTINGS_CHANGED_EVENT));
+  queueSync('settings');
   return settings;
 }
 

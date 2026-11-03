@@ -1,3 +1,4 @@
+import { queueSync } from '../cloud/queue';
 import type { Attachment } from './onboarding';
 
 const CALENDAR_KEY = 'growa_calendar_v1';
@@ -266,6 +267,7 @@ export function saveEvents(events: CalendarEvent[]): void {
   } catch (err) {
     console.error('Failed to save calendar to localStorage', err);
   }
+  queueSync('calendar');
 }
 
 export function clearCalendar(): void {
