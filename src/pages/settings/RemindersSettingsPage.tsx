@@ -10,7 +10,6 @@ import {
   LOW_STOCK_DAY_OPTIONS,
   REPEAT_COUNT_MAX,
   REPEAT_COUNT_MIN,
-  REPEAT_INTERVAL_OPTIONS,
   loadSettings,
   saveSettings,
   type LowStockDays,
@@ -154,25 +153,9 @@ export const RemindersSettingsPage: React.FC = () => {
               </div>
             </FieldGroup>
 
-            <div className="mt-6 pt-6 border-t border-slate-100">
-              <FieldGroup label="เว้นระยะระหว่างการเตือน" hint="เตือนซ้ำทุก ๆ กี่นาที">
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {REPEAT_INTERVAL_OPTIONS.map((minutes) => (
-                    <Chip
-                      key={minutes}
-                      selected={reminders.repeatIntervalMinutes === minutes}
-                      onClick={() => update({ repeatIntervalMinutes: minutes })}
-                    >
-                      {minutes} นาที
-                    </Chip>
-                  ))}
-                </div>
-              </FieldGroup>
-            </div>
-
             <p className="mt-4 text-base text-slate-600 bg-purple-50/70 p-3.5 rounded-xl border border-purple-100">
-              เตือนรวม <strong>{reminders.repeatCount} ครั้ง</strong> เว้น{' '}
-              <strong>{reminders.repeatIntervalMinutes} นาที</strong>
+              เตือนรวม <strong>{reminders.repeatCount} ครั้ง</strong> · เวลาแจ้งครั้งแรกและช่วงแจ้งซ้ำตั้งได้ในแต่ละยา
+              (เริ่มต้น: ตรงเวลา และซ้ำทุก 10 นาที)
               {reminders.repeatCount > 1 && ' · ครั้งที่ 2 เป็นต้นไปจะแจ้งคนในบ้านด้วยถ้าเปิดไว้'}
               {reminders.repeatCount === 1 && ' · ตั้ง 1 ครั้ง จะไม่มีการเตือนซ้ำ'}
             </p>

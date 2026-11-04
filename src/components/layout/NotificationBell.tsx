@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AlertTriangle, Bell, BellRing, Check, CheckCircle2, ShieldCheck, Users, X } from 'lucide-react';
-import { useMedAlerts } from '../../lib/medAlerts';
+import { useIncomingFamilyNotices, useMedAlerts } from '../../lib/medAlerts';
 import { decideRequest, memberNameById, pendingIncoming, useAccessRequests } from '../../lib/access';
 import { cn } from '../../lib/cn';
 
@@ -12,6 +12,7 @@ export const NotificationBell: React.FC = () => {
   const alerts = useMedAlerts({ notify: true });
   const accessRequests = useAccessRequests();
   const incoming = pendingIncoming(accessRequests);
+  const familyNotices = useIncomingFamilyNotices();
   const [open, setOpen] = useState(false);
   const [permission, setPermission] = useState(supportsNotification ? Notification.permission : 'denied');
   const rootRef = useRef<HTMLDivElement>(null);
@@ -36,7 +37,7 @@ export const NotificationBell: React.FC = () => {
     setPermission(result);
   };
 
-  const count = alerts.length + incoming.length;
+  const count = alerts.length + incoming.length + familyNotices.length;
 
   return (
     <div ref={rootRef} className="static lg:relative">
@@ -118,6 +119,29 @@ export const NotificationBell: React.FC = () => {
                         ไม่อนุญาต
                       </button>
                     </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {familyNotices.length > 0 && (
+              <ul className="p-3 space-y-2 border-b border-slate-100">
+                {familyNotices.map((n) => (
+                  <li key={n.key}>
+                    <Link
+                      to="/journal"
+                      onClick={() => setOpen(false)}
+                      className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 px-3 py-3 hover:bg-red-100"
+                    >
+                      <Users className="w-5 h-5 mt-0.5 shrink-0 text-red-700" aria-hidden="true" />
+                      <span className="min-w-0">
+                        <span className="block text-base font-bold text-slate-900 break-words">{n.title}</span>
+                        <span className="block text-sm text-slate-700 break-words">{n.body}</span>
+                        <span className="mt-1 block text-xs font-bold text-red-800">
+                          แจ้งคนในบ้านแล้ว · ดูในบันทึกอาการ
+                        </span>
+                      </span>
+                    </Link>
                   </li>
                 ))}
               </ul>

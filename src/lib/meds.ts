@@ -10,7 +10,17 @@ export const MEDS_CHANGED_EVENT = 'growa-meds-changed';
 /** ช่วงเวลาของวัน (ยืดหยุ่น ไม่ต้องระบุนาที) */
 export type DosePeriod = 'morning' | 'noon' | 'evening' | 'bedtime';
 export type MealTiming = 'before' | 'after' | 'with' | 'any';
-export type MedForm = 'tablet' | 'capsule' | 'liquid' | 'injection' | 'topical' | 'drops' | 'spray' | 'other';
+export type MedForm =
+  | 'tablet'
+  | 'capsule'
+  | 'liquid'
+  | 'injection'
+  | 'needle'
+  | 'testkit'
+  | 'topical'
+  | 'drops'
+  | 'spray'
+  | 'other';
 export type DoseStatus = 'taken' | 'missed' | 'skipped';
 
 export interface Medication {
@@ -45,6 +55,16 @@ export interface Medication {
   lastRefillDate: string;
   /** เติมยาได้อีกกี่ครั้งตามใบสั่ง (null = ไม่ระบุ) */
   refillsRemaining: number | null;
+  /** วันหมดอายุของยา yyyy-mm-dd (ไม่บังคับ) */
+  expiryDate?: string;
+  /** เตือนล่วงหน้ากี่วันก่อนหมดอายุ (ค่าเริ่มต้น DEFAULT_EXPIRY_WARN_DAYS) */
+  expiryWarnDays?: number;
+  /** แจ้งเตือนครั้งแรกหลังถึงเวลากี่นาที (0 = ตรงเวลา ค่าเริ่มต้น) */
+  reminderDelayMin?: number;
+  /** ถ้ายังไม่กิน แจ้งซ้ำทุกกี่นาที (ค่าเริ่มต้น DEFAULT_REMINDER_REPEAT_MIN) */
+  reminderRepeatMin?: number;
+  /** ไม่มีตารางประจำ (กินเมื่อจำเป็น / ติดตามจำนวนอย่างเดียว) จะไม่ขึ้นในตารางวันนี้และไม่เตือนลืมกิน */
+  asNeeded?: boolean;
   /** โรคหรืออาการที่เกี่ยวข้อง */
   condition: string;
   /** เหตุผลที่ใช้ยานี้ */
@@ -69,6 +89,10 @@ export interface DoseLog {
   at: string;
   byId: string;
   byName: string;
+  /** เหตุผลที่ไม่ได้กิน (เมื่อ status = missed / skipped) */
+  reason?: string;
+  /** กินช้ากว่าเวลาที่กำหนดกี่นาที (บันทึกเมื่อช้าเกิน LATE_THRESHOLD_MIN) */
+  lateMinutes?: number;
 }
 
 export interface MedsState {
@@ -102,6 +126,8 @@ export const FORM_OPTIONS: { value: MedForm; label: string; unit: string }[] = [
   { value: 'capsule', label: 'แคปซูล', unit: 'แคปซูล' },
   { value: 'liquid', label: 'ยาน้ำ', unit: 'ช้อนชา' },
   { value: 'injection', label: 'ยาฉีด', unit: 'ยูนิต' },
+  { value: 'needle', label: 'เข็ม/อุปกรณ์ฉีดยา', unit: 'เข็ม' },
+  { value: 'testkit', label: 'ชุดตรวจ/แผ่นตรวจ', unit: 'แผ่น' },
   { value: 'topical', label: 'ยาทา/ครีม', unit: 'ครั้ง' },
   { value: 'drops', label: 'ยาหยอด', unit: 'หยด' },
   { value: 'spray', label: 'ยาพ่น', unit: 'พ่น' },
@@ -135,9 +161,29 @@ export const UNIT_OPTIONS = [
 
 export const DOSE_STATUS_LABEL: Record<DoseStatus, string> = {
   taken: 'กินแล้ว',
-  missed: 'พลาดมื้อนี้',
+  missed: 'ไม่ได้กิน',
   skipped: 'งดตามแพทย์สั่ง',
 };
+
+/** เหตุผลที่ไม่กินยา: หมอสั่งให้งด = ไม่นับว่าพลาด ที่เหลือบันทึกเป็นพลาดลงรายงาน */
+export const SKIP_REASONS: { value: string; label: string; status: 'missed' | 'skipped' }[] = [
+  { value: 'doctor', label: 'หมอสั่งให้งด', status: 'skipped' },
+  { value: 'forgot', label: 'ลืมกิน', status: 'missed' },
+  { value: 'unwell', label: 'ไม่สบาย กินไม่ได้', status: 'missed' },
+  { value: 'sideeffect', label: 'มีอาการข้างเคียง', status: 'missed' },
+  { value: 'outofstock', label: 'ยาหมด', status: 'missed' },
+  { value: 'other', label: 'อื่น ๆ', status: 'missed' },
+];
+
+export const DEFAULT_REMINDER_REPEAT_MIN = 10;
+export const DEFAULT_EXPIRY_WARN_DAYS = 30;
+
+export const reminderDelayOf = (m: Pick<Medication, 'reminderDelayMin'>) => Math.max(0, m.reminderDelayMin ?? 0);
+export const reminderRepeatOf = (m: Pick<Medication, 'reminderRepeatMin'>) =>
+  Math.max(1, m.reminderRepeatMin ?? DEFAULT_REMINDER_REPEAT_MIN);
+
+/** กดกินช้ากว่าเวลาที่กำหนดเกินกี่นาที ถึงจะบันทึกว่า "กินช้า" ในรายงาน */
+export const LATE_THRESHOLD_MIN = 20;
 
 export const WEEKDAY_SHORT = ['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.'];
 
@@ -196,6 +242,7 @@ export type StockLevel = 'good' | 'low' | 'critical';
 
 /** เขียว = พอ, เหลือง = ใกล้หมด (ถึงเกณฑ์เตือน), แดง = ใกล้หมดมากหรือหมดแล้ว */
 export function stockLevel(m: StockInput): StockLevel {
+  if (m.remaining <= 0) return 'critical';
   const days = daysLeft(m);
   if (days === null) return 'good';
   const critical = Math.min(3, Math.floor(m.lowStockDays / 2));
@@ -254,8 +301,22 @@ export function isDue(m: Pick<Medication, 'times'>, p: DosePeriod, now = new Dat
   return now.getHours() * 60 + now.getMinutes() >= minutesOf(periodTime(m, p)) + MISSED_GRACE_MIN;
 }
 
+/** ถึงเวลาแจ้งเตือนครั้งแรกของมื้อนี้แล้วหรือยัง (ตามที่ตั้งไว้ในแต่ละยา ค่าเริ่มต้น = ตรงเวลา) */
+export function isOverdue(m: Pick<Medication, 'times' | 'reminderDelayMin'>, p: DosePeriod, now = new Date()): boolean {
+  return now.getHours() * 60 + now.getMinutes() >= minutesOf(periodTime(m, p)) + reminderDelayOf(m);
+}
+
+/** อีกกี่วันยาจะหมดอายุ (ติดลบ = หมดอายุแล้ว) null = ไม่ได้ระบุวันหมดอายุ */
+export function daysToExpiry(m: Pick<Medication, 'expiryDate'>, now = new Date()): number | null {
+  if (!m.expiryDate) return null;
+  const end = parseKey(m.expiryDate);
+  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  return Math.round((end.getTime() - start.getTime()) / 86_400_000);
+}
+
 /** ยานี้ต้องกินในวันนั้นไหม (คิดวันเริ่ม วันหยุดใช้ จำนวนวัน และวันในสัปดาห์) */
 export function isScheduledOn(m: Medication, key: string): boolean {
+  if (m.asNeeded) return false;
   if (key < m.startDate) return false;
   if (m.stoppedAt && key >= m.stoppedAt) return false;
   if (!m.active && !m.stoppedAt) return false;
@@ -284,8 +345,10 @@ export function applyDoseStatus(
   period: DosePeriod,
   status: DoseStatus | null,
   by: { id: string; name: string },
-  date = todayKey()
+  date = todayKey(),
+  options: { reason?: string; now?: Date } = {}
 ): MedsState {
+  const now = options.now ?? new Date();
   const previous = findLog(state.logs, date, med.id, period);
   const others = state.logs.filter((l) => l !== previous);
   const wasTaken = previous?.status === 'taken';
@@ -295,13 +358,31 @@ export function applyDoseStatus(
   if (nowTaken && !wasTaken) remaining = Math.max(0, remaining - med.perDose);
   if (!nowTaken && wasTaken) remaining = remaining + med.perDose;
 
-  const logs: DoseLog[] = status
-    ? [...others, { date, medId: med.id, period, status, at: new Date().toISOString(), byId: by.id, byName: by.name }]
-    : others;
+  // กินช้า: เทียบเวลาที่กดกับเวลาที่ควรกิน (เฉพาะบันทึกของวันนี้)
+  let lateMinutes: number | undefined;
+  if (nowTaken && date === todayKey(now)) {
+    const late = now.getHours() * 60 + now.getMinutes() - minutesOf(periodTime(med, period));
+    if (late > LATE_THRESHOLD_MIN) lateMinutes = late;
+  }
+
+  const entry: DoseLog | null = status
+    ? {
+        date,
+        medId: med.id,
+        period,
+        status,
+        at: now.toISOString(),
+        byId: by.id,
+        byName: by.name,
+        ...(options.reason ? { reason: options.reason } : {}),
+        ...(lateMinutes ? { lateMinutes } : {}),
+      }
+    : null;
 
   return {
+    ...state,
     meds: state.meds.map((m) => (m.id === med.id ? { ...m, remaining } : m)),
-    logs,
+    logs: entry ? [...others, entry] : others,
   };
 }
 
@@ -317,6 +398,8 @@ export interface MedStats {
   unrecorded: number;
   /** เปอร์เซ็นต์กินตามนัด (ไม่นับมื้อที่งดตามแพทย์สั่ง) null = ยังไม่มีข้อมูล */
   adherence: number | null;
+  /** กินแล้วแต่ช้ากว่ากำหนดเกิน LATE_THRESHOLD_MIN นาที */
+  late: number;
   /** กินครบติดต่อกันกี่วัน */
   streak: number;
   /** ปริมาณที่กินไปทั้งหมดในช่วงนี้ (หน่วยของยา) */
@@ -354,6 +437,7 @@ export function medStats(
   let missed = 0;
   let skipped = 0;
   let unrecorded = 0;
+  let late = 0;
   const days: { ok: boolean; slots: number; isToday: boolean }[] = [];
 
   for (let d = parseKey(from), i = 0; todayKey(d) <= today && i < 800; d = addDays(d, 1), i++) {
@@ -366,8 +450,10 @@ export function medStats(
       if (!(key < today || log || isDue(med, p, now))) continue;
       slots++;
       expected++;
-      if (log?.status === 'taken') taken++;
-      else if (log?.status === 'skipped') skipped++;
+      if (log?.status === 'taken') {
+        taken++;
+        if (log.lateMinutes) late++;
+      } else if (log?.status === 'skipped') skipped++;
       else {
         ok = false;
         if (log?.status === 'missed') missed++;
@@ -396,6 +482,7 @@ export function medStats(
     skipped,
     unrecorded,
     adherence: denominator > 0 ? Math.round((taken / denominator) * 100) : null,
+    late,
     streak,
     totalUnits: taken * med.perDose,
     from,
@@ -455,7 +542,13 @@ export function normalizeMed(raw: Partial<Medication> & { id: string; name: stri
     perDose: raw.perDose ?? 1,
     unit: raw.unit ?? 'เม็ด',
     meal: raw.meal ?? 'any',
-    periods: Array.isArray(raw.periods) && raw.periods.length > 0 ? raw.periods : ['morning'],
+    periods:
+      Array.isArray(raw.periods) && (raw.periods.length > 0 || raw.asNeeded) ? raw.periods : ['morning'],
+    asNeeded: raw.asNeeded ? true : undefined,
+    expiryDate: raw.expiryDate || undefined,
+    expiryWarnDays: raw.expiryWarnDays,
+    reminderDelayMin: raw.reminderDelayMin,
+    reminderRepeatMin: raw.reminderRepeatMin,
     times: raw.times ?? {},
     weekdays: Array.isArray(raw.weekdays) ? raw.weekdays : [],
     startDate: raw.startDate || todayKey(new Date(created)),

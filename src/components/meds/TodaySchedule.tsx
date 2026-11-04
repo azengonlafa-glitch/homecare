@@ -1,14 +1,17 @@
-import React from 'react';
-import { Check, CircleDashed, PartyPopper } from 'lucide-react';
+import React, { useState } from 'react';
+import { Check, CircleDashed, Clock, PartyPopper, X } from 'lucide-react';
 import { Card } from '../ui/Card';
 import { StockBadge } from './StockBadge';
+import { MedPhoto } from './MedPhoto';
 import {
   DOSE_STATUS_LABEL,
+  LATE_THRESHOLD_MIN,
   PERIODS,
+  SKIP_REASONS,
   currentPeriod,
   findLog,
   instructionText,
-  isDue,
+  isOverdue,
   isScheduledOn,
   periodTime,
   stockLevel,
@@ -24,7 +27,8 @@ import { cn } from '../../lib/cn';
 interface TodayScheduleProps {
   meds: Medication[];
   logs: DoseLog[];
-  onSet: (med: Medication, period: DosePeriod, status: DoseStatus | null) => void;
+  /** reason = เหตุผลที่ไม่ได้กิน (ใช้เมื่อ status เป็น missed/skipped) */
+  onSet: (med: Medication, period: DosePeriod, status: DoseStatus | null, reason?: string) => void;
 }
 
 const STATUS_CHIP: Record<DoseStatus | 'none', string> = {
@@ -34,65 +38,141 @@ const STATUS_CHIP: Record<DoseStatus | 'none', string> = {
   skipped: 'bg-amber-50 border-amber-300 text-amber-900',
 };
 
-const ALT_BUTTON: Record<'missed' | 'skipped', string> = {
-  missed: 'bg-rose-50 border-rose-200 text-rose-900 hover:bg-rose-100',
-  skipped: 'bg-amber-50 border-amber-200 text-amber-900 hover:bg-amber-100',
-};
-
 const timeLabel = (iso: string) =>
   `${new Date(iso).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', hour12: false })} น.`;
 
-const SmallButton: React.FC<{
-  status: 'missed' | 'skipped';
-  onClick: () => void;
-}> = ({ status, onClick }) => (
-  <button
-    type="button"
-    onClick={onClick}
-    className={cn(
-      'inline-flex items-center justify-center min-h-[48px] px-5 rounded-xl border text-base font-bold transition-colors cursor-pointer',
-      ALT_BUTTON[status]
-    )}
-  >
-    {status === 'missed' ? 'พลาดมื้อนี้' : status === 'skipped' ? 'งดตามแพทย์สั่ง' : ''}
-  </button>
-);
+/** กล่องถามเหตุผลเมื่อกด "ไม่กิน" */
+const SkipReasonPanel: React.FC<{
+  onConfirm: (status: 'missed' | 'skipped', reason: string) => void;
+  onCancel: () => void;
+}> = ({ onConfirm, onCancel }) => {
+  const [key, setKey] = useState('');
+  const [text, setText] = useState('');
+  const chosen = SKIP_REASONS.find((r) => r.value === key);
+  const needsText = key === 'other';
+  const canSave = !!chosen && (!needsText || text.trim().length > 0);
+
+  return (
+    <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50/60 p-4 space-y-3">
+      <p className="text-base font-bold text-slate-900">ทำไมถึงไม่ได้กินมื้อนี้?</p>
+      <div className="flex flex-wrap gap-2" role="group" aria-label="เหตุผลที่ไม่ได้กินยา">
+        {SKIP_REASONS.map((r) => (
+          <button
+            key={r.value}
+            type="button"
+            aria-pressed={key === r.value}
+            onClick={() => setKey(r.value)}
+            className={cn(
+              'min-h-[44px] px-4 rounded-full border text-base font-semibold cursor-pointer transition-colors',
+              key === r.value
+                ? 'bg-purple-700 border-purple-700 text-white'
+                : 'bg-white border-slate-300 text-slate-800 hover:bg-purple-50'
+            )}
+          >
+            {r.label}
+          </button>
+        ))}
+      </div>
+      {chosen && (
+        <div className="space-y-2">
+          <label htmlFor="skip-reason-text" className="block text-sm font-bold text-slate-700">
+            {needsText ? 'พิมพ์เหตุผล' : 'รายละเอียดเพิ่มเติม (ไม่บังคับ)'}
+          </label>
+          <input
+            id="skip-reason-text"
+            type="text"
+            value={text}
+            autoFocus
+            autoComplete="off"
+            maxLength={120}
+            onChange={(e) => setText(e.target.value)}
+            placeholder={needsText ? 'เช่น ติดธุระด่วน' : 'เช่น หมอนัดตรวจเลือดเช้านี้'}
+            className="w-full min-h-[50px] px-5 bg-white border border-slate-300 rounded-2xl text-base text-slate-900 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-600"
+          />
+          <p className="text-sm text-slate-600">
+            {chosen.status === 'skipped'
+              ? 'หมอสั่งให้งดจะไม่นับว่าพลาด'
+              : 'มื้อนี้จะถูกบันทึกเป็นไม่ได้กินลงในรายงาน'}
+          </p>
+        </div>
+      )}
+      <div className="grid grid-cols-2 gap-2">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="min-h-[48px] rounded-xl border border-slate-300 bg-white text-base font-bold text-slate-700 hover:bg-slate-50 cursor-pointer"
+        >
+          ยกเลิก
+        </button>
+        <button
+          type="button"
+          disabled={!canSave}
+          onClick={() => {
+            if (!chosen) return;
+            const detail = text.trim();
+            onConfirm(
+              chosen.status,
+              needsText ? detail : detail ? `${chosen.label} · ${detail}` : chosen.label
+            );
+          }}
+          className="min-h-[48px] rounded-xl bg-purple-700 text-base font-bold text-white hover:bg-purple-800 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+        >
+          บันทึก
+        </button>
+      </div>
+    </div>
+  );
+};
 
 const DoseItem: React.FC<{
   med: Medication;
   period: DosePeriod;
   log: DoseLog | undefined;
-  onSet: (status: DoseStatus | null) => void;
+  onSet: (status: DoseStatus | null, reason?: string) => void;
 }> = ({ med, period, log, onSet }) => {
+  const [asking, setAsking] = useState(false);
   const status = log?.status;
-  const overdue = !status && isDue(med, period);
+  const overdue = !status && isOverdue(med, period);
   const chipText = status ? DOSE_STATUS_LABEL[status] : overdue ? 'เลยเวลาแล้ว' : 'ยังไม่ได้บันทึก';
   const level = stockLevel(med);
   const exact = med.times[period];
+  const time = periodTime(med, period);
+
+  const confirmSkip = (next: 'missed' | 'skipped', reason: string) => {
+    setAsking(false);
+    onSet(next, reason);
+  };
 
   return (
     <li className="py-5 first:pt-0 last:pb-0">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          {exact && <p className="text-2xl font-bold text-emerald-700 tabular-nums">{exact} น.</p>}
-          <p className="text-lg sm:text-xl font-bold text-slate-900 break-words">{med.name}</p>
-          <p className="mt-0.5 text-base text-slate-600">
-            {instructionText(med)}
-          </p>
+      <div className="flex items-start gap-3">
+        <MedPhoto
+          med={med}
+          className="h-16 w-16 shrink-0 rounded-2xl bg-purple-50 overflow-hidden"
+          fallback={null}
+        />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              {exact && <p className="text-2xl font-bold text-emerald-700 tabular-nums">{exact} น.</p>}
+              <p className="text-lg sm:text-xl font-bold text-slate-900 break-words">{med.name}</p>
+              <p className="mt-0.5 text-base text-slate-600">{instructionText(med)}</p>
+            </div>
+            <span
+              className={cn(
+                'shrink-0 inline-flex items-center gap-1.5 min-h-[36px] px-3 rounded-full border text-sm sm:text-base font-bold',
+                overdue ? 'bg-red-50 border-red-300 text-red-800' : STATUS_CHIP[status ?? 'none']
+              )}
+            >
+              {status === 'taken' ? (
+                <Check className="w-4 h-4" aria-hidden="true" />
+              ) : (
+                !status && <CircleDashed className="w-4 h-4" aria-hidden="true" />
+              )}
+              {chipText}
+            </span>
+          </div>
         </div>
-        <span
-          className={cn(
-            'shrink-0 inline-flex items-center gap-1.5 min-h-[36px] px-3 rounded-full border text-sm sm:text-base font-bold',
-            overdue ? 'bg-red-50 border-red-300 text-red-800' : STATUS_CHIP[status ?? 'none']
-          )}
-        >
-          {status === 'taken' ? (
-            <Check className="w-4 h-4" aria-hidden="true" />
-          ) : (
-            !status && <CircleDashed className="w-4 h-4" aria-hidden="true" />
-          )}
-          {chipText}
-        </span>
       </div>
 
       {level !== 'good' && !status && (
@@ -102,53 +182,91 @@ const DoseItem: React.FC<{
       )}
 
       {!log ? (
-        <div className="mt-4 space-y-2">
-          <button
-            type="button"
-            onClick={() => onSet('taken')}
-            className="w-full inline-flex items-center justify-center gap-2 min-h-[58px] rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xl font-bold shadow-sm transition-colors cursor-pointer"
-          >
-            <Check className="w-6 h-6" aria-hidden="true" />
-            <span>กินแล้ว</span>
-          </button>
-          <div className="flex flex-wrap gap-2">
-            <SmallButton status="missed" onClick={() => onSet('missed')} />
-            <SmallButton status="skipped" onClick={() => onSet('skipped')} />
-          </div>
-        </div>
-      ) : (
-        <div className="mt-3 space-y-2">
-          <p className="text-base font-semibold text-emerald-800">
-            บันทึกเมื่อ {timeLabel(log.at)} · โดย {log.byId === CURRENT_MEMBER_ID ? 'คุณ' : log.byName}
-          </p>
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-base text-slate-600">บันทึกผิด? แก้เป็น</span>
-            {log.status !== 'taken' && (
-              <button
-                type="button"
-                onClick={() => onSet('taken')}
-                className="inline-flex items-center min-h-[48px] px-5 rounded-xl border border-emerald-300 bg-emerald-50 text-emerald-900 text-base font-bold hover:bg-emerald-100 cursor-pointer"
-              >
-                กินแล้ว
-              </button>
-            )}
-            {log.status !== 'missed' && <SmallButton status="missed" onClick={() => onSet('missed')} />}
-            {log.status !== 'skipped' && <SmallButton status="skipped" onClick={() => onSet('skipped')} />}
+        <>
+          <div className="mt-4 grid grid-cols-2 gap-3">
             <button
               type="button"
-              onClick={() => onSet(null)}
-              className="inline-flex items-center min-h-[48px] px-3 rounded-xl text-base font-semibold text-slate-600 hover:bg-slate-100 cursor-pointer"
+              onClick={() => {
+                setAsking(false);
+                onSet('taken');
+              }}
+              className="inline-flex items-center justify-center gap-2 min-h-[58px] rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xl font-bold shadow-sm transition-colors cursor-pointer"
             >
-              ล้างบันทึก
+              <Check className="w-6 h-6" aria-hidden="true" />
+              <span>กิน</span>
+            </button>
+            <button
+              type="button"
+              aria-expanded={asking}
+              onClick={() => setAsking((v) => !v)}
+              className={cn(
+                'inline-flex items-center justify-center gap-2 min-h-[58px] rounded-2xl border-2 text-xl font-bold transition-colors cursor-pointer',
+                asking
+                  ? 'border-rose-400 bg-rose-50 text-rose-900'
+                  : 'border-slate-300 bg-white text-slate-800 hover:bg-rose-50 hover:border-rose-300'
+              )}
+            >
+              <X className="w-6 h-6" aria-hidden="true" />
+              <span>ไม่กิน</span>
             </button>
           </div>
+          {asking && <SkipReasonPanel onConfirm={confirmSkip} onCancel={() => setAsking(false)} />}
+        </>
+      ) : (
+        <div className="mt-3 space-y-2">
+          <p className="text-base font-semibold text-slate-800">
+            บันทึกเมื่อ {timeLabel(log.at)} · โดย {log.byId === CURRENT_MEMBER_ID ? 'คุณ' : log.byName}
+          </p>
+          {log.status === 'taken' && log.lateMinutes ? (
+            <p className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 border border-amber-300 px-3 py-1 text-sm font-bold text-amber-900">
+              <Clock className="w-4 h-4" aria-hidden="true" />
+              กินช้ากว่ากำหนด {log.lateMinutes} นาที (เกิน {LATE_THRESHOLD_MIN} นาที บันทึกลงรายงาน)
+            </p>
+          ) : null}
+          {log.reason && <p className="text-base text-slate-700">เหตุผล: {log.reason}</p>}
+          {log.status !== 'taken' && (
+            <p className="text-sm text-slate-500">กำหนดเดิม {time} น.</p>
+          )}
+
+          {asking ? (
+            <SkipReasonPanel onConfirm={confirmSkip} onCancel={() => setAsking(false)} />
+          ) : (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-base text-slate-600">บันทึกผิด? แก้เป็น</span>
+              {log.status !== 'taken' && (
+                <button
+                  type="button"
+                  onClick={() => onSet('taken')}
+                  className="inline-flex items-center min-h-[48px] px-5 rounded-xl border border-emerald-300 bg-emerald-50 text-emerald-900 text-base font-bold hover:bg-emerald-100 cursor-pointer"
+                >
+                  กิน
+                </button>
+              )}
+              {log.status === 'taken' && (
+                <button
+                  type="button"
+                  onClick={() => setAsking(true)}
+                  className="inline-flex items-center min-h-[48px] px-5 rounded-xl border border-rose-200 bg-rose-50 text-rose-900 text-base font-bold hover:bg-rose-100 cursor-pointer"
+                >
+                  ไม่กิน
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => onSet(null)}
+                className="inline-flex items-center min-h-[48px] px-3 rounded-xl text-base font-semibold text-slate-600 hover:bg-slate-100 cursor-pointer"
+              >
+                ล้างบันทึก
+              </button>
+            </div>
+          )}
         </div>
       )}
     </li>
   );
 };
 
-/** ตารางกินยาวันนี้: เป็น to-do แยกตามช่วงเวลาของวัน กดบันทึกว่ากินแล้ว/พลาด/งด */
+/** ตารางกินยาวันนี้: เป็น to-do แยกตามช่วงเวลาของวัน กด กิน / ไม่กิน (ไม่กินต้องบอกเหตุผล) */
 export const TodaySchedule: React.FC<TodayScheduleProps> = ({ meds, logs, onSet }) => {
   const date = todayKey();
   const now = currentPeriod();
@@ -238,7 +356,7 @@ export const TodaySchedule: React.FC<TodayScheduleProps> = ({ meds, logs, onSet 
                   med={med}
                   period={group.value}
                   log={findLog(logs, date, med.id, group.value)}
-                  onSet={(status) => onSet(med, group.value, status)}
+                  onSet={(status, reason) => onSet(med, group.value, status, reason)}
                 />
               ))}
             </ul>

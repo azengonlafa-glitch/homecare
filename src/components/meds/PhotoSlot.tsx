@@ -57,7 +57,7 @@ export const PhotoSlot: React.FC<PhotoSlotProps> = ({ id, label, emptyText, valu
             <button
               type="button"
               onClick={() => inputRef.current?.click()}
-              className="inline-flex items-center gap-1.5 min-h-[44px] px-3 rounded-xl text-sm font-semibold text-purple-900 bg-purple-50 border border-purple-200 hover:bg-purple-100 cursor-pointer"
+              className="inline-flex items-center gap-1.5 min-h-[44px] px-3 rounded-xl text-sm font-semibold text-slate-800 bg-white border border-slate-300 hover:bg-slate-50 cursor-pointer"
             >
               <Camera className="w-4 h-4" aria-hidden="true" />
               เปลี่ยนรูป

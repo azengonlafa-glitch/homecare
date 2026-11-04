@@ -1,20 +1,24 @@
 import React, { useState } from 'react';
-import { AlertTriangle, Flame, Pencil, RefreshCcw, Trash2 } from 'lucide-react';
+import { AlarmClock, Flame, Pencil, RefreshCcw, Trash2 } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { AttachmentImage } from '../ui/AttachmentImage';
-import { StockBadge } from './StockBadge';
-import { drugById } from '../../data/drugDb';
+import { ExpiryBadge, StockBadge } from './StockBadge';
+import { DrugInfoPanel } from './DrugInfoPanel';
+import { drugById, matchDrugInText } from '../../data/drugDb';
 import {
   DOSE_STATUS_LABEL,
   PERIOD_LABEL,
   dayStates,
+  daysToExpiry,
   endDateOf,
   formatMedForm,
   formatQty,
   historyOf,
   instructionText,
   medStats,
+  reminderDelayOf,
+  reminderRepeatOf,
   runOutDate,
   thaiDate,
   weekdaysText,
@@ -32,6 +36,8 @@ interface MedDetailModalProps {
   onEdit: (med: Medication) => void;
   onDelete: (med: Medication) => void;
   onRefill: (med: Medication) => void;
+  /** ตั้งเวลากินให้ยาที่อยู่ในตู้ (ยังไม่มีตาราง) */
+  onSchedule?: (med: Medication) => void;
   onClose: () => void;
 }
 
@@ -96,15 +102,17 @@ export const DayStrip: React.FC<{ med: Medication; logs: DoseLog[]; days?: numbe
 const HISTORY_PAGE = 15;
 
 /** รายละเอียดยาแต่ละตัว: สถิติการกินตั้งแต่เริ่มใช้ ข้อมูลยา รูป และประวัติการบันทึกทั้งหมด */
-export const MedDetailModal: React.FC<MedDetailModalProps> = ({ med, logs, onEdit, onDelete, onRefill, onClose }) => {
+export const MedDetailModal: React.FC<MedDetailModalProps> = ({ med, logs, onEdit, onDelete, onRefill, onSchedule, onClose }) => {
   const [shown, setShown] = useState(HISTORY_PAGE);
   if (!med) return null;
 
   const stats = medStats(med, logs);
   const history = historyOf(logs, med.id);
-  const drug = med.drugRef ? drugById(med.drugRef) : undefined;
+  const drug = (med.drugRef ? drugById(med.drugRef) : undefined) ?? matchDrugInText(med.name);
   const runOut = med.active ? runOutDate(med) : null;
   const end = endDateOf(med);
+  const expiryLeft = daysToExpiry(med);
+  const delay = reminderDelayOf(med);
   const timesText = med.periods
     .map((p) => `${PERIOD_LABEL[p]}${med.times[p] ? ` ${med.times[p]} น.` : ''}`)
     .join(' · ');
@@ -143,13 +151,22 @@ export const MedDetailModal: React.FC<MedDetailModalProps> = ({ med, logs, onEdi
             </span>
           )}
           <StockBadge med={med} />
+          <ExpiryBadge med={med} />
           <span className="text-base text-slate-700">
             เหลือ {formatQty(med.remaining)} {med.unit}
             {runOut && ` · คาดว่าหมด ${runOut.toLocaleDateString('th-TH', { dateStyle: 'medium' })}`}
           </span>
         </div>
 
-        {/* สถิติ */}
+        {med.asNeeded && onSchedule && (
+          <Button fullWidth onClick={() => onSchedule(med)}>
+            <AlarmClock className="w-5 h-5" aria-hidden="true" />
+            <span>ตั้งเวลากินยานี้</span>
+          </Button>
+        )}
+
+        {/* สถิติ (ยาที่ไม่มีตารางประจำไม่มีมื้อให้นับ) */}
+        {!med.asNeeded && (
         <section aria-label="สถิติการกินยา">
           <h3 className="text-lg font-bold text-slate-900">การกินยาตั้งแต่ {thaiDate(stats.from)}</h3>
           <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -171,30 +188,51 @@ export const MedDetailModal: React.FC<MedDetailModalProps> = ({ med, logs, onEdi
             />
           </div>
           <p className="mt-2 text-sm text-slate-600">
-            งดตามแพทย์สั่ง {stats.skipped} มื้อ (ไม่นับเป็นพลาด) · กินไปแล้วรวม {formatQty(stats.totalUnits)} {med.unit}
+            งดตามแพทย์สั่ง {stats.skipped} มื้อ (ไม่นับเป็นพลาด) · กินช้า {stats.late} มื้อ · กินไปแล้วรวม {formatQty(stats.totalUnits)} {med.unit}
           </p>
           <div className="mt-4">
             <p className="text-base font-bold text-slate-900 mb-2">30 วันล่าสุด</p>
             <DayStrip med={med} logs={logs} />
           </div>
         </section>
+        )}
 
         {/* ข้อมูลยา */}
         <section aria-label="ข้อมูลการใช้ยา">
           <h3 className="text-lg font-bold text-slate-900 mb-3">ข้อมูลการใช้ยา</h3>
           <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-base">
             <Row label="วิธีกิน">{instructionText(med)}</Row>
-            <Row label="เวลา">{timesText}</Row>
-            <Row label="วัน">{weekdaysText(med.weekdays)}</Row>
             <Row label="รูปแบบ">{formatMedForm(med)}</Row>
-            <Row label="เริ่มใช้">{thaiDate(med.startDate)}</Row>
-            <Row label="ระยะเวลา">
-              {end ? `${med.durationDays} วัน (ถึง ${thaiDate(end)})` : 'ใช้ต่อเนื่อง'}
-              {med.stoppedAt && ` · หยุดใช้ ${thaiDate(med.stoppedAt)}`}
-            </Row>
+            {med.asNeeded ? (
+              <Row label="ตาราง">ไม่มีตารางประจำ</Row>
+            ) : (
+              <>
+                <Row label="เวลา">{timesText}</Row>
+                <Row label="วัน">{weekdaysText(med.weekdays)}</Row>
+                <Row label="แจ้งเตือน">
+                  {delay === 0 ? 'ตรงเวลา' : `หลังถึงเวลา ${delay} นาที`} · ถ้ายังไม่กินแจ้งซ้ำทุก {reminderRepeatOf(med)} นาที
+                </Row>
+                <Row label="เริ่มใช้">{thaiDate(med.startDate)}</Row>
+                <Row label="ระยะเวลา">
+                  {end ? `${med.durationDays} วัน (ถึง ${thaiDate(end)})` : 'ใช้ต่อเนื่อง'}
+                  {med.stoppedAt && ` · หยุดใช้ ${thaiDate(med.stoppedAt)}`}
+                </Row>
+              </>
+            )}
+            {med.expiryDate && (
+              <Row label="วันหมดอายุ">
+                {thaiDate(med.expiryDate)}
+                {expiryLeft !== null &&
+                  (expiryLeft < 0
+                    ? ` (หมดอายุแล้ว ${-expiryLeft} วัน)`
+                    : expiryLeft === 0
+                      ? ' (หมดอายุวันนี้)'
+                      : ` (เหลืออีก ${expiryLeft} วัน)`)}
+              </Row>
+            )}
             {med.condition && <Row label="โรค">{med.condition}</Row>}
             {med.reason && <Row label="เหตุผล">{med.reason}</Row>}
-            <Row label="เตือนเมื่อเหลือ">{med.lowStockDays} วัน</Row>
+            {!med.asNeeded && <Row label="เตือนเมื่อเหลือ">{med.lowStockDays} วัน</Row>}
             {med.lastRefillDate && <Row label="รับยาล่าสุด">{thaiDate(med.lastRefillDate)}</Row>}
             {med.refillsRemaining !== null && <Row label="เติมยาได้อีก">{med.refillsRemaining} ครั้ง</Row>}
             {med.refillRequestedAt && (
@@ -206,25 +244,7 @@ export const MedDetailModal: React.FC<MedDetailModalProps> = ({ med, logs, onEdi
           </dl>
         </section>
 
-        {drug && (
-          <section aria-label="ข้อมูลจากฐานข้อมูลยา" className="rounded-2xl border border-purple-200 bg-purple-50 p-4">
-            <h3 className="text-base font-bold text-purple-900">
-              {drug.generic} · {drug.thai}
-            </h3>
-            <p className="mt-1 text-base text-slate-800">ใช้สำหรับ: {drug.purpose}</p>
-            {drug.warnings.length > 0 && (
-              <ul className="mt-2 space-y-1">
-                {drug.warnings.map((w) => (
-                  <li key={w} className="flex items-start gap-2 text-base text-slate-800">
-                    <AlertTriangle className="w-4 h-4 mt-1 shrink-0 text-amber-600" aria-hidden="true" />
-                    {w}
-                  </li>
-                ))}
-              </ul>
-            )}
-            <p className="mt-2 text-sm text-slate-500">ข้อมูลทั่วไป ไม่ใช่คำแนะนำเฉพาะตัว ถ้าสงสัยให้ถามเภสัชกร</p>
-          </section>
-        )}
+        {drug && <DrugInfoPanel drug={drug} />}
 
         {(med.pillPhoto || med.labelPhoto) && (
           <section aria-label="รูปยา" className="grid grid-cols-2 gap-3">
@@ -247,7 +267,7 @@ export const MedDetailModal: React.FC<MedDetailModalProps> = ({ med, logs, onEdi
         <section aria-label="ประวัติการบันทึก">
           <h3 className="text-lg font-bold text-slate-900 mb-3">ประวัติการบันทึก ({history.length})</h3>
           {history.length === 0 ? (
-            <p className="text-base text-slate-600">ยังไม่มีการบันทึก กด “กินแล้ว” ในตารางกินยาวันนี้</p>
+            <p className="text-base text-slate-600">ยังไม่มีการบันทึก กด “กิน” ในตารางกินยาวันนี้</p>
           ) : (
             <>
               <ul className="divide-y divide-slate-200 rounded-2xl border border-slate-200">
@@ -261,7 +281,9 @@ export const MedDetailModal: React.FC<MedDetailModalProps> = ({ med, logs, onEdi
                         บันทึก{' '}
                         {new Date(l.at).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', hour12: false })}{' '}
                         น. โดย {l.byId === CURRENT_MEMBER_ID ? 'คุณ' : l.byName}
+                        {l.lateMinutes ? ` · ช้า ${l.lateMinutes} นาที` : ''}
                       </p>
+                      {l.reason && <p className="text-sm text-slate-600 break-words">เหตุผล: {l.reason}</p>}
                     </div>
                     <span className={cn('shrink-0 px-3 py-1 rounded-full border text-sm font-bold', STATUS_TEXT[l.status])}>
                       {DOSE_STATUS_LABEL[l.status]}
