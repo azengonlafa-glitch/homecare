@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { HeartPulse, Image as ImageIcon, NotebookPen, PenLine, Smile } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
+import { Avatar } from '../components/ui/Avatar';
 import { PageHeader } from '../components/ui/PageHeader';
 import { OptionPickerModal } from '../components/ui/OptionPickerModal';
 import { ConfirmDialog } from '../components/settings/ConfirmDialog';
@@ -12,7 +13,7 @@ import { ReminderPanel } from '../components/journal/ReminderPanel';
 import { useToast } from '../components/ui/Toast';
 import { useMedAlerts, type MedAlert } from '../lib/medAlerts';
 import { applyDoseStatus, loadMeds, saveMeds } from '../lib/meds';
-import { CURRENT_MEMBER_ID, loadSettings } from '../lib/settings';
+import { CURRENT_MEMBER_ID, SETTINGS_CHANGED_EVENT, loadSettings } from '../lib/settings';
 import { SYMPTOMS, type MoodKey } from '../data/journalOptions';
 import { deleteFiles } from '../lib/fileStore';
 import { loadHomeData } from '../lib/storage';
@@ -49,6 +50,13 @@ const quickButton =
  */
 export const JournalPage: React.FC = () => {
   const user = useMemo(currentJournalUser, []);
+  const [photo, setPhoto] = useState(() => loadSettings().profile.photo);
+
+  useEffect(() => {
+    const sync = () => setPhoto(loadSettings().profile.photo);
+    window.addEventListener(SETTINGS_CHANGED_EVENT, sync);
+    return () => window.removeEventListener(SETTINGS_CHANGED_EVENT, sync);
+  }, []);
   const [posts, setPosts] = useState<JournalPost[]>(loadPosts);
   const alerts = useMedAlerts();
   const toast = useToast();
@@ -280,12 +288,7 @@ export const JournalPage: React.FC = () => {
       {/* กล่องเริ่มโพสต์ */}
       <Card className="p-4 sm:p-6">
         <div className="flex items-center gap-3">
-          <div
-            aria-hidden="true"
-            className="w-12 h-12 shrink-0 rounded-full bg-purple-100 text-purple-800 flex items-center justify-center text-lg font-bold"
-          >
-            {user.name.slice(0, 1)}
-          </div>
+          <Avatar src={photo} name={user.name} className="w-12 h-12 text-lg shadow-xs" />
           <button
             type="button"
             onClick={() => begin('details')}

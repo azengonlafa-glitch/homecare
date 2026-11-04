@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { HeartPulse, MessageCircle, Pencil, Send, Trash2, X } from 'lucide-react';
 import { Heart } from 'lucide-react';
+import { Avatar } from '../ui/Avatar';
+import { loadSettings } from '../../lib/settings';
 import { AttachmentImage } from '../ui/AttachmentImage';
 import { MoodBadge } from './MoodPickerModal';
 import { cn } from '../../lib/cn';
@@ -38,6 +40,10 @@ export const PostCard: React.FC<PostCardProps> = ({
   const [draft, setDraft] = useState('');
 
   const isMine = post.authorId === user.id;
+
+  const authorPhoto = isMine
+    ? loadSettings().profile.photo
+    : loadSettings().members.find((m) => m.id === post.authorId || m.name === post.authorName)?.photo;
   const liked = post.likes.includes(user.id);
   const commentsId = `comments-${post.id}`;
 
@@ -58,12 +64,7 @@ export const PostCard: React.FC<PostCardProps> = ({
       )}
     >
       <header className="flex items-start gap-3">
-        <div
-          aria-hidden="true"
-          className="w-11 h-11 shrink-0 rounded-full bg-purple-100 text-purple-800 flex items-center justify-center text-lg font-bold"
-        >
-          {post.authorName.slice(0, 1)}
-        </div>
+        <Avatar src={authorPhoto} name={post.authorName} className="w-11 h-11 text-base shadow-xs" />
         <div className="min-w-0 flex-1">
           <p className="text-lg font-bold text-slate-900 break-words">{post.authorName}</p>
           <p className="text-sm text-slate-600">
@@ -166,12 +167,7 @@ export const PostCard: React.FC<PostCardProps> = ({
               <ul className="space-y-3">
                 {post.comments.map((comment) => (
                   <li key={comment.id} className="flex items-start gap-3">
-                    <div
-                      aria-hidden="true"
-                      className="w-9 h-9 shrink-0 rounded-full bg-slate-100 text-slate-700 flex items-center justify-center text-base font-bold"
-                    >
-                      {comment.authorName.slice(0, 1)}
-                    </div>
+                    <Avatar src={comment.authorId === user.id ? loadSettings().profile.photo : loadSettings().members.find((m) => m.id === comment.authorId || m.name === comment.authorName)?.photo} name={comment.authorName} className="w-9 h-9 text-sm shadow-xs" />
                     <div className="min-w-0 flex-1 rounded-2xl bg-slate-50 px-4 py-2.5">
                       <p className="text-sm font-bold text-slate-800">{comment.authorName}</p>
                       <p className="text-base text-slate-800 whitespace-pre-wrap break-words">

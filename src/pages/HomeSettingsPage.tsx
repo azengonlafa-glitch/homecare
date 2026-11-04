@@ -836,7 +836,7 @@ export const HomeSettingsPage: React.FC = () => {
                       onChange={() => setTransferTo(member.id)}
                       className="w-5 h-5 text-purple-700 focus:ring-purple-600"
                     />
-                    <Avatar name={member.name} className="w-10 h-10 text-lg" />
+                    <Avatar src={member.id === CURRENT_MEMBER_ID ? settings.profile.photo : member.photo} name={member.name} className="w-10 h-10 text-lg" />
                     <span className="text-base text-slate-900">
                       {member.name} <span className="text-sm text-slate-500">· {member.relation}</span>
                     </span>
