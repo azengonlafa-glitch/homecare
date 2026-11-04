@@ -654,7 +654,7 @@ export const HomeSettingsPage: React.FC = () => {
           <Card className="p-6 sm:p-8">
             <SectionTitle title="ภาพพื้นหลังบ้าน" hint="แสดงที่มุมบนซ้ายของแอป คล้ายแบนเนอร์เซิร์ฟเวอร์ใน Discord" />
             <div className="flex flex-col gap-4">
-              <div className="relative h-28 rounded-2xl overflow-hidden border border-slate-200 bg-purple-50 flex items-end">
+              <div className="relative h-28 rounded-2xl overflow-hidden border border-slate-200 bg-purple-50">
                 {home.banner ? (
                   <img src={home.banner} alt="ภาพพื้นหลังบ้าน" className="absolute inset-0 w-full h-full object-cover" />
                 ) : (
@@ -665,9 +665,6 @@ export const HomeSettingsPage: React.FC = () => {
                 {home.banner && (
                   <span aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/25 to-black/10" />
                 )}
-                <span className={'relative px-4 pb-3 text-lg font-bold truncate max-w-full ' + (home.banner ? 'text-white drop-shadow' : 'text-purple-700')}>
-                  {settings.homeName || 'ชื่อบ้าน'}
-                </span>
               </div>
               <input
                 ref={bannerRef}
