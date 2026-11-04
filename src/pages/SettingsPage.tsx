@@ -11,8 +11,7 @@ import { pendingIncoming } from '../lib/access';
 import { resetDemoState } from '../lib/demo';
 import { FEEDBACK_URL } from '../lib/config';
 import { cloudEnabled } from '../cloud/client';
-import { explainError, leaveHome, clearHomeCaches } from '../cloud/engine';
-import { clearHomeSetup } from '../lib/homeSetup';
+import { explainError, getCtx, leaveHome, signOutAll } from '../cloud/engine';
 import { useToast } from '../components/ui/Toast';
 
 interface SettingsRowProps {
@@ -66,23 +65,24 @@ export const SettingsPage: React.FC = () => {
   ].filter(Boolean).length;
 
   const toast = useToast();
-  const handleLeaveHome = async () => {
-    localStorage.removeItem('growa_last_visited_path');
+  const canLeaveHome = cloudEnabled && getCtx()?.homeId && getCtx()?.role !== 'owner';
+
+  const handleLogout = () => {
     if (cloudEnabled) {
-      try {
-        await leaveHome();
-      } catch (err) {
-        setConfirm(null);
-        toast.show(explainError(err), { tone: 'error' });
-        return;
-      }
-    } else {
-      clearHomeSetup();
-      clearHomeCaches();
+      void signOutAll();
+      return;
     }
-    setConfirm(null);
-    toast.show('ออกจากบ้านแล้ว');
-    navigate('/setup', { replace: true });
+    localStorage.removeItem('growa_auth_user');
+    navigate('/login', { replace: true });
+  };
+
+  const handleLeaveHome = async () => {
+    try {
+      await leaveHome();
+    } catch (err) {
+      setConfirm(null);
+      toast.show(explainError(err), { tone: 'error' });
+    }
   };
 
   const handleReset = () => {
@@ -146,25 +146,40 @@ export const SettingsPage: React.FC = () => {
       <div className="pt-2">
         <button
           type="button"
-          onClick={() => setConfirm('leave')}
+          onClick={() => setConfirm('logout')}
           className="w-full inline-flex items-center justify-center gap-2 min-h-[58px] px-6 rounded-2xl sm:rounded-full bg-red-600 hover:bg-red-700 active:bg-red-800 text-white text-lg font-bold shadow-sm shadow-red-200 transition-colors cursor-pointer"
         >
           <LogOut className="w-6 h-6" aria-hidden="true" />
-          <span>ออกจากบ้าน</span>
+          <span>ออกจากระบบ</span>
         </button>
-
+        {canLeaveHome && (
+          <button
+            type="button"
+            onClick={() => setConfirm('leave')}
+            className="mt-3 w-full min-h-[52px] px-6 rounded-2xl border border-slate-300 bg-white text-base font-bold text-slate-700 hover:bg-slate-50 cursor-pointer"
+          >
+            ออกจากบ้านนี้
+          </button>
+        )}
       </div>
 
       <ConfirmDialog
         open={confirm === 'leave'}
         title="ออกจากบ้านนี้?"
-        message="คุณจะออกจากบ้านนี้ และระบบจะพาคุณไปยังหน้าเข้ารหัสบ้านหรือสร้างบ้านใหม่ ข้อมูลสุขภาพส่วนตัวของคุณยังอยู่ครบ"
+        message="คุณจะไม่เห็นข้อมูลของบ้านนี้อีก และต้องใช้รหัสเชิญใหม่หากต้องการกลับเข้ามา ข้อมูลสุขภาพส่วนตัวของคุณยังอยู่"
         confirmLabel="ออกจากบ้าน"
         onCancel={() => setConfirm(null)}
         onConfirm={handleLeaveHome}
       />
 
-
+      <ConfirmDialog
+        open={confirm === 'logout'}
+        title="ออกจากระบบ?"
+        message="คุณจะกลับไปหน้าเข้าสู่ระบบ ข้อมูลของบ้านและสมาชิกยังอยู่ครบ เข้ามาใหม่ได้ด้วยบัญชีเดิม"
+        confirmLabel="ออกจากระบบ"
+        onCancel={() => setConfirm(null)}
+        onConfirm={handleLogout}
+      />
 
       <ConfirmDialog
         open={confirm === 'reset'}
