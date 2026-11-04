@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { AlertTriangle, BarChart3, BellRing, ClipboardCheck, Pill, Plus, Trash2 } from 'lucide-react';
+import { AlertTriangle, BarChart3, BellRing, ClipboardCheck, Pill, Plus } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { PageHeader } from '../components/ui/PageHeader';
@@ -7,7 +7,6 @@ import { useToast } from '../components/ui/Toast';
 import { ConfirmDialog } from '../components/settings/ConfirmDialog';
 import { MedFormModal, type MedFormData } from '../components/meds/MedFormModal';
 import { MedCabinet } from '../components/meds/MedCabinet';
-import { ExtraDoseModal, type ExtraDoseInput } from '../components/meds/ExtraDoseModal';
 import { MedDetailModal } from '../components/meds/MedDetailModal';
 import { MedReport } from '../components/meds/MedReport';
 import { RefillModal } from '../components/meds/RefillModal';
@@ -18,13 +17,10 @@ import { useMedAlerts } from '../lib/medAlerts';
 import { CURRENT_MEMBER_ID, getCurrentMember, loadSettings } from '../lib/settings';
 import {
   DOSE_STATUS_LABEL,
-  addExtraDose,
   applyDoseStatus,
   daysLeft,
   formatQty,
   loadMeds,
-  normalizeMed,
-  removeExtraDose,
   saveMeds,
   stockLevel,
   todayKey,
@@ -49,11 +45,12 @@ export const MedsPage: React.FC = () => {
   const alerts = useMedAlerts();
   const [state, setState] = useState<MedsState>(loadMeds);
   const [tab, setTab] = useState<Tab>('today');
-  const [form, setForm] = useState<{ mode: 'new' } | { mode: 'edit'; id: string } | null>(null);
+  const [form, setForm] = useState<
+    { mode: 'new'; fromId?: string } | { mode: 'inventory' } | { mode: 'edit'; id: string } | null
+  >(null);
   const [detailId, setDetailId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<Medication | null>(null);
   const [refilling, setRefilling] = useState<Medication | null>(null);
-  const [quickLog, setQuickLog] = useState(false);
 
   const settings = useMemo(loadSettings, []);
   const me = getCurrentMember(settings);
@@ -66,8 +63,9 @@ export const MedsPage: React.FC = () => {
 
   const editing = form?.mode === 'edit' ? (state.meds.find((m) => m.id === form.id) ?? null) : null;
   const detail = detailId ? (state.meds.find((m) => m.id === detailId) ?? null) : null;
+  const linkFrom = form?.mode === 'new' && form.fromId ? (state.meds.find((m) => m.id === form.fromId) ?? null) : null;
 
-  const handleSave = (data: MedFormData) => {
+  const handleSave = (data: MedFormData, linkedId?: string | null) => {
     if (form?.mode === 'edit') {
       commit({
         ...state,
@@ -84,20 +82,38 @@ export const MedsPage: React.FC = () => {
       });
       toast.show('บันทึกการแก้ไขแล้ว');
     } else {
-      commit({
-        ...state,
-        meds: [
-          ...state.meds,
-          {
-            ...data,
-            id: newId(),
-            stoppedAt: data.active ? null : todayKey(),
-            refillRequestedAt: null,
-            createdAt: new Date().toISOString(),
-          },
-        ],
-      });
-      toast.show('เพิ่มยาแล้ว');
+      // ยาจากตู้ (เลือกมา หรือชื่อตรงกับยาที่จดไว้): อัปเดตตัวเดิม ไม่สร้างซ้ำ จำนวนคงเหลือและรูปจึงต่อเนื่อง
+      const inInventory = linkedId
+        ? state.meds.find((m) => m.id === linkedId)
+        : state.meds.find((m) => m.asNeeded && m.name.trim().toLowerCase() === data.name.trim().toLowerCase());
+      if (inInventory) {
+        commit({
+          ...state,
+          meds: state.meds.map((m) =>
+            m.id === inInventory.id ? { ...m, ...data, stoppedAt: data.active ? null : todayKey() } : m
+          ),
+        });
+        toast.show(
+          data.asNeeded
+            ? `อัปเดต ${data.name} ในตู้ยาแล้ว`
+            : `ตั้งเวลาให้ ${data.name} แล้ว ใช้ข้อมูลและจำนวนคงเหลือเดิมจากตู้ยา`
+        );
+      } else {
+        commit({
+          ...state,
+          meds: [
+            ...state.meds,
+            {
+              ...data,
+              id: newId(),
+              stoppedAt: data.active ? null : todayKey(),
+              refillRequestedAt: null,
+              createdAt: new Date().toISOString(),
+            },
+          ],
+        });
+        toast.show(form?.mode === 'inventory' ? 'เพิ่มยาเข้าตู้ยาแล้ว' : 'เพิ่มยาแล้ว');
+      }
     }
     setForm(null);
   };
@@ -115,7 +131,6 @@ export const MedsPage: React.FC = () => {
     commit({
       meds: others,
       logs: state.logs.filter((l) => l.medId !== deleting.id),
-      extras: state.extras.filter((x) => x.medId !== deleting.id),
     });
     toast.show(`ลบ ${deleting.name} แล้ว`);
     setDeleting(null);
@@ -139,37 +154,6 @@ export const MedsPage: React.FC = () => {
     toast.show(status ? `บันทึก “${DOSE_STATUS_LABEL[status]}” แล้ว` : 'ล้างบันทึกแล้ว');
   };
 
-  /** บันทึกกินยานอกตาราง: ถ้าเป็นชื่อใหม่ จดเป็นยา "ไม่มีตารางประจำ" ไว้ให้ครั้งหน้าไม่ต้องกรอกซ้ำ */
-  const handleExtra = (input: ExtraDoseInput) => {
-    let base = state;
-    let med = input.med;
-    if (!med) {
-      const created = normalizeMed({
-        id: newId(),
-        name: input.name,
-        form: input.form,
-        unit: input.unit,
-        perDose: input.qty,
-        remaining: input.remaining,
-        periods: [],
-        asNeeded: true,
-        active: true,
-        lowStockDays: settings.reminders.lowStockDays,
-      });
-      base = { ...state, meds: [...state.meds, created] };
-      med = created;
-    }
-    const next = addExtraDose(base, med, input.qty, by, input.note);
-    commit(next);
-    setQuickLog(false);
-    const updated = next.meds.find((m) => m.id === med!.id);
-    toast.show(
-      updated && (input.med || input.remaining > 0)
-        ? `จดแล้ว · ${med.name} เหลือ ${formatQty(updated.remaining)} ${updated.unit}`
-        : `จดแล้ว · ครั้งหน้าพิมพ์ชื่อ “${med.name}” ระบบใช้ข้อมูลเดิมให้`
-    );
-  };
-
   const markRequested = (med: Medication) => {
     commit({
       ...state,
@@ -183,14 +167,17 @@ export const MedsPage: React.FC = () => {
     setForm({ mode: 'edit', id: med.id });
   };
 
+  const openSchedule = (med: Medication) => {
+    setDetailId(null);
+    setForm({ mode: 'new', fromId: med.id });
+  };
+
   const openRefill = (med: Medication) => {
     setDetailId(null);
     setRefilling(med);
   };
 
   const hasMeds = state.meds.length > 0;
-  const today = todayKey();
-  const todaysExtras = state.extras.filter((x) => x.at.slice(0, 10) === today || todayKey(new Date(x.at)) === today);
   const missedAlerts = alerts.filter((a) => a.kind === 'missed');
   const stockAlerts = alerts.filter((a) => a.kind !== 'missed');
 
@@ -201,18 +188,12 @@ export const MedsPage: React.FC = () => {
         title="ยาและการดูแล"
         description="ตารางใช้ยา ยาฉีดเบาหวาน สิ่งดูแลสุขภาพ และการแจ้งเตือน เห็นเฉพาะคุณคนเดียว"
         action={
-          <div className="grid grid-cols-2 sm:flex sm:flex-row gap-2 w-full sm:w-auto">
-            <Button type="button" variant="soft" onClick={() => setQuickLog(true)} className="w-full sm:w-auto">
+          hasMeds ? (
+            <Button type="button" onClick={() => setForm({ mode: 'new' })} className="w-full sm:w-auto">
               <Plus className="w-5 h-5" aria-hidden="true" />
-              <span className="truncate">บันทึกกินยา</span>
+              <span>เพิ่มยา / การดูแล</span>
             </Button>
-            {hasMeds && (
-              <Button type="button" onClick={() => setForm({ mode: 'new' })} className="w-full sm:w-auto">
-                <Plus className="w-5 h-5" aria-hidden="true" />
-                <span className="truncate">เพิ่มยา/ดูแล</span>
-              </Button>
-            )}
-          </div>
+          ) : undefined
         }
       />
 
@@ -227,6 +208,12 @@ export const MedsPage: React.FC = () => {
             <Plus className="w-5 h-5" aria-hidden="true" />
             <span>เพิ่มรายการแรก</span>
           </Button>
+          <div className="mt-3">
+            <Button type="button" variant="soft" onClick={() => setForm({ mode: 'inventory' })}>
+              <Plus className="w-5 h-5" aria-hidden="true" />
+              <span>เพิ่มยาเข้าตู้ยา (ไม่ตั้งเวลา)</span>
+            </Button>
+          </div>
         </Card>
       ) : (
         <>
@@ -305,67 +292,35 @@ export const MedsPage: React.FC = () => {
 
           <div id={`meds-panel-${tab}`} role="tabpanel" aria-labelledby={`meds-tab-${tab}`}>
             {tab === 'today' ? (
-              <div className="space-y-5">
-                <TodaySchedule meds={state.meds} logs={state.logs} onSet={handleDose} />
-                {todaysExtras.length > 0 && (
-                  <Card className="p-5 sm:p-6">
-                    <h2 className="text-lg font-bold text-slate-900 mb-3">กินนอกตารางวันนี้</h2>
-                    <ul className="divide-y divide-slate-200">
-                      {todaysExtras.map((x) => {
-                        const med = state.meds.find((m) => m.id === x.medId);
-                        return (
-                          <li key={x.id} className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
-                            <div className="min-w-0">
-                              <p className="text-base font-bold text-slate-900 break-words">{med?.name ?? 'ยา'}</p>
-                              <p className="text-sm text-slate-600">
-                                {new Date(x.at).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', hour12: false })} น.
-                                {' · '}
-                                {formatQty(x.qty)} {med?.unit ?? ''}
-                                {x.note ? ` · ${x.note}` : ''}
-                              </p>
-                            </div>
-                            <button
-                              type="button"
-                              aria-label={`ลบบันทึก ${med?.name ?? 'ยา'}`}
-                              onClick={() => {
-                                commit(removeExtraDose(state, x.id));
-                                toast.show('ลบบันทึกแล้ว คืนจำนวนยาให้แล้ว');
-                              }}
-                              className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-slate-500 hover:bg-red-50 hover:text-red-700 cursor-pointer"
-                            >
-                              <Trash2 className="w-5 h-5" aria-hidden="true" />
-                            </button>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </Card>
-                )}
-              </div>
+              <TodaySchedule meds={state.meds} logs={state.logs} onSet={handleDose} />
             ) : tab === 'cabinet' ? (
               <MedCabinet
                 meds={state.meds}
                 onOpen={(m) => setDetailId(m.id)}
                 onEdit={openEdit}
                 onRefill={openRefill}
+                onAdd={() => setForm({ mode: 'inventory' })}
               />
             ) : (
-              <MedReport meds={state.meds} logs={state.logs} extras={state.extras} onOpen={(m) => setDetailId(m.id)} />
+              <MedReport meds={state.meds} logs={state.logs} onOpen={(m) => setDetailId(m.id)} />
             )}
           </div>
         </>
       )}
+
+
+
 
       <MedFormModal
         open={form !== null}
         initial={editing}
         defaultLowStockDays={settings.reminders.lowStockDays}
         knownMeds={state.meds}
+        mode={form?.mode === 'inventory' ? 'inventory' : 'full'}
+        linkFrom={linkFrom}
         onSave={handleSave}
         onClose={() => setForm(null)}
       />
-
-      <ExtraDoseModal open={quickLog} meds={state.meds} onSave={handleExtra} onClose={() => setQuickLog(false)} />
 
       <MedDetailModal
         med={detail}
@@ -373,6 +328,7 @@ export const MedsPage: React.FC = () => {
         onEdit={openEdit}
         onDelete={setDeleting}
         onRefill={openRefill}
+        onSchedule={openSchedule}
         onClose={() => setDetailId(null)}
       />
 
