@@ -9,6 +9,11 @@ import { ConditionPicker } from '../ui/ConditionPicker';
 import { AttachmentList, AttachmentPicker } from '../ui/AttachmentPicker';
 import { Chip, FieldGroup } from '../ui/ChoiceChips';
 import { OTHER_ALLERGIES, SEVERITIES } from '../../data/onboardingOptions';
+import {
+  ALLERGY_SYMPTOM_SUGGESTIONS,
+  DRUG_SUGGESTIONS,
+  SUPPLEMENT_SUGGESTIONS,
+} from '../../data/suggestions';
 import { MEDICAL_CONDITIONS } from '../../data/medicalConditions';
 import { deleteFiles } from '../../lib/fileStore';
 import type { Attachment, DrugAllergy } from '../../lib/onboarding';
@@ -18,7 +23,7 @@ const severityLabel = (value: DrugAllergy['severity']) =>
   SEVERITIES.find((s) => s.value === value)?.label ?? '';
 
 /** ขั้นที่ 3: ประวัติการแพ้ */
-export const StepAllergies: React.FC<StepProps> = ({ profile, update }) => {
+export const StepAllergies: React.FC<StepProps> = ({ profile, update, errors, clearError }) => {
   const [drug, setDrug] = useState('');
   const [symptoms, setSymptoms] = useState('');
   const [severity, setSeverity] = useState<DrugAllergy['severity']>('moderate');
@@ -29,6 +34,7 @@ export const StepAllergies: React.FC<StepProps> = ({ profile, update }) => {
 
   const addDrugAllergy = () => {
     if (!canAdd) return;
+    clearError('ob-no-allergies');
     update({
       drugAllergies: [
         ...profile.drugAllergies,
@@ -47,6 +53,7 @@ export const StepAllergies: React.FC<StepProps> = ({ profile, update }) => {
   };
 
   const handleNoAllergies = (checked: boolean) => {
+    clearError('ob-no-allergies');
     if (checked) {
       // ติ๊ก "ไม่เคยแพ้" แล้วล้างรายการที่กรอกไว้ (รวมไฟล์แนบ) เพื่อไม่ให้ข้อมูลขัดแย้งกัน
       profile.drugAllergies.forEach((item) => void deleteFiles(item.attachments));
@@ -100,6 +107,7 @@ export const StepAllergies: React.FC<StepProps> = ({ profile, update }) => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <TextField
                   id="ob-drug-name"
+                  suggestions={DRUG_SUGGESTIONS}
                   label="ชื่อยาหรือสารที่แพ้"
                   autoComplete="off"
                   placeholder="เช่น เพนิซิลลิน, ซัลฟา"
@@ -108,6 +116,8 @@ export const StepAllergies: React.FC<StepProps> = ({ profile, update }) => {
                 />
                 <TextField
                   id="ob-drug-symptoms"
+                  suggestions={ALLERGY_SYMPTOM_SUGGESTIONS}
+                  suggestMode="list"
                   label="อาการที่เคยเป็น"
                   autoComplete="off"
                   placeholder="เช่น ผื่น, ปากบวม"
@@ -160,13 +170,21 @@ export const StepAllergies: React.FC<StepProps> = ({ profile, update }) => {
             label="แพ้อาหารและสิ่งอื่น ๆ"
             options={OTHER_ALLERGIES}
             value={profile.otherAllergies}
-            onChange={(v) => update({ otherAllergies: v })}
+            onChange={(v) => {
+              update({ otherAllergies: v });
+              clearError('ob-no-allergies');
+            }}
             customPlaceholder="พิมพ์สิ่งที่แพ้อื่น ๆ"
           />
         </>
       )}
 
-      <CheckboxField id="ob-no-allergies" checked={profile.noAllergies} onChange={handleNoAllergies}>
+      <CheckboxField
+        id="ob-no-allergies"
+        checked={profile.noAllergies}
+        onChange={handleNoAllergies}
+        error={errors['ob-no-allergies']}
+      >
         ฉันไม่เคยแพ้ยา อาหาร หรือสิ่งใดเลย
       </CheckboxField>
     </div>
@@ -174,7 +192,7 @@ export const StepAllergies: React.FC<StepProps> = ({ profile, update }) => {
 };
 
 /** ขั้นที่ 4: โรคและยาที่ใช้ */
-export const StepConditions: React.FC<StepProps> = ({ profile, update }) => (
+export const StepConditions: React.FC<StepProps> = ({ profile, update, errors, clearError }) => (
   <div className="space-y-8">
     <div className="space-y-4">
       <ConditionPicker
@@ -184,15 +202,20 @@ export const StepConditions: React.FC<StepProps> = ({ profile, update }) => (
         modalTitle="เลือกโรคประจำตัว"
         options={MEDICAL_CONDITIONS}
         value={profile.conditions}
-        onChange={(v) => update({ conditions: v })}
+        onChange={(v) => {
+          update({ conditions: v });
+          clearError('ob-no-conditions');
+        }}
         disabled={profile.noConditions}
       />
       <CheckboxField
         id="ob-no-conditions"
         checked={profile.noConditions}
-        onChange={(checked) =>
-          update(checked ? { noConditions: true, conditions: [] } : { noConditions: false })
-        }
+        error={errors['ob-no-conditions']}
+        onChange={(checked) => {
+          clearError('ob-no-conditions');
+          update(checked ? { noConditions: true, conditions: [] } : { noConditions: false });
+        }}
       >
         ฉันไม่มีโรคประจำตัว
       </CheckboxField>
@@ -200,6 +223,7 @@ export const StepConditions: React.FC<StepProps> = ({ profile, update }) => (
 
     <ChipsWithCustom
       id="ob-current-med"
+      suggestions={DRUG_SUGGESTIONS}
       label="ยาที่ใช้อยู่ตอนนี้"
       hint="ยังไม่มียาที่ใช้ประจำ รวมถึงยาที่ซื้อเองและยาทาหรือพ่น"
       options={[]}
@@ -211,6 +235,8 @@ export const StepConditions: React.FC<StepProps> = ({ profile, update }) => (
 
     <TextField
       id="ob-supplements"
+      suggestions={SUPPLEMENT_SUGGESTIONS}
+      suggestMode="list"
       label="วิตามิน อาหารเสริม และสมุนไพรที่กินเป็นประจำ"
       autoComplete="off"
       placeholder="เช่น วิตามินซี น้ำมันปลา ขมิ้นชัน"

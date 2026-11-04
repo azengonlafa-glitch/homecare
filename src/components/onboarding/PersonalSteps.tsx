@@ -33,7 +33,8 @@ export const StepPersonal: React.FC<StepProps> = ({ profile, update, errors, cle
     />
 
     <FieldGroup
-      label="วันเกิด"
+      label="ปีเกิด"
+      required
       hint="ขนาดยาและข้อห้ามใช้ยาขึ้นกับอายุ รู้แค่ปีเกิดก็กรอกได้"
       error={errors['ob-birth-year']}
     >
@@ -75,10 +76,16 @@ export const StepPersonal: React.FC<StepProps> = ({ profile, update, errors, cle
     </FieldGroup>
 
     <SingleChoiceChips
+      id="ob-gender"
       label="เพศ"
+      required
+      error={errors['ob-gender']}
       options={GENDERS}
       value={profile.gender}
-      onChange={(v) => update({ gender: v })}
+      onChange={(v) => {
+        update({ gender: v });
+        clearError('ob-gender');
+      }}
     />
 
     <SelectField
@@ -132,6 +139,7 @@ export const StepBody: React.FC<StepProps> = ({ profile, update, errors, clearEr
         id="ob-weight"
         name="weight"
         label="น้ำหนัก (กก.)"
+        labelSuffix="(จำเป็น)"
         inputMode="decimal"
         autoComplete="off"
         placeholder="เช่น 58"

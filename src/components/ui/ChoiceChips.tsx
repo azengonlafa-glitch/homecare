@@ -31,16 +31,22 @@ export const Chip: React.FC<{
 );
 
 interface FieldGroupProps {
+  /** ใส่ id เพื่อให้โฟกัสกลุ่มนี้ได้เมื่อตรวจพบว่ายังไม่ได้กรอก */
+  id?: string;
   label: string;
+  required?: boolean;
   hint?: string;
   error?: string;
   children: React.ReactNode;
 }
 
 /** กลุ่มตัวเลือก (fieldset + legend) สำหรับ chip ที่ไม่มี input เดี่ยวให้ผูก label */
-export const FieldGroup: React.FC<FieldGroupProps> = ({ label, hint, error, children }) => (
-  <fieldset className="space-y-2 min-w-0">
-    <legend className="text-base sm:text-lg font-bold text-slate-900 mb-2">{label}</legend>
+export const FieldGroup: React.FC<FieldGroupProps> = ({ id, label, required, hint, error, children }) => (
+  <fieldset id={id} tabIndex={id ? -1 : undefined} className="space-y-2 min-w-0 focus:outline-none">
+    <legend className="text-base sm:text-lg font-bold text-slate-900 mb-2">
+      {label}
+      {required && <span className="font-normal text-slate-500"> (จำเป็น)</span>}
+    </legend>
     {hint && <p className="text-sm sm:text-base text-slate-600 leading-snug">{hint}</p>}
     {children}
     {error && (
@@ -52,7 +58,10 @@ export const FieldGroup: React.FC<FieldGroupProps> = ({ label, hint, error, chil
 );
 
 interface SingleChoiceProps {
+  id?: string;
   label: string;
+  required?: boolean;
+  error?: string;
   hint?: string;
   options: ChipOption[];
   value: string;
@@ -66,7 +75,10 @@ interface SingleChoiceProps {
  * หากเลือก "อื่น ๆ" จะมีช่องพิมพ์ข้อความระบุเพิ่มเติมขึ้นมาให้อัตโนมัติ
  */
 export const SingleChoiceChips: React.FC<SingleChoiceProps> = ({
+  id,
   label,
+  required,
+  error,
   hint,
   options,
   value,
@@ -106,7 +118,7 @@ export const SingleChoiceChips: React.FC<SingleChoiceProps> = ({
   };
 
   return (
-    <FieldGroup label={label} hint={hint}>
+    <FieldGroup id={id} label={label} required={required} hint={hint} error={error}>
       <div className="flex flex-wrap gap-2">
         {options.map((option) => {
           const isSelected = option.value === otherOption?.value ? isOtherSelected : value === option.value;

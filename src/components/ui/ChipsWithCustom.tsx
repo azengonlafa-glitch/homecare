@@ -3,6 +3,7 @@ import { Plus, X } from 'lucide-react';
 import { Chip, FieldGroup, type ChipOption } from './ChoiceChips';
 import { Button } from './Button';
 import { fieldControlClass } from './Field';
+import { SuggestionList, useSuggestions, type SuggestionItem } from './Suggestions';
 
 interface ChipsWithCustomProps {
   id: string;
@@ -16,6 +17,8 @@ interface ChipsWithCustomProps {
   /** ข้อความช่วยใต้ช่องพิมพ์ */
   footer?: string;
   disabled?: boolean;
+  /** คำแนะนำที่ขึ้นขณะพิมพ์ กดเลือกแล้วเพิ่มเป็นแท็กทันที */
+  suggestions?: SuggestionItem[];
 }
 
 /** เลือกได้หลายตัวเลือก + พิมพ์เพิ่มเอง รายการที่พิมพ์เองแสดงเป็นแท็กที่ลบได้ */
@@ -29,6 +32,7 @@ export const ChipsWithCustom: React.FC<ChipsWithCustomProps> = ({
   customPlaceholder,
   footer,
   disabled,
+  suggestions,
 }) => {
   const [draft, setDraft] = useState('');
   const presetValues = options.map((o) => o.value);
@@ -37,12 +41,20 @@ export const ChipsWithCustom: React.FC<ChipsWithCustomProps> = ({
   const toggle = (optionValue: string) =>
     onChange(value.includes(optionValue) ? value.filter((v) => v !== optionValue) : [...value, optionValue]);
 
-  const addDraft = () => {
-    const text = draft.trim();
+  const addValue = (raw: string) => {
+    const text = raw.trim();
     if (!text) return;
     if (!value.includes(text)) onChange([...value, text]);
     setDraft('');
+    sg.setActive(-1);
+    sg.close();
   };
+  const addDraft = () => addValue(draft);
+  // ไม่แนะนำรายการที่เลือกไว้แล้ว
+  const sg = useSuggestions(
+    suggestions?.filter((s) => !value.includes(typeof s === 'string' ? s : s.value)),
+    draft
+  );
 
   return (
     <FieldGroup label={label} hint={hint}>
@@ -83,6 +95,7 @@ export const ChipsWithCustom: React.FC<ChipsWithCustomProps> = ({
       )}
 
       <div className="flex gap-2">
+        <div className="relative flex-1 min-w-0">
         <input
           id={id}
           type="text"
@@ -92,7 +105,27 @@ export const ChipsWithCustom: React.FC<ChipsWithCustomProps> = ({
           aria-label={`${label}: พิมพ์เพิ่มเอง`}
           placeholder={customPlaceholder}
           onChange={(e) => setDraft(e.target.value)}
+          onFocus={sg.onFocus}
+          onBlur={sg.onBlur}
           onKeyDown={(e) => {
+            if (sg.results.length > 0) {
+              if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                e.preventDefault();
+                const step = e.key === 'ArrowDown' ? 1 : -1;
+                sg.setActive((sg.active + step + sg.results.length) % sg.results.length);
+                return;
+              }
+              if (e.key === 'Escape') {
+                e.stopPropagation();
+                sg.close();
+                return;
+              }
+              if (e.key === 'Enter' && sg.active >= 0) {
+                e.preventDefault();
+                addValue(sg.results[sg.active].value);
+                return;
+              }
+            }
             if (e.key === 'Enter') {
               e.preventDefault(); // ไม่ให้ Enter ส่งฟอร์มทั้งหน้า
               addDraft();
@@ -100,6 +133,8 @@ export const ChipsWithCustom: React.FC<ChipsWithCustomProps> = ({
           }}
           className={fieldControlClass(false)}
         />
+        <SuggestionList id={id} items={sg.results} active={sg.active} onPick={addValue} />
+        </div>
         <Button
           type="button"
           variant="soft"

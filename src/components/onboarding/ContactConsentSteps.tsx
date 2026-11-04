@@ -6,6 +6,7 @@ import { Button } from '../ui/Button';
 import { FieldGroup } from '../ui/ChoiceChips';
 import { ConsentDocumentModal } from './ConsentDocumentModal';
 import { CONSENT_VERSION } from '../../data/consentDocument';
+import { RELATION_SUGGESTIONS } from '../../data/suggestions';
 import type { StepProps } from './stepTypes';
 
 /** ขั้นที่ 6: ติดต่อและที่อยู่ */
@@ -42,7 +43,7 @@ export const StepContact: React.FC<StepProps> = ({ profile, update, errors, clea
 
   return (
     <div className="space-y-6">
-      <FieldGroup label="ผู้ติดต่อฉุกเฉิน" hint="ใช้เมื่อเกิดเหตุฉุกเฉินเท่านั้น">
+      <FieldGroup label="ผู้ติดต่อฉุกเฉิน" required hint="ใช้เมื่อเกิดเหตุฉุกเฉินเท่านั้น ต้องกรอกชื่อและเบอร์โทร">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <TextField
             id="ob-emergency-name"
@@ -51,7 +52,11 @@ export const StepContact: React.FC<StepProps> = ({ profile, update, errors, clea
             autoComplete="off"
             placeholder="ชื่อ"
             value={profile.emergencyName}
-            onChange={(e) => update({ emergencyName: e.target.value })}
+            onChange={(e) => {
+              update({ emergencyName: e.target.value });
+              clearError('ob-emergency-name');
+            }}
+            error={errors['ob-emergency-name']}
           />
           <TextField
             id="ob-emergency-phone"
@@ -71,6 +76,7 @@ export const StepContact: React.FC<StepProps> = ({ profile, update, errors, clea
         </div>
         <TextField
           id="ob-emergency-relation"
+          suggestions={RELATION_SUGGESTIONS}
           label="ความสัมพันธ์กับผู้ติดต่อฉุกเฉิน"
           hideLabel
           autoComplete="off"
@@ -85,9 +91,14 @@ export const StepContact: React.FC<StepProps> = ({ profile, update, errors, clea
         name="street-address"
         autoComplete="street-address"
         label="ที่อยู่จัดส่ง"
+        labelSuffix="(จำเป็น)"
         hint="ใช้เป็นที่อยู่จัดส่งและจุดอ้างอิงตำแหน่งบ้านของคุณ"
         value={profile.address}
-        onChange={(e) => update({ address: e.target.value })}
+        onChange={(e) => {
+          update({ address: e.target.value });
+          clearError('ob-address');
+        }}
+        error={errors['ob-address']}
       />
 
       <div className="space-y-2">
