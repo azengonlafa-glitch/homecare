@@ -40,7 +40,10 @@ export const PostCard: React.FC<PostCardProps> = ({
   const [draft, setDraft] = useState('');
 
   const isMine = post.authorId === user.id;
-  const authorPhoto = isMine ? loadSettings().profile.photo : loadSettings().members.find((m) => m.id === post.authorId || m.name === post.authorName)?.photo;
+
+  const authorPhoto = isMine
+    ? loadSettings().profile.photo
+    : loadSettings().members.find((m) => m.id === post.authorId || m.name === post.authorName)?.photo;
   const liked = post.likes.includes(user.id);
   const commentsId = `comments-${post.id}`;
 
