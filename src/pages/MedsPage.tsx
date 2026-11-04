@@ -299,7 +299,6 @@ export const MedsPage: React.FC = () => {
                 onOpen={(m) => setDetailId(m.id)}
                 onEdit={openEdit}
                 onRefill={openRefill}
-                onAdd={() => setForm({ mode: 'inventory' })}
               />
             ) : (
               <MedReport meds={state.meds} logs={state.logs} onOpen={(m) => setDetailId(m.id)} />
@@ -310,6 +309,19 @@ export const MedsPage: React.FC = () => {
 
 
 
+
+      {/* ปุ่มเพิ่มยาเข้าตู้ยา (ไม่ตั้งเวลา) แยกจากปุ่ม "เพิ่มยา / การดูแล" ด้านบนให้ไม่สับสน */}
+      {hasMeds && tab === 'cabinet' && form === null && (
+        <button
+          type="button"
+          onClick={() => setForm({ mode: 'inventory' })}
+          aria-label="เพิ่มยาเข้าตู้ยา (ไม่ตั้งเวลา)"
+          title="เพิ่มยาเข้าตู้ยา (ไม่ตั้งเวลา)"
+          className="fixed bottom-28 lg:bottom-8 right-5 lg:right-8 z-30 inline-flex h-16 w-16 items-center justify-center rounded-full bg-purple-700 text-white shadow-xl shadow-purple-900/30 hover:bg-purple-800 active:scale-95 transition-transform cursor-pointer focus:outline-none focus:ring-4 focus:ring-purple-300"
+        >
+          <Plus className="w-8 h-8" aria-hidden="true" />
+        </button>
+      )}
 
       <MedFormModal
         open={form !== null}

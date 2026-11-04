@@ -1,6 +1,5 @@
 import React from 'react';
-import { Pill, Syringe, Droplets, Wind, FlaskConical, Layers, Package2, Circle, TestTube2, Plus } from 'lucide-react';
-import { Button } from '../ui/Button';
+import { Pill, Syringe, Droplets, Wind, FlaskConical, Layers, Package2, Circle, TestTube2 } from 'lucide-react';
 import { ExpiryBadge, StockBadge } from './StockBadge';
 import {
   PERIOD_LABEL,
@@ -18,7 +17,6 @@ interface MedCabinetProps {
   onOpen: (med: Medication) => void;
   onEdit: (med: Medication) => void;
   onRefill: (med: Medication) => void;
-  onAdd?: () => void;
 }
 
 /** ไอคอนประจำรูปแบบยา */
@@ -134,7 +132,7 @@ const MedGridCard: React.FC<{ med: Medication; onOpen: (m: Medication) => void }
 };
 
 /** ตู้ยา: แสดงเป็น grid การ์ดภาพ กดเข้าไปดูรายละเอียด */
-export const MedCabinet: React.FC<MedCabinetProps> = ({ meds, onOpen, onAdd }) => {
+export const MedCabinet: React.FC<MedCabinetProps> = ({ meds, onOpen }) => {
   const active = meds.filter((m) => m.active);
   const stopped = meds.filter((m) => !m.active);
 
@@ -147,36 +145,11 @@ export const MedCabinet: React.FC<MedCabinetProps> = ({ meds, onOpen, onAdd }) =
               กำลังใช้อยู่
               <span className="ml-2 text-sm font-medium text-slate-400">· {active.length} รายการ</span>
             </h2>
-            {onAdd && (
-              <Button
-                type="button"
-                variant="soft"
-                size="sm"
-                onClick={onAdd}
-                className="shrink-0 h-9 px-3 text-xs sm:text-sm font-semibold"
-              >
-                <Plus className="w-4 h-4" aria-hidden="true" />
-                <span>เพิ่มยาเข้าตู้</span>
-              </Button>
-            )}
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
             {active.map((med) => (
               <MedGridCard key={med.id} med={med} onOpen={onOpen} />
             ))}
-            {onAdd && (
-              <button
-                type="button"
-                onClick={onAdd}
-                className="group flex flex-col items-center justify-center gap-2.5 p-4 rounded-2xl border-2 border-dashed border-purple-300 bg-purple-50/40 hover:bg-purple-100/60 hover:border-purple-400 text-purple-700 font-bold transition-all active:scale-95 cursor-pointer min-h-[160px]"
-                aria-label="เพิ่มยาเข้าตู้ยา"
-              >
-                <div className="w-12 h-12 rounded-full bg-purple-100 group-hover:bg-purple-200 flex items-center justify-center text-purple-700 transition-colors">
-                  <Plus className="w-6 h-6" aria-hidden="true" />
-                </div>
-                <span className="text-sm font-semibold text-purple-900">เพิ่มยาเข้าตู้</span>
-              </button>
-            )}
           </div>
         </section>
       )}
