@@ -688,6 +688,8 @@ function handleRemovedFromHome() {
   if (!ctx) return;
   ctx.homeId = null;
   ctx.role = null;
+  // ข้อมูลของบ้านที่ค้างส่งอยู่ใช้ไม่ได้แล้ว (ไม่มีบ้านให้ส่งไป)
+  for (const store of Object.keys(ITEM_STORES) as StoreName[]) dirty.delete(store);
   clearHomeCaches();
   stopRealtime();
   startRealtime();
@@ -722,7 +724,9 @@ export async function signOutAll(): Promise<void> {
   stopPolling();
   setSyncHandler(null);
   ctx = null;
-  if (supabase) await supabase.auth.signOut();
+  // scope: 'local' = ออกเฉพาะเครื่อง/เบราว์เซอร์นี้ ค่าเริ่มต้น ('global') จะยกเลิกเซสชันของบัญชีนี้ทุกเครื่อง
+  // ทำให้หน้าอื่นหรืออุปกรณ์อื่นที่ล็อกอินอีเมลเดียวกันถูกเด้งออกไปด้วย
+  if (supabase) await supabase.auth.signOut({ scope: 'local' }).catch(() => undefined);
   wipeLocal();
   window.location.replace('/login');
 }
@@ -825,15 +829,16 @@ export const transferOwnership = (userId: string) =>
   homeRpc('transfer_ownership', { p_user: userId }).then(() => undefined);
 export const removeMember = (userId: string) => homeRpc('remove_member', { p_user: userId }).then(() => undefined);
 
+/** สมาชิกออกจากบ้านเอง (เจ้าของบ้านออกเองไม่ได้ ต้องมอบบทบาทหรือลบบ้านก่อน) */
 export async function leaveHome(): Promise<void> {
   const c = ctx;
-  if (!c) return;
-  await flush();
-  await removeMember(c.userId).catch(async (err) => {
-    // หลังออกสำเร็จ การดึงข้อมูลซ้ำจะพบว่าไม่ได้อยู่ในบ้านแล้ว ซึ่งไม่ใช่ข้อผิดพลาดจริง
-    if (ctx?.homeId) throw err;
-  });
-  if (ctx?.homeId) handleRemovedFromHome();
+  if (!c?.homeId) return;
+  // ส่งข้อมูลที่ค้างก่อน (ถ้าส่งไม่ได้ก็ไม่ขวางการออกจากบ้าน)
+  await flush().catch(() => undefined);
+  // เรียกฟังก์ชันตรง ๆ ไม่ดึงข้อมูลบ้านซ้ำ เพราะหลังออกแล้วจะไม่มีสิทธิ์อ่านข้อมูลบ้านนั้นอีก
+  const { error } = await requireClient().rpc('remove_member', { p_home: c.homeId, p_user: c.userId });
+  if (error) throw error;
+  handleRemovedFromHome();
 }
 
 /** ลบบ้านและข้อมูลทั้งหมดของบ้าน (เฉพาะผู้ดูแลหลัก) */
