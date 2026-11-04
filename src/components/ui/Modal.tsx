@@ -22,6 +22,24 @@ interface ModalProps {
   initialFocusSelector?: string;
 }
 
+/**
+ * ล็อกการเลื่อนหน้าแบบนับจำนวนหน้าต่างที่เปิดอยู่ คืนค่าเดิมเมื่อปิดครบทุกบาน
+ * (ถ้าแต่ละบานจำค่าก่อนหน้าเอง หน้าต่างที่ปิดทีหลังจะคืนค่า "hidden" ทำให้หน้าเว็บเลื่อนไม่ได้ค้าง)
+ */
+let scrollLocks = 0;
+let savedOverflow = '';
+function lockScroll() {
+  if (scrollLocks === 0) {
+    savedOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+  }
+  scrollLocks++;
+}
+function unlockScroll() {
+  scrollLocks = Math.max(0, scrollLocks - 1);
+  if (scrollLocks === 0) document.body.style.overflow = savedOverflow;
+}
+
 const FOCUSABLE =
   'a[href],button:not([disabled]),textarea:not([disabled]),input:not([disabled]),select:not([disabled]),[tabindex]:not([tabindex="-1"])';
 
@@ -45,8 +63,7 @@ export const Modal: React.FC<ModalProps> = ({
   useEffect(() => {
     if (!open) return;
     const previouslyFocused = document.activeElement as HTMLElement | null;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+    lockScroll();
 
     const target =
       (initialFocusSelector && dialogRef.current?.querySelector<HTMLElement>(initialFocusSelector)) ||
@@ -54,7 +71,7 @@ export const Modal: React.FC<ModalProps> = ({
     target?.focus();
 
     return () => {
-      document.body.style.overflow = previousOverflow;
+      unlockScroll();
       previouslyFocused?.focus?.();
     };
     // โฟกัสเฉพาะตอนเปิด/ปิดเท่านั้น
