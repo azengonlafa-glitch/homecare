@@ -6,7 +6,7 @@ import { loadSettings } from '../../lib/settings';
 import { AttachmentImage } from '../ui/AttachmentImage';
 import { MoodBadge } from './MoodPickerModal';
 import { cn } from '../../lib/cn';
-import { formatDateTime, type JournalPost, type JournalUser } from '../../lib/journal';
+import { formatDateTime, SELF_LABEL, type JournalPost, type JournalUser } from '../../lib/journal';
 import { SYMPTOM_DESCRIPTIONS } from '../../data/symptomDescriptions';
 
 interface PostCardProps {
@@ -68,9 +68,11 @@ export const PostCard: React.FC<PostCardProps> = ({
         <Avatar src={authorPhoto} name={post.authorName} className="w-11 h-11 text-base shadow-xs" />
         <div className="min-w-0 flex-1">
           <p className="text-lg font-bold text-slate-900 break-words">{post.authorName}</p>
-          <p className="text-sm text-slate-600">
-            บันทึกอาการของ <strong className="font-semibold">{post.about}</strong>
-          </p>
+          {post.about && post.about !== SELF_LABEL && post.about !== 'ตัวฉันเอง' && post.about !== post.authorName && (
+            <p className="text-sm text-slate-600">
+              บันทึกอาการของ <strong className="font-semibold">{post.about}</strong>
+            </p>
+          )}
           <p className="text-sm text-slate-500">
             <time dateTime={post.createdAt}>{formatDateTime(post.createdAt)}</time>
             {post.editedAt && <span> · แก้ไขเมื่อ {formatDateTime(post.editedAt)}</span>}
