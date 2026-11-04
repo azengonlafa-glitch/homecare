@@ -15,6 +15,7 @@ import { useMedAlerts, type MedAlert } from '../lib/medAlerts';
 import { applyDoseStatus, loadMeds, saveMeds } from '../lib/meds';
 import { CURRENT_MEMBER_ID, SETTINGS_CHANGED_EVENT, loadSettings } from '../lib/settings';
 import { SYMPTOMS, type MoodKey } from '../data/journalOptions';
+import { SYMPTOM_DESCRIPTIONS } from '../data/symptomDescriptions';
 import { deleteFiles } from '../lib/fileStore';
 import { loadHomeData } from '../lib/storage';
 import { cloudEnabled } from '../cloud/client';
@@ -377,6 +378,7 @@ export const JournalPage: React.FC = () => {
         onClose={closePicker}
         title="เลือกอาการที่พบ"
         options={SYMPTOMS}
+        descriptions={SYMPTOM_DESCRIPTIONS}
         value={draft.symptoms}
         searchPlaceholder="ค้นหาอาการ เช่น ปวดหัว ไอ มีไข้"
         listHeading="อาการทั้งหมด"

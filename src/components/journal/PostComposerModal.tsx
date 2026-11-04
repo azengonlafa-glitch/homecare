@@ -7,8 +7,10 @@ import { TextAreaField } from '../ui/TextAreaField';
 import { AttachmentPicker } from '../ui/AttachmentPicker';
 import { Chip, FieldGroup } from '../ui/ChoiceChips';
 import { MoodBadge } from './MoodPickerModal';
+import { SYMPTOM_TITLE_SUGGESTIONS } from '../../data/suggestions';
 import type { Attachment } from '../../lib/onboarding';
 import type { MoodKey } from '../../data/journalOptions';
+import { SYMPTOM_DESCRIPTIONS } from '../../data/symptomDescriptions';
 
 export interface PostDraft {
   about: string;
@@ -93,6 +95,7 @@ const ComposerDialog: React.FC<Omit<PostComposerModalProps, 'open'>> = ({
 
         <TextField
           id="jr-title"
+          suggestions={SYMPTOM_TITLE_SUGGESTIONS}
           label="หัวข้อโพสต์"
           labelSuffix="(ไม่บังคับ)"
           autoComplete="off"
@@ -122,7 +125,8 @@ const ComposerDialog: React.FC<Omit<PostComposerModalProps, 'open'>> = ({
               {draft.symptoms.map((item) => (
                 <li
                   key={item}
-                  className="inline-flex items-center gap-1 pl-4 pr-1 min-h-[44px] rounded-full bg-red-50 border border-red-200 text-red-900 text-base font-semibold"
+                  title={SYMPTOM_DESCRIPTIONS[item]}
+                  className="inline-flex items-center gap-1 pl-4 pr-1 min-h-[44px] rounded-full bg-red-50 border border-red-200 text-red-900 text-base font-semibold cursor-help"
                 >
                   <span>{item}</span>
                   <button

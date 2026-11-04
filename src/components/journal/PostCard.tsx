@@ -7,6 +7,7 @@ import { AttachmentImage } from '../ui/AttachmentImage';
 import { MoodBadge } from './MoodPickerModal';
 import { cn } from '../../lib/cn';
 import { formatDateTime, type JournalPost, type JournalUser } from '../../lib/journal';
+import { SYMPTOM_DESCRIPTIONS } from '../../data/symptomDescriptions';
 
 interface PostCardProps {
   post: JournalPost;
@@ -111,7 +112,8 @@ export const PostCard: React.FC<PostCardProps> = ({
               {post.symptoms.map((item) => (
                 <li
                   key={item}
-                  className="rounded-full bg-red-50 border border-red-200 px-3 py-1 text-base font-semibold text-red-900"
+                  title={SYMPTOM_DESCRIPTIONS[item]}
+                  className="rounded-full bg-red-50 border border-red-200 px-3 py-1 text-base font-semibold text-red-900 cursor-help"
                 >
                   {item}
                 </li>
