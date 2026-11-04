@@ -632,16 +632,17 @@ export const HomeSettingsPage: React.FC = () => {
 
           <Card className="p-6 sm:p-8">
             <SectionTitle title="รหัสชวน" hint="ให้ญาติกด “เข้าร่วมบ้าน” แล้วใส่รหัสนี้" />
-            <div className="rounded-2xl bg-purple-50 border border-purple-200 px-4 py-6 text-center">
+            <div className="rounded-2xl bg-purple-50 border border-purple-200 px-4 py-6 text-center [container-type:inline-size]">
               <p className="text-base font-semibold text-purple-900 flex items-center justify-center gap-1.5">
                 <MessageCircle className="w-5 h-5" aria-hidden="true" />
-                รหัสชวน 6 หลัก
+                รหัสชวน 8 หลัก
               </p>
-              <p className="mt-2 text-4xl sm:text-5xl font-extrabold tracking-[0.15em] text-purple-700 whitespace-nowrap select-all">
+              {/* ขนาดตัวเลขปรับตามความกว้างกล่อง เลขจึงไม่ล้นแม้จอหรือกล่องแคบ */}
+              <p className="mt-2 text-[clamp(1.5rem,11cqw,3rem)] leading-tight font-extrabold tracking-[0.08em] text-purple-700 whitespace-nowrap select-all">
                 {shownCode}
               </p>
             </div>
-            <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="mt-4 grid grid-cols-[repeat(auto-fit,minmax(11rem,1fr))] gap-3">
               <Button fullWidth onClick={handleShare}>
                 <Share2 className="w-6 h-6" aria-hidden="true" />
                 <span>ชวนทางไลน์</span>
