@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { BrandMark } from './BrandMark';
+import { HomeHeader } from './HomeHeader';
 import { NAV_GROUP_META, NAV_ITEMS, type NavGroup } from './navItems';
 import { cn } from '../../lib/cn';
 import { canManageHome } from '../../lib/settings';
@@ -16,8 +16,8 @@ export const Sidebar: React.FC = () => {
   const isOwner = canManageHome(useSettings());
   return (
     <aside className="hidden lg:flex lg:w-64 2xl:w-72 shrink-0 flex-col sticky top-0 h-dvh bg-white border-r border-slate-200">
-      <div className="h-20 shrink-0 flex items-center px-4 lg:px-6 border-b border-slate-200">
-        <BrandMark />
+      <div className="shrink-0 flex items-center border-b border-slate-200">
+        <HomeHeader variant="sidebar" />
       </div>
 
       <nav aria-label="เมนูหลัก" className="flex-1 overflow-y-auto p-4">

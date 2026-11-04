@@ -1,7 +1,7 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { LogIn } from 'lucide-react';
-import { BrandMark } from './BrandMark';
+import { HomeHeader } from './HomeHeader';
 import { Avatar } from '../ui/Avatar';
 import { NotificationBell } from './NotificationBell';
 
@@ -16,8 +16,8 @@ interface TopBarProps {
 export const TopBar: React.FC<TopBarProps> = ({ user, photo, onLogout }) => (
   <header className="sticky top-0 z-40 h-20 bg-white/95 backdrop-blur-md border-b border-slate-200">
     <div className="h-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
-      <div className="lg:hidden min-w-0 max-[419px]:[&_span]:hidden">
-        <BrandMark />
+      <div className="lg:hidden min-w-0 flex-1">
+        <HomeHeader variant="topbar" />
       </div>
       <p className="hidden lg:block text-base font-medium text-slate-600">ดูแลยาและสุขภาพของครอบครัว</p>
 
