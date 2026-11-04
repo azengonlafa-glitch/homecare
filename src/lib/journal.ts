@@ -73,6 +73,8 @@ export function loadPosts(): JournalPost[] {
   return [];
 }
 
+export const JOURNAL_CHANGED_EVENT = 'growa-journal-changed';
+
 export function savePosts(posts: JournalPost[]): void {
   try {
     localStorage.setItem(JOURNAL_KEY, JSON.stringify(posts));
@@ -80,6 +82,9 @@ export function savePosts(posts: JournalPost[]): void {
     console.error('Failed to save journal to localStorage', err);
   }
   queueSync('journal');
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event(JOURNAL_CHANGED_EVENT));
+  }
 }
 
 export function clearJournal(): void {

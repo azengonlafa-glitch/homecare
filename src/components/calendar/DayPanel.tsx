@@ -15,6 +15,7 @@ interface DayPanelProps {
   onCreate: () => void;
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
+  onChangeColor?: (id: string, color: import('../../lib/calendar').EventColor) => void;
   onToggleVolunteer: (id: string) => void;
   onAddComment: (id: string, text: string) => void;
   onDeleteComment: (id: string, commentId: string) => void;

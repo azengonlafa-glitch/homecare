@@ -17,7 +17,6 @@ import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Avatar } from '../components/ui/Avatar';
 import { Modal } from '../components/ui/Modal';
-import { Chip } from '../components/ui/ChoiceChips';
 import { TextField } from '../components/ui/TextField';
 import { useToast } from '../components/ui/Toast';
 import { cn } from '../lib/cn';
@@ -41,12 +40,23 @@ import {
   ACCESS_CHANGED_EVENT,
   canEditMember,
   canViewMember,
-  decideRequest,
   requestAccess,
   requestsFor,
   useAccessRequests,
 } from '../lib/access';
-import { PERIOD_LABEL, PERIODS, type DosePeriod } from '../lib/meds';
+import {
+  FORM_OPTIONS,
+  PERIOD_LABEL,
+  formatMedForm,
+  formatQty,
+  instructionText,
+  todayKey,
+  type DosePeriod,
+  type Medication,
+} from '../lib/meds';
+import { REQUEST_MESSAGE_SUGGESTIONS } from '../data/suggestions';
+import { MedFormModal, type MedFormData } from '../components/meds/MedFormModal';
+import { getMemberTodayMood } from '../lib/memberMood';
 
 const DEFAULT_TIME: Record<DosePeriod, string> = {
   morning: '08:00',
@@ -56,6 +66,58 @@ const DEFAULT_TIME: Record<DosePeriod, string> = {
 };
 
 const newMedId = () => `med-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+
+/** แปลงรายการยาของสมาชิกเป็นข้อมูลที่ฟอร์มยาใช้ (ถ้าไม่มีข้อมูลละเอียดจะเดาจากสรุปที่มี) */
+function medFromMember(m: MemberMed): Medication {
+  const base = {
+    id: m.id,
+    stoppedAt: null,
+    refillRequestedAt: null,
+    createdAt: '',
+  };
+  if (m.detail) return { ...base, ...m.detail };
+  const match = /^([\d.]+)\s*(.*)$/.exec(m.dose.trim());
+  const form = FORM_OPTIONS.find((f) => f.label === m.form);
+  return {
+    ...base,
+    name: m.name,
+    form: form?.value ?? 'tablet',
+    perDose: match ? parseFloat(match[1]) || 1 : 1,
+    unit: match?.[2] || form?.unit || 'เม็ด',
+    meal: 'after',
+    periods: m.periods,
+    times: m.times,
+    weekdays: [],
+    startDate: todayKey(),
+    durationDays: null,
+    active: true,
+    remaining: 0,
+    lowStockDays: 3,
+    lastRefillDate: '',
+    refillsRemaining: null,
+    condition: m.condition ?? '',
+    reason: '',
+    drugRef: '',
+    pillPhoto: null,
+    labelPhoto: null,
+    note: '',
+  };
+}
+
+/** แปลงข้อมูลจากฟอร์มยากลับเป็นรายการของสมาชิก พร้อมสรุปสั้นสำหรับแสดงในหน้ารายละเอียด */
+function memberMedFromForm(id: string, data: MedFormData): MemberMed {
+  return {
+    id,
+    name: data.name,
+    dose: `${formatQty(data.perDose)} ${data.unit}`,
+    periods: data.periods,
+    times: data.times,
+    form: formatMedForm(data),
+    condition: data.condition,
+    instruction: instructionText(data),
+    detail: data,
+  };
+}
 
 const SectionTitle: React.FC<{ icon: React.ComponentType<{ className?: string }>; children: React.ReactNode }> = ({
   icon: Icon,
@@ -104,6 +166,7 @@ const RequestDialog: React.FC<{
         </p>
         <TextField
           id="request-message"
+          suggestions={REQUEST_MESSAGE_SUGGESTIONS}
           label="ข้อความบอกเหตุผล"
           value={message}
           onChange={(e) => setMessage(e.target.value)}
@@ -124,18 +187,27 @@ const ScheduleDialog: React.FC<{
 }> = ({ record, memberName, onClose, onSave }) => {
   const [meds, setMeds] = useState<MemberMed[]>(record.meds);
   const [note, setNote] = useState(record.health.note);
+  /** 'new' = เพิ่มรายการใหม่, MemberMed = แก้รายการนั้น, null = อยู่หน้ารายการ */
+  const [editing, setEditing] = useState<MemberMed | 'new' | null>(null);
 
-  const patch = (id: string, changes: Partial<MemberMed>) =>
-    setMeds((prev) => prev.map((m) => (m.id === id ? { ...m, ...changes } : m)));
-
-  const togglePeriod = (med: MemberMed, period: DosePeriod) => {
-    const has = med.periods.includes(period);
-    const periods = has ? med.periods.filter((p) => p !== period) : [...med.periods, period];
-    patch(med.id, {
-      periods,
-      times: has ? med.times : { ...med.times, [period]: med.times[period] ?? DEFAULT_TIME[period] },
-    });
-  };
+  // เปิดฟอร์มยาเดียวกับหน้า "ยาและการดูแล" (แทนที่หน้ารายการชั่วคราว)
+  if (editing) {
+    const current = editing === 'new' ? null : editing;
+    return (
+      <MedFormModal
+        open
+        initial={current ? medFromMember(current) : null}
+        defaultLowStockDays={3}
+        conditionSuggestions={record.health.conditions}
+        onClose={() => setEditing(null)}
+        onSave={(data) => {
+          const saved = memberMedFromForm(current?.id ?? newMedId(), data);
+          setMeds((prev) => (current ? prev.map((m) => (m.id === saved.id ? saved : m)) : [...prev, saved]));
+          setEditing(null);
+        }}
+      />
+    );
+  }
 
   return (
     <Modal
@@ -157,71 +229,47 @@ const ScheduleDialog: React.FC<{
         {meds.length === 0 && <p className="text-base text-slate-600">ยังไม่มีรายการยาในตาราง เพิ่มรายการแรกได้เลย</p>}
 
         {meds.map((med) => (
-          <div key={med.id} className="rounded-2xl border border-slate-200 p-4 space-y-3 bg-slate-50/50">
-            <div className="flex items-start gap-2">
-              <div className="flex-1 space-y-3">
-                <TextField
-                  id={`med-name-${med.id}`}
-                  label="ชื่อยา หรือสิ่งดูแล (เช่น ยาลดความดัน, ยาฉีดเบาหวาน)"
-                  value={med.name}
-                  onChange={(e) => patch(med.id, { name: e.target.value })}
-                />
-                <TextField
-                  id={`med-dose-${med.id}`}
-                  label="ขนาดที่ใช้ต่อครั้ง (เช่น 1 เม็ด, 10 ยูนิต)"
-                  value={med.dose}
-                  onChange={(e) => patch(med.id, { dose: e.target.value })}
-                />
-              </div>
-              <button
-                type="button"
-                aria-label={`ลบ ${med.name || 'รายการยา'}`}
-                onClick={() => setMeds((prev) => prev.filter((m) => m.id !== med.id))}
-                className="mt-8 inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 cursor-pointer transition-colors"
-              >
-                <Trash2 className="w-5 h-5" aria-hidden="true" />
-              </button>
-            </div>
-
-            <div>
-              <p className="mb-2 text-sm font-bold text-slate-700">ช่วงเวลา / มื้อ</p>
-              <div className="flex flex-wrap gap-2">
-                {PERIODS.map((p) => (
-                  <Chip key={p.value} selected={med.periods.includes(p.value)} onClick={() => togglePeriod(med, p.value)}>
-                    {p.label}
-                  </Chip>
-                ))}
-              </div>
-            </div>
-
-            {med.periods.length > 0 && (
-              <div className="space-y-2 pt-2 border-t border-slate-200">
+          <div key={med.id} className="flex items-start gap-2 rounded-2xl border border-slate-200 p-4 bg-slate-50/50">
+            <div className="min-w-0 flex-1">
+              <p className="text-base sm:text-lg font-bold text-slate-900 break-words">{med.name}</p>
+              <p className="text-sm font-medium text-slate-600">
+                ครั้งละ {med.dose}
+                {med.instruction ? ` · ${med.instruction}` : ''}
+              </p>
+              <ul className="mt-2 flex flex-wrap gap-2">
                 {med.periods.map((p) => (
-                  <label key={p} className="flex min-h-[48px] items-center justify-between gap-3">
-                    <span className="text-base text-slate-700 font-medium">เวลา {PERIOD_LABEL[p]}</span>
-                    <input
-                      type="time"
-                      value={med.times[p] ?? DEFAULT_TIME[p]}
-                      onChange={(e) => patch(med.id, { times: { ...med.times, [p]: e.target.value } })}
-                      className="min-h-[48px] rounded-xl border border-slate-300 px-3 text-base bg-white"
-                    />
-                  </label>
+                  <li
+                    key={p}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-purple-200 bg-purple-50 px-3 py-1 text-sm font-bold text-purple-900"
+                  >
+                    <Clock className="w-3.5 h-3.5 text-purple-600 shrink-0" aria-hidden="true" />
+                    <span>
+                      {PERIOD_LABEL[p]} · {med.times[p] ?? DEFAULT_TIME[p]} น.
+                    </span>
+                  </li>
                 ))}
-              </div>
-            )}
+              </ul>
+            </div>
+            <button
+              type="button"
+              aria-label={`แก้ไข ${med.name || 'รายการยา'}`}
+              onClick={() => setEditing(med)}
+              className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-100 cursor-pointer transition-colors"
+            >
+              <PencilLine className="w-5 h-5" aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              aria-label={`ลบ ${med.name || 'รายการยา'}`}
+              onClick={() => setMeds((prev) => prev.filter((m) => m.id !== med.id))}
+              className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 cursor-pointer transition-colors"
+            >
+              <Trash2 className="w-5 h-5" aria-hidden="true" />
+            </button>
           </div>
         ))}
 
-        <Button
-          variant="soft"
-          fullWidth
-          onClick={() =>
-            setMeds((prev) => [
-              ...prev,
-              { id: newMedId(), name: '', dose: '1 เม็ด', periods: ['morning'], times: { morning: DEFAULT_TIME.morning } },
-            ])
-          }
-        >
+        <Button variant="soft" fullWidth onClick={() => setEditing('new')}>
           + เพิ่มรายการยา / การดูแล
         </Button>
 
@@ -303,18 +351,6 @@ export const MemberDetailPage: React.FC = () => {
     toast.show(`ส่งคำขอไปหา ${member.name} แล้ว รอการอนุมัติ`);
   };
 
-  const answerAsTarget = (decision: 'once' | 'always' | 'denied') => {
-    if (!latestEditRequest) return;
-    decideRequest(latestEditRequest.id, decision);
-    toast.show(
-      decision === 'denied'
-        ? `ไม่อนุญาตให้ ${member.name} แก้ไขข้อมูล`
-        : decision === 'once'
-          ? `อนุญาตครั้งนี้แล้ว · ${member.name} เข้าไปแก้ไขได้ 1 ครั้ง`
-          : `อนุญาตตลอดแล้ว · ${member.name} แก้ไขข้อมูลได้ทุกเมื่อ`
-    );
-  };
-
   const saveSchedule = (nextMeds: MemberMed[], note: string) => {
     const updated: MemberRecord = {
       ...record,
@@ -326,6 +362,8 @@ export const MemberDetailPage: React.FC = () => {
     setDialog(null);
     toast.show('บันทึกตารางยาและการดูแลแล้ว');
   };
+
+  const todayMood = getMemberTodayMood(member.id, member.name, record);
 
   return (
     <div className="mx-auto w-full max-w-5xl space-y-5">
@@ -350,6 +388,20 @@ export const MemberDetailPage: React.FC = () => {
                   <span aria-hidden="true" className={cn('h-2 w-2 rounded-full', ROLE_META[member.role].dot)} />
                   {ROLE_META[member.role].label}
                 </span>
+                {todayMood && (
+                  <span
+                    className={cn(
+                      'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm font-bold',
+                      todayMood.toneBadge
+                    )}
+                  >
+                    <todayMood.Icon className="w-4 h-4 shrink-0" aria-hidden="true" />
+                    <span>
+                      อารมณ์วันนี้: {todayMood.label}
+                      {todayMood.detail ? ` (${todayMood.detail})` : ''}
+                    </span>
+                  </span>
+                )}
               </div>
               <p className="mt-0.5 text-sm sm:text-base text-slate-600">
                 {isMe ? 'ฉัน' : member.relation} · {record.age ? `${record.age} ปี` : 'ไม่ระบุอายุ'} ·{' '}
@@ -373,22 +425,11 @@ export const MemberDetailPage: React.FC = () => {
                   </Button>
                 </div>
               ) : latestEditRequest?.decision === 'pending' ? (
-                <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 text-amber-800 text-sm font-bold border border-amber-200">
-                    <span>รอ {member.name} อนุมัติ</span>
-                  </span>
-                  <div className="flex items-center gap-1.5">
-                    <Button size="sm" onClick={() => answerAsTarget('once')}>
-                      อนุญาตครั้งนี้
-                    </Button>
-                    <Button size="sm" variant="soft" onClick={() => answerAsTarget('always')}>
-                      อนุญาตตลอด
-                    </Button>
-                    <Button size="sm" variant="neutral" onClick={() => answerAsTarget('denied')}>
-                      ไม่อนุญาต
-                    </Button>
-                  </div>
-                </div>
+                /* ผู้ขอทำได้แค่รอ เจ้าของข้อมูลเป็นคนตอบเองผ่านกระดิ่งแจ้งเตือน */
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 text-amber-800 text-sm font-bold border border-amber-200">
+                  <Clock className="w-4 h-4" aria-hidden="true" />
+                  <span>ส่งคำขอแล้ว · รอ {member.name} ตอบ</span>
+                </span>
               ) : (
                 <Button size="sm" onClick={() => setDialog('edit')}>
                   <Send className="w-4 h-4" aria-hidden="true" />

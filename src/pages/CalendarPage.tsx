@@ -18,6 +18,8 @@ import {
   loadEvents,
   parseKey,
   saveEvents,
+  getEventColorMeta,
+  type EventColor,
   type CalendarEvent,
   type Occurrence,
 } from '../lib/calendar';
@@ -244,6 +246,9 @@ export const CalendarPage: React.FC = () => {
       ],
     }));
 
+  const changeColor = (id: string, color: EventColor) =>
+    patchEvent(id, (ev) => ({ ...ev, color, updatedAt: new Date().toISOString() }));
+
   const deleteComment = (id: string, commentId: string) =>
     patchEvent(id, (ev) => ({ ...ev, comments: ev.comments.filter((c) => c.id !== commentId) }));
 
@@ -294,7 +299,7 @@ export const CalendarPage: React.FC = () => {
                     key={`${occ.event.id}-${occ.dayIndex}`}
                     className={cn(
                       'flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs font-semibold truncate',
-                      occ.event.important ? 'bg-red-100 text-red-900' : 'bg-amber-100 text-amber-950'
+                      occ.event.important ? 'bg-red-100 text-red-900' : `${getEventColorMeta(occ.event.color, occ.event.important).chipBg} ${getEventColorMeta(occ.event.color, occ.event.important).chipText}`
                     )}
                   >
                     {occ.event.important && <Flag className="w-3 h-3 shrink-0 fill-current" />}
@@ -316,7 +321,7 @@ export const CalendarPage: React.FC = () => {
                     key={`${occ.event.id}-${occ.dayIndex}`}
                     className={cn(
                       'w-2 h-2 rounded-full',
-                      occ.event.important ? 'bg-red-500' : 'bg-amber-400'
+                      getEventColorMeta(occ.event.color, occ.event.important).dotBg
                     )}
                   />
                 ))}
@@ -499,6 +504,7 @@ export const CalendarPage: React.FC = () => {
           onToggleVolunteer={toggleVolunteer}
           onAddComment={addComment}
           onDeleteComment={deleteComment}
+          onChangeColor={changeColor}
         />
       </div>
 

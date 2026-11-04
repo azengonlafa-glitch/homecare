@@ -1,4 +1,11 @@
-import { MEDS_CHANGED_EVENT, formatMedForm, instructionText, loadMeds, type DosePeriod } from './meds';
+import {
+  MEDS_CHANGED_EVENT,
+  formatMedForm,
+  instructionText,
+  loadMeds,
+  type DosePeriod,
+  type Medication,
+} from './meds';
 import { loadOnboarding, ONBOARDING_CHANGED_EVENT, isOnboardingDone } from './onboarding';
 import { cloudEnabled } from '../cloud/client';
 import { queueSync } from '../cloud/queue';
@@ -26,7 +33,11 @@ export interface MemberMed {
   form?: string;
   condition?: string;
   instruction?: string;
+  /** ข้อมูลยาแบบละเอียดจากฟอร์มเดียวกับตู้ยา (ใช้เปิดแก้ไขต่อ) */
+  detail?: MemberMedDetail;
 }
+
+export type MemberMedDetail = Omit<Medication, 'id' | 'createdAt' | 'refillRequestedAt' | 'stoppedAt'>;
 
 export interface HealthHistoryItem {
   id: string;
@@ -55,6 +66,11 @@ export interface MemberRecord {
   sharing: MemberSharing;
   health: MemberHealth;
   meds: MemberMed[];
+  todayMood?: {
+    date: string;
+    main: import('../data/journalOptions').MoodKey;
+    details: string[];
+  } | null;
 }
 
 const RECORDS_KEY = 'growa_member_records_v1';

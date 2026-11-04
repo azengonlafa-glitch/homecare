@@ -34,12 +34,130 @@ export interface EventComment {
   createdAt: string;
 }
 
+export type EventColor =
+  | 'amber'
+  | 'purple'
+  | 'blue'
+  | 'emerald'
+  | 'rose'
+  | 'orange'
+  | 'pink'
+  | 'teal'
+  | 'indigo';
+
+export interface EventColorItem {
+  key: EventColor;
+  label: string;
+  borderLeft: string;
+  chipBg: string;
+  chipText: string;
+  dotBg: string;
+  swatchBg: string;
+}
+
+export const EVENT_COLORS: EventColorItem[] = [
+  {
+    key: 'amber',
+    label: 'สีเหลืองทอง',
+    borderLeft: 'border-l-amber-400',
+    chipBg: 'bg-amber-100',
+    chipText: 'text-amber-950',
+    dotBg: 'bg-amber-400',
+    swatchBg: 'bg-amber-400',
+  },
+  {
+    key: 'purple',
+    label: 'สีม่วง',
+    borderLeft: 'border-l-purple-600',
+    chipBg: 'bg-purple-100',
+    chipText: 'text-purple-950',
+    dotBg: 'bg-purple-600',
+    swatchBg: 'bg-purple-600',
+  },
+  {
+    key: 'blue',
+    label: 'สีฟ้า',
+    borderLeft: 'border-l-blue-500',
+    chipBg: 'bg-blue-100',
+    chipText: 'text-blue-950',
+    dotBg: 'bg-blue-500',
+    swatchBg: 'bg-blue-500',
+  },
+  {
+    key: 'emerald',
+    label: 'สีเขียว',
+    borderLeft: 'border-l-emerald-500',
+    chipBg: 'bg-emerald-100',
+    chipText: 'text-emerald-950',
+    dotBg: 'bg-emerald-500',
+    swatchBg: 'bg-emerald-500',
+  },
+  {
+    key: 'rose',
+    label: 'สีแดง',
+    borderLeft: 'border-l-rose-500',
+    chipBg: 'bg-rose-100',
+    chipText: 'text-rose-950',
+    dotBg: 'bg-rose-500',
+    swatchBg: 'bg-rose-500',
+  },
+  {
+    key: 'orange',
+    label: 'สีส้ม',
+    borderLeft: 'border-l-orange-500',
+    chipBg: 'bg-orange-100',
+    chipText: 'text-orange-950',
+    dotBg: 'bg-orange-500',
+    swatchBg: 'bg-orange-500',
+  },
+  {
+    key: 'pink',
+    label: 'สีชมพู',
+    borderLeft: 'border-l-pink-500',
+    chipBg: 'bg-pink-100',
+    chipText: 'text-pink-950',
+    dotBg: 'bg-pink-500',
+    swatchBg: 'bg-pink-500',
+  },
+  {
+    key: 'teal',
+    label: 'สีเขียวอมฟ้า',
+    borderLeft: 'border-l-teal-500',
+    chipBg: 'bg-teal-100',
+    chipText: 'text-teal-950',
+    dotBg: 'bg-teal-500',
+    swatchBg: 'bg-teal-500',
+  },
+  {
+    key: 'indigo',
+    label: 'สีคราม',
+    borderLeft: 'border-l-indigo-500',
+    chipBg: 'bg-indigo-100',
+    chipText: 'text-indigo-950',
+    dotBg: 'bg-indigo-500',
+    swatchBg: 'bg-indigo-500',
+  },
+];
+
+export function getEventColorMeta(color?: EventColor, important?: boolean): EventColorItem {
+  if (color) {
+    const found = EVENT_COLORS.find((c) => c.key === color);
+    if (found) return found;
+  }
+  if (important) {
+    return EVENT_COLORS.find((c) => c.key === 'rose')!;
+  }
+  return EVENT_COLORS[0];
+}
+
 export interface CalendarEvent {
   id: string;
   title: string;
   description: string;
   /** ปักธงแดง = สำคัญ */
   important: boolean;
+  /** สีแถบของกิจกรรม */
+  color?: EventColor;
   tags: string[];
   allDay: boolean;
   /** yyyy-mm-dd */
@@ -261,6 +379,8 @@ export function loadEvents(): CalendarEvent[] {
   return [];
 }
 
+export const CALENDAR_CHANGED_EVENT = 'growa-calendar-changed';
+
 export function saveEvents(events: CalendarEvent[]): void {
   try {
     localStorage.setItem(CALENDAR_KEY, JSON.stringify(events));
@@ -268,6 +388,9 @@ export function saveEvents(events: CalendarEvent[]): void {
     console.error('Failed to save calendar to localStorage', err);
   }
   queueSync('calendar');
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event(CALENDAR_CHANGED_EVENT));
+  }
 }
 
 export function clearCalendar(): void {
