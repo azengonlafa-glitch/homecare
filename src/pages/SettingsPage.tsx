@@ -11,7 +11,8 @@ import { pendingIncoming } from '../lib/access';
 import { resetDemoState } from '../lib/demo';
 import { FEEDBACK_URL } from '../lib/config';
 import { cloudEnabled } from '../cloud/client';
-import { explainError, getCtx, leaveHome, signOutAll } from '../cloud/engine';
+import { clearHomeCaches, deleteHome, explainError, getCtx, leaveHome, signOutAll } from '../cloud/engine';
+import { clearHomeSetup } from '../lib/homeSetup';
 import { useToast } from '../components/ui/Toast';
 
 interface SettingsRowProps {
@@ -65,7 +66,11 @@ export const SettingsPage: React.FC = () => {
   ].filter(Boolean).length;
 
   const toast = useToast();
-  const canLeaveHome = cloudEnabled && getCtx()?.homeId && getCtx()?.role !== 'owner';
+  const hasHomeNow = cloudEnabled ? !!getCtx()?.homeId : true;
+  // ผู้ดูแลหลักออกจากบ้านตรง ๆ ไม่ได้ (เซิร์ฟเวอร์ไม่อนุญาต) ต้องมอบบทบาทหรือลบบ้านก่อน
+  const isOwner = cloudEnabled && getCtx()?.role === 'owner';
+  // ผู้ดูแลหลักที่อยู่คนเดียวในบ้าน: ออกจากบ้านได้ด้วยการลบบ้านนั้นทิ้ง (ไม่มีใครให้มอบบทบาทต่อ)
+  const isSoloOwner = isOwner && settings.members.length <= 1;
 
   const handleLogout = () => {
     if (cloudEnabled) {
@@ -76,13 +81,40 @@ export const SettingsPage: React.FC = () => {
     navigate('/login', { replace: true });
   };
 
+  /** ออกจากบ้านนี้ แล้วพาไปหน้ากรอกรหัสบ้านหรือสร้างบ้านใหม่ (ยังล็อกอินอยู่) */
   const handleLeaveHome = async () => {
+    if (cloudEnabled) {
+      try {
+        // สำเร็จแล้วระบบจะพาไปหน้า /setup เอง
+        await leaveHome();
+      } catch (err) {
+        setConfirm(null);
+        toast.show(explainError(err), { tone: 'error' });
+      }
+      return;
+    }
+    clearHomeSetup();
+    clearHomeCaches();
+    setConfirm(null);
+    navigate('/setup', { replace: true });
+  };
+
+  const handleDeleteAndLeave = async () => {
     try {
-      await leaveHome();
+      await deleteHome();
     } catch (err) {
       setConfirm(null);
       toast.show(explainError(err), { tone: 'error' });
+      return;
     }
+    localStorage.removeItem('growa_last_visited_path');
+    setConfirm(null);
+    navigate('/setup', { replace: true });
+  };
+
+  const goManageHome = () => {
+    setConfirm(null);
+    navigate('/home-settings');
   };
 
   const handleReset = () => {
@@ -146,30 +178,36 @@ export const SettingsPage: React.FC = () => {
       <div className="pt-2">
         <button
           type="button"
-          onClick={() => setConfirm('logout')}
+          onClick={() => setConfirm('leave')}
           className="w-full inline-flex items-center justify-center gap-2 min-h-[58px] px-6 rounded-2xl sm:rounded-full bg-red-600 hover:bg-red-700 active:bg-red-800 text-white text-lg font-bold shadow-sm shadow-red-200 transition-colors cursor-pointer"
         >
           <LogOut className="w-6 h-6" aria-hidden="true" />
-          <span>ออกจากระบบ</span>
+          <span>ออกจากบ้าน</span>
         </button>
-        {canLeaveHome && (
+        {hasHomeNow && (
           <button
             type="button"
-            onClick={() => setConfirm('leave')}
+            onClick={() => setConfirm('logout')}
             className="mt-3 w-full min-h-[52px] px-6 rounded-2xl border border-slate-300 bg-white text-base font-bold text-slate-700 hover:bg-slate-50 cursor-pointer"
           >
-            ออกจากบ้านนี้
+            ออกจากระบบ
           </button>
         )}
       </div>
 
       <ConfirmDialog
         open={confirm === 'leave'}
-        title="ออกจากบ้านนี้?"
-        message="คุณจะไม่เห็นข้อมูลของบ้านนี้อีก และต้องใช้รหัสเชิญใหม่หากต้องการกลับเข้ามา ข้อมูลสุขภาพส่วนตัวของคุณยังอยู่"
-        confirmLabel="ออกจากบ้าน"
+        title={isSoloOwner ? 'ออกจากบ้านและลบบ้านนี้?' : isOwner ? 'ออกจากบ้านนี้ยังไม่ได้' : 'ออกจากบ้านนี้?'}
+        message={
+          isSoloOwner
+            ? 'คุณอยู่คนเดียวในบ้านนี้ การออกจากบ้านจะลบบ้านและข้อมูลของบ้าน (บันทึกอาการ ปฏิทิน) ทั้งหมด กู้คืนไม่ได้ แล้วระบบจะพาไปหน้ากรอกรหัสบ้านหรือสร้างบ้านใหม่ ข้อมูลสุขภาพส่วนตัวของคุณยังอยู่'
+            : isOwner
+              ? 'คุณเป็นผู้ดูแลหลักของบ้านนี้ ต้องมอบบทบาทผู้ดูแลหลักให้คนอื่นก่อน แล้วค่อยออกจากบ้านได้ ไปจัดการที่หน้าตั้งค่าบ้านได้เลย'
+              : 'คุณจะไม่เห็นข้อมูลของบ้านนี้อีก แล้วระบบจะพาไปหน้ากรอกรหัสบ้านหรือสร้างบ้านใหม่ ข้อมูลสุขภาพส่วนตัวของคุณยังอยู่'
+        }
+        confirmLabel={isSoloOwner ? 'ลบบ้านและออก' : isOwner ? 'ไปหน้าตั้งค่าบ้าน' : 'ออกจากบ้าน'}
         onCancel={() => setConfirm(null)}
-        onConfirm={handleLeaveHome}
+        onConfirm={isSoloOwner ? handleDeleteAndLeave : isOwner ? goManageHome : handleLeaveHome}
       />
 
       <ConfirmDialog

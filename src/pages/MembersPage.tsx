@@ -106,7 +106,8 @@ const MemberTile: React.FC<{
             className="inline-flex max-w-full shrink-0 items-center gap-1 rounded-full bg-slate-50 border border-slate-200 px-2 py-0.5 text-xs font-medium text-slate-400"
           >
             <Smile className="w-3.5 h-3.5 shrink-0 text-slate-300" aria-hidden="true" />
-            <span className="truncate">ยังไม่ระบุอารมณ์</span>
+            <span className="truncate sm:hidden">ยังไม่ระบุ</span>
+            <span className="truncate hidden sm:inline">ยังไม่ระบุอารมณ์</span>
           </span>
         )}
       </div>
@@ -183,7 +184,7 @@ export const MembersPage: React.FC = () => {
         </Link>
       )}
 
-      <ul className="stagger grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
+      <ul className="stagger grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 sm:gap-4">
         {settings.members.map((member) => {
           const record = records[member.id];
           if (!record) return null;
