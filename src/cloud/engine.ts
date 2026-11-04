@@ -664,11 +664,23 @@ export async function bootCloud(): Promise<void> {
   ctx = { userId: user.id, homeId: null, role: null };
   setSyncHandler(onQueue);
 
-  supabase.auth.onAuthStateChange((event) => {
+  supabase.auth.onAuthStateChange((event, session) => {
     if (event === 'SIGNED_OUT' && ctx) {
       ctx = null;
       wipeLocal();
       window.location.replace('/login');
+      return;
+    }
+    // แท็บอื่นในเบราว์เซอร์เดียวกันเข้าสู่ระบบด้วยบัญชีอื่น: เซสชันและแคชในเครื่องใช้ร่วมกันทุกแท็บ
+    // หยุดส่งข้อมูลทันที (กันข้อมูลสองบัญชีปนกัน) แล้วโหลดหน้าใหม่ให้ตรงกับบัญชีที่ล็อกอินอยู่จริง
+    if (session?.user && ctx && session.user.id !== ctx.userId) {
+      ctx = null;
+      setSyncHandler(null);
+      window.clearTimeout(pushTimer);
+      window.clearTimeout(retryTimer);
+      stopRealtime();
+      stopPolling();
+      window.location.reload();
     }
   });
 
