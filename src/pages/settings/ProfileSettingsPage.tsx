@@ -174,7 +174,7 @@ export const ProfileSettingsPage: React.FC = () => {
       profile: trimmed,
       // ให้ชื่อในรายชื่อสมาชิกตรงกับชื่อเล่นที่เพิ่งแก้
       members: settings.members.map((member) =>
-        member.id === CURRENT_MEMBER_ID ? { ...member, name: clean } : member
+        member.id === CURRENT_MEMBER_ID ? { ...member, name: clean, photo: trimmed.photo } : member
       ),
     });
     setSettings(next);
