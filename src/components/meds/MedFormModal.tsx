@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useState } from 'react';
-import { CheckCircle2, Link2, Loader2, ScanLine } from 'lucide-react';
+import { CheckCircle2, ChevronRight, Link2, Loader2, Package, ScanLine } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { TextField } from '../ui/TextField';
@@ -8,15 +8,20 @@ import { NativeSelect } from '../ui/NativeSelect';
 import { Chip, FieldGroup } from '../ui/ChoiceChips';
 import { SwitchRow } from '../settings/SwitchRow';
 import { ConfirmDialog } from '../settings/ConfirmDialog';
-import { StockBadge } from './StockBadge';
+import { ExpiryBadge, StockBadge } from './StockBadge';
+import { MedPhoto } from './MedPhoto';
+import { DrugInfoPanel } from './DrugInfoPanel';
 import { PhotoSlot } from './PhotoSlot';
 import { DRUGS, drugById, matchDrugInText, searchDrugs, type DrugInfo } from '../../data/drugDb';
 import { deleteFiles, saveFile } from '../../lib/fileStore';
 import { loadOnboarding, type Attachment } from '../../lib/onboarding';
 import { hasScanData, scanMedPhoto, type ScanResult } from '../../lib/medScan';
 import {
+  DEFAULT_EXPIRY_WARN_DAYS,
+  DEFAULT_REMINDER_REPEAT_MIN,
   FORM_OPTIONS,
   MEAL_OPTIONS,
+  formatMedForm,
   PERIODS,
   PERIOD_LABEL,
   UNIT_OPTIONS,
@@ -37,7 +42,16 @@ interface MedFormModalProps {
   /** null = เพิ่มยาใหม่ */
   initial: Medication | null;
   defaultLowStockDays: number;
-  onSave: (data: MedFormData) => void;
+  /** โรคที่แนะนำให้กดเลือกในช่อง "โรคที่เกี่ยวข้อง" (ไม่ใส่ = โรคประจำตัวของตัวเอง) */
+  conditionSuggestions?: string[];
+  /** ยาที่เคยจดไว้ทั้งหมด (ใช้แนะนำชื่อ และกดเลือกเพื่อใช้ข้อมูลเดิมแทนการกรอกใหม่) */
+  knownMeds?: Medication[];
+  /** inventory = เพิ่มยาเข้าตู้ยาเฉยๆ ไม่ตั้งเวลา/ตาราง/การแจ้งเตือน (ฟอร์มหน้าตาเดียวกัน) */
+  mode?: 'full' | 'inventory';
+  /** เปิดฟอร์มพร้อมเลือกยาจากตู้ไว้แล้ว (กด "ตั้งเวลากินยานี้" จากหน้ารายละเอียด) */
+  linkFrom?: Medication | null;
+  /** linkedId = รหัสยาในตู้ที่เลือกมาใช้ (บันทึกทับตัวเดิม ไม่สร้างยาซ้ำ) */
+  onSave: (data: MedFormData, linkedId?: string | null) => void;
   onClose: () => void;
 }
 
@@ -51,6 +65,11 @@ interface FormState {
   unit: string;
   periods: DosePeriod[];
   times: Partial<Record<DosePeriod, string>>;
+  asNeeded: boolean;
+  reminderDelay: string;
+  reminderRepeat: string;
+  expiryDate: string;
+  expiryWarn: string;
   meal: MealTiming;
   everyDay: boolean;
   weekdays: number[];
@@ -78,8 +97,13 @@ const fromMed = (m: Medication | null, lowDays: number): FormState => ({
   condition: m?.condition ?? '',
   perDose: m ? formatQty(m.perDose) : '1',
   unit: m?.unit ?? 'เม็ด',
-  periods: m?.periods ?? ['morning'],
+  periods: m && m.periods.length > 0 ? m.periods : ['morning'],
   times: m?.times ?? {},
+  asNeeded: m?.asNeeded ?? false,
+  reminderDelay: String(m?.reminderDelayMin ?? 0),
+  reminderRepeat: String(m?.reminderRepeatMin ?? DEFAULT_REMINDER_REPEAT_MIN),
+  expiryDate: m?.expiryDate ?? '',
+  expiryWarn: String(m?.expiryWarnDays ?? DEFAULT_EXPIRY_WARN_DAYS),
   meal: m?.meal ?? 'after',
   everyDay: !m || m.weekdays.length === 0 || m.weekdays.length === 7,
   weekdays: m && m.weekdays.length > 0 ? m.weekdays : [0, 1, 2, 3, 4, 5, 6],
@@ -97,6 +121,36 @@ const fromMed = (m: Medication | null, lowDays: number): FormState => ({
   labelPhoto: m?.labelPhoto ?? null,
 });
 
+/** เติมฟอร์มจากยาที่เคยจดไว้ (ไม่รวมวันเริ่มใช้) ยาในตู้ใช้จำนวนคงเหลือและวันหมดอายุเดิมด้วย */
+const applyKnown = (prev: FormState, m: Medication, inventory: boolean): FormState => ({
+  ...prev,
+  name: m.name,
+  form: m.form,
+  customForm: m.customForm ?? '',
+  drugRef: m.drugRef,
+  condition: m.condition,
+  perDose: formatQty(m.perDose),
+  unit: m.unit,
+  meal: m.meal,
+  // ฟอร์มเพิ่มยาต้องตั้งเวลาได้เสมอ แม้เลือกมาจากยาที่ยังไม่มีตาราง
+  asNeeded: inventory,
+  periods: m.periods.length > 0 ? m.periods : prev.periods,
+  times: m.times,
+  everyDay: m.weekdays.length === 0 || m.weekdays.length === 7,
+  weekdays: m.weekdays.length > 0 ? m.weekdays : [0, 1, 2, 3, 4, 5, 6],
+  lowStockDays: String(m.lowStockDays),
+  remaining: m.asNeeded ? formatQty(m.remaining) : prev.remaining,
+  expiryDate: m.asNeeded ? (m.expiryDate ?? '') : prev.expiryDate,
+  reminderDelay: String(m.reminderDelayMin ?? 0),
+  reminderRepeat: String(m.reminderRepeatMin ?? DEFAULT_REMINDER_REPEAT_MIN),
+  expiryWarn: String(m.expiryWarnDays ?? DEFAULT_EXPIRY_WARN_DAYS),
+  lastRefillDate: m.asNeeded ? m.lastRefillDate : prev.lastRefillDate,
+  reason: m.reason,
+  note: m.note,
+  pillPhoto: m.pillPhoto,
+  labelPhoto: m.labelPhoto,
+});
+
 const SectionBox: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
   <section aria-label={title} className="rounded-2xl border border-slate-200 p-4 sm:p-5">
     <h3 className="text-lg font-bold text-purple-800 mb-4">{title}</h3>
@@ -108,6 +162,13 @@ const toNumber = (s: string) => {
   const n = parseFloat(s);
   return Number.isFinite(n) ? n : NaN;
 };
+
+const REMIND_DELAY_OPTIONS = [
+  { value: '0', label: 'ตรงเวลา' },
+  ...[5, 10, 15, 30].map((n) => ({ value: String(n), label: `หลังถึงเวลา ${n} นาที` })),
+];
+const REMIND_REPEAT_OPTIONS = [5, 10, 15, 20, 30].map((n) => ({ value: String(n), label: `ทุก ${n} นาที` }));
+const EXPIRY_WARN_OPTIONS = [7, 14, 30, 60, 90].map((n) => ({ value: String(n), label: `${n} วันก่อนหมดอายุ` }));
 
 const DRUG_OPTIONS = [
   { value: '', label: '— ไม่เชื่อม —' },
@@ -130,9 +191,9 @@ const ScanResultCard: React.FC<{ result: ScanResult; onApply: () => void; onDism
   const found = hasScanData(result);
 
   return (
-    <div className="rounded-2xl border border-purple-200 bg-purple-50 p-4">
-      <p className="flex items-center gap-2 text-base font-bold text-purple-900">
-        <CheckCircle2 className="w-5 h-5" aria-hidden="true" />
+    <div className="rounded-2xl border border-slate-200 bg-white p-4">
+      <p className="flex items-center gap-2 text-base font-bold text-slate-900">
+        <CheckCircle2 className="w-5 h-5 text-emerald-600" aria-hidden="true" />
         {found ? 'อ่านจากรูปได้ดังนี้ ตรวจให้ถูกก่อนใช้' : 'อ่านข้อมูลยาจากรูปไม่ได้'}
       </p>
       {found ? (
@@ -151,8 +212,8 @@ const ScanResultCard: React.FC<{ result: ScanResult; onApply: () => void; onDism
       )}
       {result.rawText.trim() && (
         <details className="mt-3">
-          <summary className="cursor-pointer text-sm font-semibold text-purple-800">ดูข้อความที่อ่านได้ทั้งหมด</summary>
-          <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap rounded-xl bg-white p-3 text-sm text-slate-700">
+          <summary className="cursor-pointer text-sm font-semibold text-slate-700">ดูข้อความที่อ่านได้ทั้งหมด</summary>
+          <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap rounded-xl bg-slate-50 p-3 text-sm text-slate-700">
             {result.rawText.trim()}
           </pre>
         </details>
@@ -171,8 +232,32 @@ const ScanResultCard: React.FC<{ result: ScanResult; onApply: () => void; onDism
   );
 };
 
-const FormDialog: React.FC<Omit<MedFormModalProps, 'open'>> = ({ initial, defaultLowStockDays, onSave, onClose }) => {
-  const [form, setForm] = useState<FormState>(() => fromMed(initial, defaultLowStockDays));
+const FormDialog: React.FC<Omit<MedFormModalProps, 'open'>> = ({
+  initial,
+  defaultLowStockDays,
+  conditionSuggestions,
+  knownMeds,
+  mode = 'full',
+  linkFrom,
+  onSave,
+  onClose,
+}) => {
+  const inventory = mode === 'inventory';
+  const [form, setForm] = useState<FormState>(() => {
+    const base: FormState = {
+      ...fromMed(initial, defaultLowStockDays),
+      // โหมดตู้ยา: ไม่มีตารางประจำเสมอ
+      ...(inventory ? { asNeeded: true } : {}),
+    };
+    return linkFrom ? applyKnown(base, linkFrom, inventory) : base;
+  });
+  /** ยาในตู้ที่เลือกมาใช้ */
+  const [linkedId, setLinkedId] = useState<string | null>(linkFrom?.id ?? null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [pickerQuery, setPickerQuery] = useState('');
+  /** ชื่อยาที่เลือกมาใช้ข้อมูล (ยาที่ตั้งเวลาไว้แล้ว ไม่ได้ผูกกับตัวเดิม จึงสร้างเป็นรายการใหม่) */
+  const [copiedFrom, setCopiedFrom] = useState<string | null>(null);
+  const formTopRef = useRef<HTMLDivElement>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [confirmClose, setConfirmClose] = useState(false);
   const [nameFocused, setNameFocused] = useState(false);
@@ -183,7 +268,10 @@ const FormDialog: React.FC<Omit<MedFormModalProps, 'open'>> = ({ initial, defaul
   const snapshot = useRef(JSON.stringify(form));
   const originalIds = useRef(new Set([initial?.pillPhoto?.id, initial?.labelPhoto?.id].filter(Boolean) as string[]));
   const uploadedIds = useRef(new Set<string>());
-  const myConditions = useMemo(() => loadOnboarding().profile.conditions, []);
+  const myConditions = useMemo(
+    () => conditionSuggestions ?? loadOnboarding().profile.conditions,
+    [conditionSuggestions]
+  );
 
   const dirty = JSON.stringify(form) !== snapshot.current;
 
@@ -223,6 +311,26 @@ const FormDialog: React.FC<Omit<MedFormModalProps, 'open'>> = ({ initial, defaul
       meal: drug.meal ?? prev.meal,
     }));
     setNameFocused(false);
+  };
+
+  /** ใช้ข้อมูลของยาที่เคยจดไว้ (ไม่บังคับ ผู้ใช้แก้ต่อได้ทุกช่อง) */
+  const pickKnown = (m: Medication) => {
+    setForm((prev) => applyKnown(prev, m, inventory));
+    setLinkedId(m.asNeeded ? m.id : null);
+    setCopiedFrom(m.asNeeded ? null : m.name);
+    setDetailsOpen(false);
+    setNameFocused(false);
+    setErrors({});
+    formTopRef.current?.scrollIntoView({ block: 'nearest' });
+  };
+
+  /** ไม่ใช้ยาในตู้ที่เลือกไว้ กลับไปฟอร์มเปล่า */
+  const unlink = () => {
+    setForm(fromMed(initial, defaultLowStockDays));
+    setLinkedId(null);
+    setCopiedFrom(null);
+    setDetailsOpen(false);
+    setErrors({});
   };
 
   const togglePeriod = (p: DosePeriod) =>
@@ -266,6 +374,24 @@ const FormDialog: React.FC<Omit<MedFormModalProps, 'open'>> = ({ initial, defaul
   };
 
   const suggestions = nameFocused ? searchDrugs(form.name).filter((d) => d.id !== form.drugRef) : [];
+  const typed = form.name.trim().toLowerCase();
+  const knownMatches =
+    nameFocused && typed
+      ? (knownMeds ?? [])
+          .filter((m) => m.id !== initial?.id && m.name.toLowerCase().includes(typed) && m.name.toLowerCase() !== typed)
+          .slice(0, 4)
+      : [];
+  // ชื่อตรงกับที่เคยจดไว้เป๊ะ: เสนอให้ใช้ข้อมูลเดิม (ยังไม่เติมให้เองเพื่อไม่บังคับ)
+  const exactKnown = typed
+    ? (knownMeds ?? []).find((m) => m.id !== initial?.id && m.name.toLowerCase() === typed)
+    : undefined;
+  // ใช้ข้อมูลเดิมไปแล้ว (ช่องหลักตรงกับยาที่เคยจดไว้) ไม่ต้องเสนอซ้ำ
+  const knownApplied =
+    !!exactKnown &&
+    form.form === exactKnown.form &&
+    form.unit === exactKnown.unit &&
+    form.perDose === formatQty(exactKnown.perDose) &&
+    form.drugRef === exactKnown.drugRef;
   const linked = form.drugRef ? drugById(form.drugRef) : undefined;
   const autoMatch = !form.drugRef ? matchDrugInText(form.name) : undefined;
 
@@ -278,8 +404,8 @@ const FormDialog: React.FC<Omit<MedFormModalProps, 'open'>> = ({ initial, defaul
     const found: Record<string, string> = {};
     if (!form.name.trim()) found['med-name'] = 'กรอกชื่อยาก่อนนะ';
     if (!(perDose > 0)) found['med-perdose'] = 'กรอกจำนวนต่อครั้งมากกว่า 0';
-    if (form.periods.length === 0) found['med-periods'] = 'เลือกช่วงเวลาอย่างน้อย 1 ช่วง';
-    if (!form.everyDay && form.weekdays.length === 0) found['med-weekdays'] = 'เลือกวันอย่างน้อย 1 วัน';
+    if (!form.asNeeded && form.periods.length === 0) found['med-periods'] = 'เลือกช่วงเวลาอย่างน้อย 1 ช่วง';
+    if (!form.asNeeded && !form.everyDay && form.weekdays.length === 0) found['med-weekdays'] = 'เลือกวันอย่างน้อย 1 วัน';
     if (!form.startDate) found['med-start'] = 'เลือกวันที่เริ่มใช้ยา';
     if (form.fixedDays && !(toNumber(form.durationDays) >= 1)) found['med-duration'] = 'กรอกจำนวนวันอย่างน้อย 1';
     if (!(remaining >= 0)) found['med-remaining'] = 'กรอกจำนวนยาที่เหลือ (ถ้าหมดแล้วใส่ 0)';
@@ -287,16 +413,26 @@ const FormDialog: React.FC<Omit<MedFormModalProps, 'open'>> = ({ initial, defaul
     setErrors(found);
     const first = Object.keys(found)[0];
     if (first) {
-      document.getElementById(first)?.focus();
+      // ช่องที่ผิดอาจอยู่ในส่วนที่พับไว้ เปิดก่อนแล้วค่อยโฟกัส
+      setDetailsOpen(true);
+      window.setTimeout(() => document.getElementById(first)?.focus(), 0);
       return;
     }
 
     // รูปที่ถูกแทนที่หรือลบ ให้ลบออกจากเครื่อง
     const finalIds = new Set([form.pillPhoto?.id, form.labelPhoto?.id].filter(Boolean) as string[]);
-    const dropped = [...originalIds.current, ...uploadedIds.current].filter((id) => !finalIds.has(id));
+    // ไม่ลบรูปที่ยาตัวอื่นใช้ร่วมอยู่ (กรณีใช้ข้อมูลเดิมซ้ำ)
+    const usedElsewhere = new Set(
+      (knownMeds ?? [])
+        .filter((m) => m.id !== initial?.id)
+        .flatMap((m) => [m.pillPhoto?.id, m.labelPhoto?.id])
+    );
+    const dropped = [...originalIds.current, ...uploadedIds.current].filter(
+      (id) => !finalIds.has(id) && !usedElsewhere.has(id)
+    );
     void deleteFiles(dropped.map((id) => ({ id, name: '', type: '', size: 0 })));
 
-    const periods = PERIODS.map((p) => p.value).filter((p) => form.periods.includes(p));
+    const periods = form.asNeeded ? [] : PERIODS.map((p) => p.value).filter((p) => form.periods.includes(p));
     const times: Partial<Record<DosePeriod, string>> = {};
     for (const p of periods) if (form.times[p]) times[p] = form.times[p];
     const refills = parseInt(form.refillsRemaining, 10);
@@ -311,10 +447,15 @@ const FormDialog: React.FC<Omit<MedFormModalProps, 'open'>> = ({ initial, defaul
       unit: form.unit,
       periods,
       times,
+      asNeeded: form.asNeeded ? true : undefined,
+      reminderDelayMin: Math.max(0, Math.floor(toNumber(form.reminderDelay)) || 0),
+      reminderRepeatMin: Math.max(1, Math.floor(toNumber(form.reminderRepeat)) || DEFAULT_REMINDER_REPEAT_MIN),
+      expiryDate: form.expiryDate || undefined,
+      expiryWarnDays: Math.max(1, Math.floor(toNumber(form.expiryWarn)) || DEFAULT_EXPIRY_WARN_DAYS),
       meal: form.meal,
-      weekdays,
+      weekdays: form.asNeeded ? [] : weekdays,
       startDate: form.startDate,
-      durationDays: form.fixedDays ? Math.floor(toNumber(form.durationDays)) : null,
+      durationDays: form.fixedDays && !form.asNeeded ? Math.floor(toNumber(form.durationDays)) : null,
       active: form.active,
       remaining,
       lowStockDays: Math.max(1, Math.floor(lowDays)),
@@ -324,11 +465,23 @@ const FormDialog: React.FC<Omit<MedFormModalProps, 'open'>> = ({ initial, defaul
       note: form.note.trim(),
       pillPhoto: form.pillPhoto,
       labelPhoto: form.labelPhoto,
-    });
+    }, linkedId);
   };
 
+  // ยาในตู้ที่ยังไม่มีตาราง ให้กดเลือกได้ทันทีตอนเพิ่มยา
+  const linkedMed = linkedId ? (knownMeds ?? []).find((m) => m.id === linkedId) : undefined;
+  const rank = (m: Medication) => (!m.active ? 2 : m.asNeeded ? 0 : 1);
+  const inventoryMeds = [...(knownMeds ?? [])].sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name, 'th'));
+  const pickerTerm = pickerQuery.trim().toLowerCase();
+  const pickerItems = pickerTerm
+    ? inventoryMeds.filter((m) => m.name.toLowerCase().includes(pickerTerm))
+    : inventoryMeds;
+  const showPicker = !inventory && !initial && !linkedMed && inventoryMeds.length > 0;
+  // เลือกยาจากตู้แล้ว: พับส่วนที่กรอกไว้แล้ว เหลือแค่เรื่องเวลา
+  const collapsed = !inventory && !!linkedMed && !detailsOpen;
+
   const preview =
-    perDose > 0 && remaining >= 0 && form.periods.length > 0
+    perDose > 0 && remaining >= 0 && form.periods.length > 0 && !form.asNeeded
       ? { perDose, periods: form.periods, remaining, weekdays, lowStockDays: Math.max(1, Math.floor(lowDays) || 1) }
       : null;
 
@@ -337,8 +490,16 @@ const FormDialog: React.FC<Omit<MedFormModalProps, 'open'>> = ({ initial, defaul
       <Modal
         open
         onClose={requestClose}
-        title={initial ? 'แก้ไขข้อมูลยา / การดูแล' : 'เพิ่มยา / การดูแล'}
-        initialFocusSelector="#med-name"
+        title={
+          inventory
+            ? initial
+              ? 'แก้ไขข้อมูลยาในตู้'
+              : 'เพิ่มยาเข้าตู้ยา (ไม่ตั้งเวลา)'
+            : initial
+              ? 'แก้ไขข้อมูลยา / การดูแล'
+              : 'เพิ่มยา / การดูแล'
+        }
+        initialFocusSelector={linkFrom ? '#med-perdose' : '#med-name'}
         footer={
           <div className="grid grid-cols-2 gap-3">
             <Button variant="neutral" fullWidth onClick={requestClose}>
@@ -358,8 +519,125 @@ const FormDialog: React.FC<Omit<MedFormModalProps, 'open'>> = ({ initial, defaul
             submit();
           }}
         >
+          <div ref={formTopRef} />
+
+          {/* เลือกจากยาในตู้: กดแล้วไม่ต้องกรอกข้อมูลยาซ้ำ */}
+          {showPicker && (
+            <section aria-label="เลือกยาที่มีในตู้" className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 space-y-3">
+              <div>
+                <h3 className="text-lg font-bold text-slate-900">เลือกยาที่มีในตู้</h3>
+                <p className="text-base text-slate-600">แตะยาที่ต้องการ ข้อมูลยาจะมาให้เอง ไม่ต้องกรอกซ้ำ</p>
+              </div>
+              {inventoryMeds.length > 6 && (
+                <input
+                  type="search"
+                  aria-label="ค้นหายาในตู้"
+                  placeholder="ค้นหายาในตู้"
+                  autoComplete="off"
+                  value={pickerQuery}
+                  onChange={(e) => setPickerQuery(e.target.value)}
+                  className="w-full min-h-[48px] px-4 rounded-xl border border-slate-300 bg-white text-base text-slate-900 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-600"
+                />
+              )}
+              {pickerItems.length === 0 ? (
+                <p className="text-base text-slate-600">ไม่พบยาชื่อนี้ในตู้</p>
+              ) : (
+                <ul className="max-h-72 divide-y divide-slate-100 overflow-y-auto rounded-xl border border-slate-200">
+                  {pickerItems.map((m) => (
+                    <li key={m.id}>
+                      <button
+                        type="button"
+                        onClick={() => pickKnown(m)}
+                        className="flex w-full items-center gap-3 px-3 py-3 text-left hover:bg-slate-50 focus-visible:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-purple-600 cursor-pointer"
+                      >
+                        <MedPhoto
+                          med={m}
+                          className="h-12 w-12 shrink-0 rounded-lg bg-slate-100 overflow-hidden"
+                          fallback={<Package className="w-5 h-5 text-slate-400" aria-hidden="true" />}
+                        />
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-base font-bold text-slate-900 break-words">{m.name}</span>
+                          <span className="block text-sm text-slate-600">
+                            {formatMedForm(m)} · เหลือ {formatQty(m.remaining)} {m.unit}
+                          </span>
+                          <span className="block text-sm text-slate-500">
+                            {!m.active
+                              ? 'หยุดใช้แล้ว'
+                              : m.asNeeded
+                                ? 'ยังไม่ได้ตั้งเวลา'
+                                : `ตั้งเวลาไว้แล้ว: ${m.periods.map((p) => PERIOD_LABEL[p]).join(' · ')}`}
+                          </span>
+                        </span>
+                        <span className="inline-flex shrink-0 items-center gap-0.5 text-base font-bold text-purple-700">
+                          เลือก
+                          <ChevronRight className="w-5 h-5" aria-hidden="true" />
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <p className="text-sm text-slate-500">ไม่มียานี้ในตู้? กรอกข้อมูลยาใหม่ด้านล่างได้เลย</p>
+            </section>
+          )}
+
+          {copiedFrom && !linkedMed && !inventory && (
+            <p className="flex items-start gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-700">
+              <CheckCircle2 className="w-5 h-5 mt-0.5 shrink-0 text-emerald-600" aria-hidden="true" />
+              <span>
+                เติมข้อมูลจาก “{copiedFrom}” แล้ว ตรวจเวลากิน และใส่จำนวนยาที่มีของชุดนี้ (บันทึกเป็นรายการใหม่ ไม่ทับของเดิม)
+              </span>
+            </p>
+          )}
+
+          {/* ยาที่เลือกมาจากตู้ */}
+          {linkedMed && !inventory && (
+            <section aria-label="ยาที่เลือกจากตู้" className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
+              <p className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-sm font-bold text-emerald-800">
+                <CheckCircle2 className="w-4 h-4" aria-hidden="true" />
+                เลือกจากตู้ยาแล้ว
+              </p>
+              <div className="mt-3 flex items-start gap-3">
+                <MedPhoto
+                  med={linkedMed}
+                  className="h-16 w-16 shrink-0 rounded-xl bg-slate-100 overflow-hidden"
+                  fallback={<Package className="w-7 h-7 text-slate-400" aria-hidden="true" />}
+                />
+                <div className="min-w-0 flex-1 space-y-1">
+                  <p className="text-lg font-bold text-slate-900 break-words">{form.name}</p>
+                  <p className="text-base text-slate-600">
+                    {formatMedForm(linkedMed)} · เหลือ {form.remaining || '0'} {form.unit}
+                  </p>
+                  <ExpiryBadge
+                    med={{ expiryDate: form.expiryDate || undefined, expiryWarnDays: toNumber(form.expiryWarn) || undefined }}
+                  />
+                </div>
+              </div>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  aria-expanded={detailsOpen}
+                  onClick={() => setDetailsOpen((v) => !v)}
+                  className="min-h-[44px] px-4 rounded-xl border border-slate-300 bg-white text-base font-bold text-slate-800 hover:bg-slate-50 cursor-pointer"
+                >
+                  {detailsOpen ? 'ซ่อนรายละเอียดยา' : 'แก้รายละเอียดยา'}
+                </button>
+                {!linkFrom && (
+                  <button
+                    type="button"
+                    onClick={unlink}
+                    className="min-h-[44px] px-4 rounded-xl text-base font-semibold text-slate-700 hover:bg-slate-100 cursor-pointer"
+                  >
+                    เลือกยาตัวอื่น
+                  </button>
+                )}
+              </div>
+            </section>
+          )}
+
           {/* ถ่ายรูปซองยา */}
-          <div className="rounded-2xl border-2 border-dashed border-purple-300 bg-purple-50/60 p-4">
+          {!linkedMed && (
+          <div className="rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 p-4">
             <input
               ref={scanInputRef}
               type="file"
@@ -370,7 +648,7 @@ const FormDialog: React.FC<Omit<MedFormModalProps, 'open'>> = ({ initial, defaul
               onChange={(e) => void handleScanFile(e.target.files?.[0])}
             />
             {scan.state === 'reading' ? (
-              <div className="flex items-center gap-3 text-base font-semibold text-purple-900" aria-live="polite">
+              <div className="flex items-center gap-3 text-base font-semibold text-slate-900" aria-live="polite">
                 <Loader2 className="w-6 h-6 animate-spin" aria-hidden="true" />
                 <span>กำลังอ่านข้อมูลจากรูป… {scan.progress > 0 ? `${scan.progress}%` : ''}</span>
               </div>
@@ -400,7 +678,9 @@ const FormDialog: React.FC<Omit<MedFormModalProps, 'open'>> = ({ initial, defaul
               </div>
             )}
           </div>
+          )}
 
+          {!collapsed && (
           <SectionBox title="ยาหรือการดูแล">
             <div className="relative">
               <TextField
@@ -415,12 +695,29 @@ const FormDialog: React.FC<Omit<MedFormModalProps, 'open'>> = ({ initial, defaul
                 onChange={(e) => set('name', e.target.value)}
                 error={errors['med-name']}
               />
-              {suggestions.length > 0 && (
+              {(suggestions.length > 0 || knownMatches.length > 0) && (
                 <ul
                   role="listbox"
                   aria-label="ยาจากฐานข้อมูล"
                   className="absolute left-0 right-0 top-full z-20 mt-1 rounded-2xl border border-slate-200 bg-white p-1 shadow-xl"
                 >
+                  {knownMatches.map((m) => (
+                    <li key={`known-${m.id}`}>
+                      <button
+                        type="button"
+                        role="option"
+                        aria-selected={false}
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => pickKnown(m)}
+                        className="flex w-full flex-col items-start rounded-xl px-3 py-2 text-left hover:bg-purple-50 cursor-pointer"
+                      >
+                        <span className="text-base font-bold text-slate-900">{m.name}</span>
+                        <span className="text-sm text-slate-600">
+                          เคยจดไว้ · กดเพื่อใช้ข้อมูลเดิม ({formatMedForm(m)}, {formatQty(m.perDose)} {m.unit})
+                        </span>
+                      </button>
+                    </li>
+                  ))}
                   {suggestions.map((d) => (
                     <li key={d.id}>
                       <button
@@ -441,6 +738,17 @@ const FormDialog: React.FC<Omit<MedFormModalProps, 'open'>> = ({ initial, defaul
                 </ul>
               )}
             </div>
+
+            {exactKnown && !knownApplied ? (
+              <button
+                type="button"
+                onClick={() => pickKnown(exactKnown)}
+                className="inline-flex items-center gap-2 min-h-[44px] px-4 rounded-full border border-slate-300 bg-white text-sm font-semibold text-slate-800 hover:bg-slate-50 cursor-pointer"
+              >
+                <Link2 className="w-4 h-4 text-purple-700" aria-hidden="true" />
+                เคยจดยานี้ไว้แล้ว · กดเพื่อใช้ข้อมูลเดิม (ไม่บังคับ)
+              </button>
+            ) : null}
 
             <FieldGroup label="รูปแบบยา / สิ่งที่ใช้ดูแล">
               <div className="flex flex-wrap gap-2">
@@ -520,13 +828,14 @@ const FormDialog: React.FC<Omit<MedFormModalProps, 'open'>> = ({ initial, defaul
                   <button
                     type="button"
                     onClick={() => pickDrug(autoMatch)}
-                    className="inline-flex items-center gap-2 min-h-[40px] px-3 rounded-full border border-purple-300 bg-purple-50 text-sm font-semibold text-purple-900 hover:bg-purple-100 cursor-pointer"
+                    className="inline-flex items-center gap-2 min-h-[40px] px-3 rounded-full border border-slate-300 bg-white text-sm font-semibold text-slate-800 hover:bg-slate-50 cursor-pointer"
                   >
                     <Link2 className="w-4 h-4" aria-hidden="true" />
                     ตรงกับ {autoMatch.generic} · กดเพื่อเชื่อม
                   </button>
                 )
               )}
+              {(linked ?? autoMatch) && <DrugInfoPanel drug={(linked ?? autoMatch)!} compact />}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -546,8 +855,17 @@ const FormDialog: React.FC<Omit<MedFormModalProps, 'open'>> = ({ initial, defaul
               />
             </div>
           </SectionBox>
+          )}
 
-          <SectionBox title="ใช้เมื่อไหร่">
+          <SectionBox title={inventory ? 'ปริมาณที่ใช้' : 'ใช้เมื่อไหร่'}>
+            {!inventory && (
+              <SwitchRow
+                label="ไม่มีตารางประจำ (กินเมื่อจำเป็น)"
+                description="เช่น ยาแก้ปวดเมื่อมีอาการ เข็มหรือชุดตรวจ จะไม่ขึ้นในตารางวันนี้และไม่เตือนลืมกิน แต่ยังนับจำนวนคงเหลือได้"
+                checked={form.asNeeded}
+                onChange={(v) => set('asNeeded', v)}
+              />
+            )}
             <div className="grid grid-cols-2 gap-4">
               <TextField
                 id="med-perdose"
@@ -567,6 +885,8 @@ const FormDialog: React.FC<Omit<MedFormModalProps, 'open'>> = ({ initial, defaul
               />
             </div>
 
+            {!form.asNeeded && (
+            <>
             <FieldGroup
               label="เวลาใช้ยา"
               hint="เลือกได้หลายช่วง ใส่เวลาเป๊ะหรือไม่ก็ได้ (ใช้เตือนเมื่อลืมกินยา)"
@@ -604,6 +924,28 @@ const FormDialog: React.FC<Omit<MedFormModalProps, 'open'>> = ({ initial, defaul
                     </div>
                   );
                 })}
+              </div>
+            </FieldGroup>
+
+            <FieldGroup
+              label="แจ้งเตือนเมื่อถึงเวลา"
+              hint="ค่าเริ่มต้น: แจ้งตรงเวลา ถ้ายังไม่กินจะแจ้งซ้ำทุก 10 นาที ปรับได้เฉพาะยานี้"
+            >
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <NativeSelect
+                  id="med-remind-delay"
+                  label="แจ้งครั้งแรก"
+                  options={REMIND_DELAY_OPTIONS}
+                  value={form.reminderDelay}
+                  onChange={(v) => set('reminderDelay', v)}
+                />
+                <NativeSelect
+                  id="med-remind-repeat"
+                  label="ถ้ายังไม่กิน แจ้งซ้ำทุก"
+                  options={REMIND_REPEAT_OPTIONS}
+                  value={form.reminderRepeat}
+                  onChange={(v) => set('reminderRepeat', v)}
+                />
               </div>
             </FieldGroup>
 
@@ -682,6 +1024,9 @@ const FormDialog: React.FC<Omit<MedFormModalProps, 'open'>> = ({ initial, defaul
               />
             )}
 
+            </>
+            )}
+
             <SwitchRow
               label="กำลังใช้ยานี้อยู่"
               description="ปิดเมื่อหยุดใช้ยา ยาจะไม่ขึ้นในตารางและไม่เตือน แต่ประวัติยังอยู่ในรายงาน"
@@ -690,6 +1035,8 @@ const FormDialog: React.FC<Omit<MedFormModalProps, 'open'>> = ({ initial, defaul
             />
           </SectionBox>
 
+          {!collapsed && (
+          <>
           <SectionBox title="เหลือเท่าไร">
             <div className="grid grid-cols-2 gap-4">
               <TextField
@@ -741,6 +1088,26 @@ const FormDialog: React.FC<Omit<MedFormModalProps, 'open'>> = ({ initial, defaul
                 onChange={(e) => set('refillsRemaining', e.target.value.replace(/\D/g, ''))}
               />
             </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <TextField
+                id="med-expiry"
+                type="date"
+                label="วันหมดอายุของยา"
+                labelSuffix="(ไม่บังคับ)"
+                hint="ดูได้บนฉลากหรือกล่อง ระบบจะนับถอยหลังและเตือนให้"
+                value={form.expiryDate}
+                onChange={(e) => set('expiryDate', e.target.value)}
+              />
+              {form.expiryDate && (
+                <NativeSelect
+                  id="med-expiry-warn"
+                  label="เตือนล่วงหน้าก่อนหมดอายุ"
+                  options={EXPIRY_WARN_OPTIONS}
+                  value={form.expiryWarn}
+                  onChange={(v) => set('expiryWarn', v)}
+                />
+              )}
+            </div>
           </SectionBox>
 
           <SectionBox title="ข้อมูลเพิ่มเติม">
@@ -763,6 +1130,8 @@ const FormDialog: React.FC<Omit<MedFormModalProps, 'open'>> = ({ initial, defaul
               onChange={(e) => set('note', e.target.value)}
             />
           </SectionBox>
+          </>
+          )}
         </form>
       </Modal>
 

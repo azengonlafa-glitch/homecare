@@ -18,6 +18,8 @@ import { CURRENT_MEMBER_ID, getCurrentMember, loadSettings } from '../lib/settin
 import {
   DOSE_STATUS_LABEL,
   applyDoseStatus,
+  daysLeft,
+  formatQty,
   loadMeds,
   saveMeds,
   stockLevel,
@@ -33,7 +35,7 @@ type Tab = 'today' | 'cabinet' | 'report';
 
 const TABS: { value: Tab; label: string; icon: React.ReactNode }[] = [
   { value: 'today', label: 'วันนี้', icon: <ClipboardCheck className="w-5 h-5" aria-hidden="true" /> },
-  { value: 'cabinet', label: 'รายการยา/ดูแล', icon: <Pill className="w-5 h-5" aria-hidden="true" /> },
+  { value: 'cabinet', label: 'รายการยา', icon: <Pill className="w-5 h-5" aria-hidden="true" /> },
   { value: 'report', label: 'รายงาน', icon: <BarChart3 className="w-5 h-5" aria-hidden="true" /> },
 ];
 
@@ -43,7 +45,9 @@ export const MedsPage: React.FC = () => {
   const alerts = useMedAlerts();
   const [state, setState] = useState<MedsState>(loadMeds);
   const [tab, setTab] = useState<Tab>('today');
-  const [form, setForm] = useState<{ mode: 'new' } | { mode: 'edit'; id: string } | null>(null);
+  const [form, setForm] = useState<
+    { mode: 'new'; fromId?: string } | { mode: 'inventory' } | { mode: 'edit'; id: string } | null
+  >(null);
   const [detailId, setDetailId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<Medication | null>(null);
   const [refilling, setRefilling] = useState<Medication | null>(null);
@@ -59,8 +63,9 @@ export const MedsPage: React.FC = () => {
 
   const editing = form?.mode === 'edit' ? (state.meds.find((m) => m.id === form.id) ?? null) : null;
   const detail = detailId ? (state.meds.find((m) => m.id === detailId) ?? null) : null;
+  const linkFrom = form?.mode === 'new' && form.fromId ? (state.meds.find((m) => m.id === form.fromId) ?? null) : null;
 
-  const handleSave = (data: MedFormData) => {
+  const handleSave = (data: MedFormData, linkedId?: string | null) => {
     if (form?.mode === 'edit') {
       commit({
         ...state,
@@ -77,29 +82,54 @@ export const MedsPage: React.FC = () => {
       });
       toast.show('บันทึกการแก้ไขแล้ว');
     } else {
-      commit({
-        ...state,
-        meds: [
-          ...state.meds,
-          {
-            ...data,
-            id: newId(),
-            stoppedAt: data.active ? null : todayKey(),
-            refillRequestedAt: null,
-            createdAt: new Date().toISOString(),
-          },
-        ],
-      });
-      toast.show('เพิ่มยาแล้ว');
+      // ยาจากตู้ (เลือกมา หรือชื่อตรงกับยาที่จดไว้): อัปเดตตัวเดิม ไม่สร้างซ้ำ จำนวนคงเหลือและรูปจึงต่อเนื่อง
+      const inInventory = linkedId
+        ? state.meds.find((m) => m.id === linkedId)
+        : state.meds.find((m) => m.asNeeded && m.name.trim().toLowerCase() === data.name.trim().toLowerCase());
+      if (inInventory) {
+        commit({
+          ...state,
+          meds: state.meds.map((m) =>
+            m.id === inInventory.id ? { ...m, ...data, stoppedAt: data.active ? null : todayKey() } : m
+          ),
+        });
+        toast.show(
+          data.asNeeded
+            ? `อัปเดต ${data.name} ในตู้ยาแล้ว`
+            : `ตั้งเวลาให้ ${data.name} แล้ว ใช้ข้อมูลและจำนวนคงเหลือเดิมจากตู้ยา`
+        );
+      } else {
+        commit({
+          ...state,
+          meds: [
+            ...state.meds,
+            {
+              ...data,
+              id: newId(),
+              stoppedAt: data.active ? null : todayKey(),
+              refillRequestedAt: null,
+              createdAt: new Date().toISOString(),
+            },
+          ],
+        });
+        toast.show(form?.mode === 'inventory' ? 'เพิ่มยาเข้าตู้ยาแล้ว' : 'เพิ่มยาแล้ว');
+      }
     }
     setForm(null);
   };
 
   const handleDelete = () => {
     if (!deleting) return;
-    void deleteFiles([deleting.pillPhoto, deleting.labelPhoto].filter((a): a is NonNullable<typeof a> => !!a));
+    // รูปอาจถูกใช้ร่วมกับยาอื่น (ใช้ข้อมูลเดิมซ้ำ) ลบไฟล์เฉพาะรูปที่ไม่มียาอื่นใช้อยู่
+    const others = state.meds.filter((m) => m.id !== deleting.id);
+    const stillUsed = new Set(others.flatMap((m) => [m.pillPhoto?.id, m.labelPhoto?.id]));
+    void deleteFiles(
+      [deleting.pillPhoto, deleting.labelPhoto].filter(
+        (a): a is NonNullable<typeof a> => !!a && !stillUsed.has(a.id)
+      )
+    );
     commit({
-      meds: state.meds.filter((m) => m.id !== deleting.id),
+      meds: others,
       logs: state.logs.filter((l) => l.medId !== deleting.id),
     });
     toast.show(`ลบ ${deleting.name} แล้ว`);
@@ -107,15 +137,19 @@ export const MedsPage: React.FC = () => {
     setDetailId(null);
   };
 
-  const handleDose = (med: Medication, period: DosePeriod, status: DoseStatus | null) => {
-    const next = applyDoseStatus(state, med, period, status, by);
+  const handleDose = (med: Medication, period: DosePeriod, status: DoseStatus | null, reason?: string) => {
+    const next = applyDoseStatus(state, med, period, status, by, todayKey(), { reason });
     commit(next);
-    if (status === 'taken') {
-      const updated = next.meds.find((m) => m.id === med.id);
-      if (updated && stockLevel(updated) !== 'good' && stockLevel(med) === 'good') {
-        toast.show(`${med.name} ใกล้หมดแล้ว ลองกด “ขอเติมยา” ในตู้ยา`);
-        return;
+    const updated = next.meds.find((m) => m.id === med.id);
+    if (status === 'taken' && updated) {
+      const left = daysLeft(updated);
+      const stock = `เหลือ ${formatQty(updated.remaining)} ${updated.unit}${left !== null ? ` (พออีก ${left} วัน)` : ''}`;
+      if (stockLevel(updated) !== 'good' && stockLevel(med) === 'good') {
+        toast.show(`บันทึกกินแล้ว · ${med.name} ใกล้หมด ${stock} ลองกด “ขอเติมยา”`);
+      } else {
+        toast.show(`บันทึกกินแล้ว · ${stock}`);
       }
+      return;
     }
     toast.show(status ? `บันทึก “${DOSE_STATUS_LABEL[status]}” แล้ว` : 'ล้างบันทึกแล้ว');
   };
@@ -131,6 +165,11 @@ export const MedsPage: React.FC = () => {
   const openEdit = (med: Medication) => {
     setDetailId(null);
     setForm({ mode: 'edit', id: med.id });
+  };
+
+  const openSchedule = (med: Medication) => {
+    setDetailId(null);
+    setForm({ mode: 'new', fromId: med.id });
   };
 
   const openRefill = (med: Medication) => {
@@ -169,6 +208,12 @@ export const MedsPage: React.FC = () => {
             <Plus className="w-5 h-5" aria-hidden="true" />
             <span>เพิ่มรายการแรก</span>
           </Button>
+          <div className="mt-3">
+            <Button type="button" variant="soft" onClick={() => setForm({ mode: 'inventory' })}>
+              <Plus className="w-5 h-5" aria-hidden="true" />
+              <span>เพิ่มยาเข้าตู้ยา (ไม่ตั้งเวลา)</span>
+            </Button>
+          </div>
         </Card>
       ) : (
         <>
@@ -262,10 +307,29 @@ export const MedsPage: React.FC = () => {
         </>
       )}
 
+
+
+
+      {/* ปุ่มเพิ่มยาเข้าตู้ยา (ไม่ตั้งเวลา) แยกจากปุ่ม "เพิ่มยา / การดูแล" ด้านบนให้ไม่สับสน */}
+      {hasMeds && tab === 'cabinet' && form === null && (
+        <button
+          type="button"
+          onClick={() => setForm({ mode: 'inventory' })}
+          aria-label="เพิ่มยาเข้าตู้ยา (ไม่ตั้งเวลา)"
+          title="เพิ่มยาเข้าตู้ยา (ไม่ตั้งเวลา)"
+          className="fixed bottom-28 lg:bottom-8 right-5 lg:right-8 z-30 inline-flex h-16 w-16 items-center justify-center rounded-full bg-purple-700 text-white shadow-xl shadow-purple-900/30 hover:bg-purple-800 active:scale-95 transition-transform cursor-pointer focus:outline-none focus:ring-4 focus:ring-purple-300"
+        >
+          <Plus className="w-8 h-8" aria-hidden="true" />
+        </button>
+      )}
+
       <MedFormModal
         open={form !== null}
         initial={editing}
         defaultLowStockDays={settings.reminders.lowStockDays}
+        knownMeds={state.meds}
+        mode={form?.mode === 'inventory' ? 'inventory' : 'full'}
+        linkFrom={linkFrom}
         onSave={handleSave}
         onClose={() => setForm(null)}
       />
@@ -276,6 +340,7 @@ export const MedsPage: React.FC = () => {
         onEdit={openEdit}
         onDelete={setDeleting}
         onRefill={openRefill}
+        onSchedule={openSchedule}
         onClose={() => setDetailId(null)}
       />
 

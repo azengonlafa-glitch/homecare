@@ -1,13 +1,18 @@
 import { queueSync } from '../cloud/queue';
 import { useEffect, useState } from 'react';
+import { JOURNAL_CHANGED_EVENT, loadPosts, savePosts, type JournalPost } from './journal';
 import {
+  DEFAULT_EXPIRY_WARN_DAYS,
   MEDS_CHANGED_EVENT,
-  MISSED_GRACE_MIN,
   PERIOD_LABEL,
   daysLeft,
+  daysToExpiry,
   findLog,
-  isDue,
+  isOverdue,
   isScheduledOn,
+  reminderDelayOf,
+  reminderRepeatOf,
+  thaiDate,
   loadMeds,
   periodTime,
   stockLevel,
@@ -18,11 +23,15 @@ import {
 import {
   CURRENT_MEMBER_ID,
   SETTINGS_CHANGED_EVENT,
+  getCurrentMember,
   loadSettings,
   type ReminderSettings,
 } from './settings';
 
-export type AlertKind = 'missed' | 'out' | 'low';
+/** แจ้งว่ารายการแจ้งเตือนถึงคนในบ้านเปลี่ยน (กระดิ่งของคนอื่นฟังเหตุการณ์นี้) */
+export const NOTICES_CHANGED_EVENT = 'growa-notices-changed';
+
+export type AlertKind = 'missed' | 'out' | 'low' | 'expiry';
 
 export interface MedAlert {
   /** ไม่ซ้ำกัน ใช้กันการแจ้งเตือนบนเครื่องซ้ำ (รวมครั้งที่เตือนด้วย เพราะเตือนซ้ำได้หลายรอบ) */
@@ -64,7 +73,7 @@ const labelOf = (minutes: number) => {
 
 /**
  * คำนวณการแจ้งเตือน: ลืมกินยา (เลยเวลา + ผ่อนผัน แต่ยังไม่บันทึก) และยาใกล้หมด/หมดแล้ว
- * - "ลืมกินยา" เตือนซ้ำได้ตามจำนวนครั้งที่ตั้งไว้ (repeatCount) โดยเว้นระยะ repeatIntervalMinutes
+ * - "ลืมกินยา" เตือนซ้ำได้ตามจำนวนครั้งที่ตั้งไว้ (repeatCount) โดยเว้นระยะตามที่ตั้งไว้ในแต่ละยา
  * - ตั้งแต่ครั้งที่ 2 ถ้ายังไม่กินยา และเปิด escalateToFamily ไว้ จะแจ้งทุกคนในบ้านด้วย
  */
 export function buildAlerts(
@@ -78,20 +87,21 @@ export function buildAlerts(
   const active = state.meds.filter((m) => m.active);
   const nowMinutes = now.getHours() * 60 + now.getMinutes();
 
-  const interval = Math.max(1, Math.round(reminders.repeatIntervalMinutes || 15));
   const rounds = Math.max(1, Math.round(reminders.repeatCount || 1));
 
   if (reminders.doseWindow) {
     for (const med of active) {
       if (!isScheduledOn(med, today)) continue;
       for (const p of med.periods) {
-        if (!isDue(med, p, now) || findLog(state.logs, today, med.id, p)) continue;
+        if (!isOverdue(med, p, now) || findLog(state.logs, today, med.id, p)) continue;
 
         const dueTime = periodTime(med, p);
-        // เริ่มเตือนครั้งแรกเมื่อเลยเวลาที่ควรกิน + เวลาผ่อนผัน แล้วเตือนซ้ำทุก ๆ interval นาที
+        // เวลาแจ้งครั้งแรกและช่วงแจ้งซ้ำ ตั้งรายยาได้ (ค่าเริ่มต้น: ตรงเวลา และซ้ำทุก 10 นาที)
+        const delay = reminderDelayOf(med);
+        const interval = reminderRepeatOf(med);
         const minutesLate = Math.max(0, nowMinutes - minutesOf(dueTime));
-        const elapsedAfterGrace = Math.max(0, minutesLate - MISSED_GRACE_MIN);
-        const round = Math.min(rounds, Math.floor(elapsedAfterGrace / interval) + 1);
+        const elapsedAfterFirst = Math.max(0, minutesLate - delay);
+        const round = Math.min(rounds, Math.floor(elapsedAfterFirst / interval) + 1);
         const remainingRounds = round < rounds;
         const sharedWithFamily = round >= 2 && reminders.escalateToFamily;
 
@@ -103,11 +113,11 @@ export function buildAlerts(
           round,
           rounds,
           dueTime,
-          nextTime: remainingRounds ? labelOf(minutesOf(dueTime) + MISSED_GRACE_MIN + round * interval) : undefined,
+          nextTime: remainingRounds ? labelOf(minutesOf(dueTime) + delay + round * interval) : undefined,
           minutesLate,
           sharedWithFamily,
           familyNames: sharedWithFamily ? familyNames : [],
-          title: `ลืมกินยามื้อ${PERIOD_LABEL[p]}หรือเปล่า?`,
+          title: round === 1 ? `ถึงเวลากินยามื้อ${PERIOD_LABEL[p]}` : `ลืมกินยามื้อ${PERIOD_LABEL[p]}หรือเปล่า?`,
           body: `${med.name} (เวลา ${dueTime} น.) ยังไม่ได้บันทึก`,
           tone: 'danger',
         });
@@ -120,7 +130,7 @@ export function buildAlerts(
       const level = stockLevel(med);
       if (level === 'good') continue;
       const days = daysLeft(med);
-      const out = med.remaining <= 0 || days === 0;
+      const out = med.remaining <= 0;
       alerts.push({
         key: `stock:${med.id}:${out ? 'out' : level}`,
         kind: out ? 'out' : 'low',
@@ -132,13 +142,34 @@ export function buildAlerts(
         title: out ? `${med.name} หมดแล้ว` : `${med.name} ใกล้หมด`,
         body: out
           ? 'กด “ขอเติมยา” เพื่อส่งข้อความถึงร้านยา'
-          : `พอกินอีก ${days} วัน${med.refillRequestedAt ? ' · ขอเติมยาไปแล้ว' : ''}`,
+          : `${days ? `พอกินอีก ${days} วัน` : 'เหลือไม่ถึง 1 วัน'}${med.refillRequestedAt ? ' · ขอเติมยาไปแล้ว' : ''}`,
         tone: out || level === 'critical' ? 'danger' : 'warn',
       });
     }
   }
 
-  const order: Record<AlertKind, number> = { missed: 0, out: 1, low: 2 };
+  // ยาใกล้หมดอายุ/หมดอายุแล้ว (ตั้งจำนวนวันเตือนล่วงหน้าได้ต่อยา)
+  for (const med of active) {
+    const left = daysToExpiry(med, now);
+    if (left === null || left > (med.expiryWarnDays ?? DEFAULT_EXPIRY_WARN_DAYS)) continue;
+    const expired = left < 0;
+    alerts.push({
+      key: `expiry:${med.id}:${med.expiryDate}:${expired ? 'x' : left <= 7 ? 'w' : 'n'}`,
+      kind: 'expiry',
+      medId: med.id,
+      round: 1,
+      rounds: 1,
+      sharedWithFamily: false,
+      familyNames: [],
+      title: expired ? `${med.name} หมดอายุแล้ว` : `${med.name} ใกล้หมดอายุ`,
+      body: expired
+        ? `หมดอายุเมื่อ ${thaiDate(med.expiryDate!, 'medium')} ไม่ควรใช้ต่อ ถามเภสัชกรเรื่องการทิ้งและเปลี่ยนใหม่`
+        : `หมดอายุ ${thaiDate(med.expiryDate!, 'medium')} (อีก ${left} วัน)`,
+      tone: expired || left <= 7 ? 'danger' : 'warn',
+    });
+  }
+
+  const order: Record<AlertKind, number> = { missed: 0, out: 1, expiry: 2, low: 3 };
   return alerts.sort((a, b) => order[a.kind] - order[b.kind]);
 }
 
@@ -157,10 +188,23 @@ const readNotified = (): Set<string> => {
   }
 };
 
-/** บันทึกว่าการเตือนครั้งนี้ถูกส่งถึงทุกคนในบ้านแล้ว  */
+/** ข้อความแจ้งคนในบ้านว่าสมาชิกคนนี้ยังไม่ได้กินยาหลังเตือนหลายรอบ */
+function noticeText(who: string, a: MedAlert) {
+  return {
+    title: `${who} ยังไม่ได้กินยา${a.period ? `มื้อ${PERIOD_LABEL[a.period]}` : ''}`,
+    body: `${a.body} · เตือนไปแล้ว ${a.round} ครั้ง ยังไม่ได้บันทึก ช่วยโทรถามหรือแวะดูหน่อย`,
+  };
+}
+
+/**
+ * ตั้งแต่เตือนครั้งที่ 2 ถ้ายังไม่กินยา: บันทึกแจ้งทุกคนในบ้าน (แสดงในกระดิ่งของคนอื่น)
+ * และเพิ่มโพสต์อัตโนมัติในบันทึกอาการ
+ */
 function syncFamilyNotices(alerts: MedAlert[]) {
   const shared = alerts.filter((a) => a.sharedWithFamily);
   if (shared.length === 0) return;
+  const me = getCurrentMember(loadSettings());
+  const who = me?.name || 'สมาชิกในบ้าน';
   try {
     const raw = localStorage.getItem(FAMILY_NOTICE_KEY);
     const existing = raw ? (JSON.parse(raw) as FamilyNotice[]) : [];
@@ -169,8 +213,9 @@ function syncFamilyNotices(alerts: MedAlert[]) {
       .filter((a) => !known.has(a.key))
       .map<FamilyNotice>((a) => ({
         key: a.key,
-        title: a.title,
-        body: a.body,
+        memberId: CURRENT_MEMBER_ID,
+        memberName: who,
+        ...noticeText(who, a),
         round: a.round,
         sharedAt: new Date().toISOString(),
         memberNames: a.familyNames,
@@ -178,13 +223,49 @@ function syncFamilyNotices(alerts: MedAlert[]) {
     if (fresh.length === 0) return;
     localStorage.setItem(FAMILY_NOTICE_KEY, JSON.stringify([...fresh, ...existing].slice(0, 50)));
     queueSync('notices');
+    window.dispatchEvent(new Event(NOTICES_CHANGED_EVENT));
+    addJournalPosts(fresh, who);
   } catch {
     // เก็บไม่ได้ (เช่นพื้นที่เต็ม): ข้ามได้ ไม่ให้กระทบการใช้งาน
   }
 }
 
+/** เพิ่มโพสต์ในบันทึกอาการ 1 โพสต์ต่อมื้อ (รหัสคงที่ ไม่ซ้ำแม้เตือนหลายรอบ) */
+function addJournalPosts(notices: FamilyNotice[], who: string) {
+  const posts = loadPosts();
+  const have = new Set(posts.map((p) => p.id));
+  const added: JournalPost[] = [];
+  for (const n of notices) {
+    // key = missed:วัน:รหัสยา:ช่วง:rรอบ ตัดรอบออกให้เหลือ 1 โพสต์ต่อมื้อ
+    const id = `auto-missed-${n.key.replace(/:r\d+$/, '').replace(/[^A-Za-z0-9-]+/g, '-')}`;
+    if (have.has(id) || added.some((p) => p.id === id)) continue;
+    added.push({
+      id,
+      authorId: CURRENT_MEMBER_ID,
+      authorName: who,
+      about: who,
+      title: n.title,
+      content: `แจ้งอัตโนมัติจากระบบ: ${n.body}`,
+      symptoms: [],
+      moodMain: null,
+      moodDetails: [],
+      photo: null,
+      createdAt: n.sharedAt,
+      editedAt: null,
+      likes: [],
+      comments: [],
+    });
+  }
+  if (added.length === 0) return;
+  savePosts([...added, ...posts]);
+  window.dispatchEvent(new Event(JOURNAL_CHANGED_EVENT));
+}
+
 export interface FamilyNotice {
   key: string;
+  /** สมาชิกที่ยังไม่ได้กินยา (เจ้าของการแจ้งเตือน) */
+  memberId?: string;
+  memberName?: string;
   title: string;
   body: string;
   round: number;
@@ -196,10 +277,45 @@ export interface FamilyNotice {
 export function readFamilyNotices(): FamilyNotice[] {
   try {
     const raw = localStorage.getItem(FAMILY_NOTICE_KEY);
-    return raw ? (JSON.parse(raw) as FamilyNotice[]) : [];
+    const list = raw ? (JSON.parse(raw) as FamilyNotice[]) : [];
+    return [...list].sort((a, b) => b.sharedAt.localeCompare(a.sharedAt));
   } catch {
     return [];
   }
+}
+
+/** ติดตามการแจ้งเตือนที่คนอื่นในบ้านส่งมาถึงเรา (ไม่รวมของตัวเอง เฉพาะ 12 ชั่วโมงล่าสุด) */
+export function useIncomingFamilyNotices(): FamilyNotice[] {
+  const compute = () => {
+    const since = Date.now() - 12 * 3_600_000;
+    // เตือนหลายรอบในมื้อเดียวแสดงรายการเดียว (รายการใหม่สุดมาก่อน จึงเก็บรอบล่าสุดไว้)
+    const seen = new Set<string>();
+    return readFamilyNotices().filter((n) => {
+      if (!n.memberId || n.memberId === CURRENT_MEMBER_ID) return false;
+      if (new Date(n.sharedAt).getTime() < since) return false;
+      const dose = n.key.replace(/:r\d+$/, '');
+      if (seen.has(dose)) return false;
+      seen.add(dose);
+      return true;
+    });
+  };
+  const [list, setList] = useState<FamilyNotice[]>(compute);
+
+  useEffect(() => {
+    const refresh = () => setList(compute());
+    refresh();
+    const timer = window.setInterval(refresh, 60_000);
+    window.addEventListener(NOTICES_CHANGED_EVENT, refresh);
+    window.addEventListener('storage', refresh);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener(NOTICES_CHANGED_EVENT, refresh);
+      window.removeEventListener('storage', refresh);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return list;
 }
 
 /** แสดงการแจ้งเตือนบนเครื่อง (ถ้าอนุญาตแล้ว) เฉพาะรายการที่ยังไม่เคยแจ้งในรอบนี้ */

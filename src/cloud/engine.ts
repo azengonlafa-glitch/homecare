@@ -30,7 +30,7 @@ const EVENTS: Record<StoreName, string[]> = {
   calendar: [],
   journal: [],
   access: ['growa-access-changed'],
-  notices: [],
+  notices: ['growa-notices-changed'],
   onboarding: [],
 };
 

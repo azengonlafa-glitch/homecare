@@ -165,29 +165,49 @@ export function validateStep(step: number, p: OnboardingProfile): Record<string,
 
   if (step === 0) {
     if (!p.fullName.trim()) errors['ob-fullname'] = 'กรุณากรอกชื่อ-นามสกุล';
-    if (p.birthYear) {
-      const year = Number(p.birthYear);
-      const thisYearBE = new Date().getFullYear() + 543;
-      if (!/^\d{4}$/.test(p.birthYear) || year > thisYearBE || year < thisYearBE - 120) {
-        errors['ob-birth-year'] = 'กรอกปี พ.ศ. 4 หลัก เช่น 2535';
-      }
+    // ปีเกิดจำเป็น: ขนาดยาและข้อห้ามใช้ยาขึ้นกับอายุ
+    const year = Number(p.birthYear);
+    const thisYearBE = new Date().getFullYear() + 543;
+    if (!/^\d{4}$/.test(p.birthYear) || year > thisYearBE || year < thisYearBE - 120) {
+      errors['ob-birth-year'] = 'กรุณากรอกปีเกิด (พ.ศ.) 4 หลัก เช่น 2535';
     }
+    if (!p.gender) errors['ob-gender'] = 'กรุณาเลือกเพศ';
     if (p.phone && !phonePattern.test(digits(p.phone))) {
       errors['ob-phone'] = 'กรอกเบอร์โทร 9–10 หลัก ขึ้นต้นด้วย 0';
     }
   }
 
   if (step === 1) {
+    // น้ำหนักจำเป็น: ใช้คำนวณขนาดยา
+    if (!p.weightKg) {
+      errors['ob-weight'] = 'กรุณากรอกน้ำหนัก';
+    } else if (!(Number(p.weightKg) >= 1 && Number(p.weightKg) <= 400)) {
+      errors['ob-weight'] = 'น้ำหนักควรอยู่ระหว่าง 1–400 กก.';
+    }
     if (p.heightCm && !(Number(p.heightCm) >= 30 && Number(p.heightCm) <= 250)) {
       errors['ob-height'] = 'ส่วนสูงควรอยู่ระหว่าง 30–250 ซม.';
     }
-    if (p.weightKg && !(Number(p.weightKg) >= 1 && Number(p.weightKg) <= 400)) {
-      errors['ob-weight'] = 'น้ำหนักควรอยู่ระหว่าง 1–400 กก.';
-    }
   }
 
-  if (step === 5 && p.emergencyPhone && !phonePattern.test(digits(p.emergencyPhone))) {
-    errors['ob-emergency-phone'] = 'กรอกเบอร์โทร 9–10 หลัก ขึ้นต้นด้วย 0';
+  // ประวัติแพ้ยา/อาหาร: ต้องระบุอย่างน้อย 1 รายการ หรือยืนยันว่าไม่เคยแพ้
+  if (step === 2 && !p.noAllergies && p.drugAllergies.length === 0 && p.otherAllergies.length === 0) {
+    errors['ob-no-allergies'] =
+      'กรุณาเพิ่มประวัติที่แพ้ หรือติ๊กว่าไม่เคยแพ้อะไรเลย (ถ้าพิมพ์ชื่อยาไว้ ให้กด "เพิ่มประวัติแพ้ยา" ก่อน)';
+  }
+
+  // โรคประจำตัว: ต้องเลือกอย่างน้อย 1 โรค หรือยืนยันว่าไม่มี
+  if (step === 3 && !p.noConditions && p.conditions.length === 0) {
+    errors['ob-no-conditions'] = 'กรุณาเลือกโรคประจำตัว หรือติ๊กว่าไม่มีโรคประจำตัว';
+  }
+
+  if (step === 5) {
+    if (!p.emergencyName.trim()) errors['ob-emergency-name'] = 'กรุณากรอกชื่อผู้ติดต่อฉุกเฉิน';
+    if (!p.emergencyPhone.trim()) {
+      errors['ob-emergency-phone'] = 'กรุณากรอกเบอร์โทรผู้ติดต่อฉุกเฉิน';
+    } else if (!phonePattern.test(digits(p.emergencyPhone))) {
+      errors['ob-emergency-phone'] = 'กรอกเบอร์โทร 9–10 หลัก ขึ้นต้นด้วย 0';
+    }
+    if (!p.address.trim()) errors['ob-address'] = 'กรุณากรอกที่อยู่จัดส่ง';
   }
 
   if (step === 7 && !p.consent) {

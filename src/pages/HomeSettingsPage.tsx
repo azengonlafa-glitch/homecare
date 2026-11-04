@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { Camera, Check, ChevronDown, Copy, Crown, House, MessageCircle, Plus, RefreshCw, Share2, Trash2 } from 'lucide-react';
+import { Camera, Check, ChevronDown, Copy, Crown, House, Image as ImageIcon, MessageCircle, Plus, RefreshCw, Share2, Trash2 } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { PageHeader } from '../components/ui/PageHeader';
@@ -29,7 +29,7 @@ import { clearJournal } from '../lib/journal';
 import { copyToClipboard } from '../lib/clipboard';
 import { clearHomeSetup } from '../lib/homeSetup';
 import { resetHomeData } from '../lib/storage';
-import { resizeToAvatar } from '../lib/photo';
+import { resizeToAvatar, resizeToBanner } from '../lib/photo';
 import { cn } from '../lib/cn';
 import {
   CURRENT_MEMBER_ID,
@@ -230,9 +230,11 @@ export const HomeSettingsPage: React.FC = () => {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [photoError, setPhotoError] = useState('');
+  const [bannerError, setBannerError] = useState('');
   const [copied, setCopied] = useState(false);
   const copiedTimer = useRef<number | undefined>(undefined);
   const fileRef = useRef<HTMLInputElement>(null);
+  const bannerRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => () => window.clearTimeout(copiedTimer.current), []);
 
@@ -301,6 +303,25 @@ export const HomeSettingsPage: React.FC = () => {
   const removePhoto = () => {
     commit({ ...settings, home: { ...settings.home, photo: '' } });
     toast.show('ลบรูปบ้านแล้ว');
+  };
+
+  const handleBanner = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setBannerError('');
+    try {
+      const banner = await resizeToBanner(file);
+      commit({ ...settings, home: { ...settings.home, banner } });
+      toast.show('เปลี่ยนภาพพื้นหลังบ้านแล้ว');
+    } catch {
+      setBannerError('ใช้ไฟล์นี้ไม่ได้ เลือกรูปภาพ (JPG, PNG) อีกครั้ง');
+    }
+  };
+
+  const removeBanner = () => {
+    commit({ ...settings, home: { ...settings.home, banner: '' } });
+    toast.show('ลบภาพพื้นหลังบ้านแล้ว');
   };
 
   const changeConditions = (conditions: string[]) => commit({ ...settings, home: { ...settings.home, conditions } });
@@ -631,17 +652,62 @@ export const HomeSettingsPage: React.FC = () => {
           </Card>
 
           <Card className="p-6 sm:p-8">
+            <SectionTitle title="ภาพพื้นหลังบ้าน" hint="แสดงที่มุมบนซ้ายของแอป คล้ายแบนเนอร์เซิร์ฟเวอร์ใน Discord" />
+            <div className="flex flex-col gap-4">
+              <div className="relative h-28 rounded-2xl overflow-hidden border border-slate-200 bg-purple-50">
+                {home.banner ? (
+                  <img src={home.banner} alt="ภาพพื้นหลังบ้าน" className="absolute inset-0 w-full h-full object-cover" />
+                ) : (
+                  <span className="absolute inset-0 flex items-center justify-center text-purple-400" aria-hidden="true">
+                    <ImageIcon className="w-10 h-10" />
+                  </span>
+                )}
+                {home.banner && (
+                  <span aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/25 to-black/10" />
+                )}
+              </div>
+              <input
+                ref={bannerRef}
+                id="home-banner"
+                type="file"
+                accept="image/*"
+                className="sr-only"
+                tabIndex={-1}
+                onChange={handleBanner}
+              />
+              <div className="flex flex-wrap justify-center gap-2">
+                <Button type="button" size="sm" onClick={() => bannerRef.current?.click()}>
+                  <ImageIcon className="w-5 h-5" aria-hidden="true" />
+                  <span>{home.banner ? 'เปลี่ยนภาพพื้นหลัง' : 'อัปโหลดภาพพื้นหลัง'}</span>
+                </Button>
+                {home.banner && (
+                  <Button type="button" variant="soft" size="sm" onClick={removeBanner}>
+                    <Trash2 className="w-5 h-5" aria-hidden="true" />
+                    <span>ลบภาพ</span>
+                  </Button>
+                )}
+              </div>
+              {bannerError && (
+                <p role="alert" className="text-base font-semibold text-red-700">
+                  {bannerError}
+                </p>
+              )}
+            </div>
+          </Card>
+
+          <Card className="p-6 sm:p-8">
             <SectionTitle title="รหัสชวน" hint="ให้ญาติกด “เข้าร่วมบ้าน” แล้วใส่รหัสนี้" />
-            <div className="rounded-2xl bg-purple-50 border border-purple-200 px-4 py-6 text-center">
+            <div className="rounded-2xl bg-purple-50 border border-purple-200 px-4 py-6 text-center [container-type:inline-size]">
               <p className="text-base font-semibold text-purple-900 flex items-center justify-center gap-1.5">
                 <MessageCircle className="w-5 h-5" aria-hidden="true" />
-                รหัสชวน 6 หลัก
+                รหัสชวน 8 หลัก
               </p>
-              <p className="mt-2 text-4xl sm:text-5xl font-extrabold tracking-[0.15em] text-purple-700 whitespace-nowrap select-all">
+              {/* ขนาดตัวเลขปรับตามความกว้างกล่อง เลขจึงไม่ล้นแม้จอหรือกล่องแคบ */}
+              <p className="mt-2 text-[clamp(1.5rem,11cqw,3rem)] leading-tight font-extrabold tracking-[0.08em] text-purple-700 whitespace-nowrap select-all">
                 {shownCode}
               </p>
             </div>
-            <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="mt-4 grid grid-cols-[repeat(auto-fit,minmax(11rem,1fr))] gap-3">
               <Button fullWidth onClick={handleShare}>
                 <Share2 className="w-6 h-6" aria-hidden="true" />
                 <span>ชวนทางไลน์</span>

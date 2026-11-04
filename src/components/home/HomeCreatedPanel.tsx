@@ -61,11 +61,11 @@ export const HomeCreatedPanel: React.FC<HomeCreatedPanelProps> = ({ homeName, co
       </div>
 
       {/* รหัสเชิญ */}
-      <div className="rounded-2xl bg-purple-50 border border-purple-200 px-4 py-6 text-center">
+      <div className="rounded-2xl bg-purple-50 border border-purple-200 px-4 py-6 text-center [container-type:inline-size]">
         <p className="text-sm font-semibold text-purple-800">รหัสเชิญบ้านของคุณ</p>
         <p
           id="invite-code-display"
-          className="mt-2 text-3xl min-[400px]:text-4xl sm:text-5xl font-extrabold tracking-[0.12em] whitespace-nowrap text-purple-700 select-all"
+          className="mt-2 text-[clamp(1.5rem,11cqw,3rem)] leading-tight font-extrabold tracking-[0.08em] whitespace-nowrap text-purple-700 select-all"
         >
           {shownCode}
         </p>

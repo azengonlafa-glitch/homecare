@@ -196,7 +196,7 @@ export const HealthProfilePage: React.FC = () => {
             </Card>
           ))}
 
-          <div className="sticky bottom-24 md:bottom-4 z-10 rounded-2xl bg-white/95 backdrop-blur border border-slate-200 p-3 shadow-lg">
+          <div className="sticky bottom-[calc(5.75rem+env(safe-area-inset-bottom))] lg:bottom-4 z-20 rounded-2xl bg-white/95 backdrop-blur border border-slate-200 p-3 shadow-lg">
             <div className="grid grid-cols-2 gap-3">
               <Button type="button" variant="neutral" fullWidth disabled={!dirty} onClick={handleCancel}>
                 ยกเลิก

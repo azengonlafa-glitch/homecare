@@ -4,12 +4,15 @@ import { Card } from '../ui/Card';
 import { DayStrip, adherenceTone } from './MedDetailModal';
 import {
   DOSE_STATUS_LABEL,
+  LATE_THRESHOLD_MIN,
   PERIOD_LABEL,
   medStats,
   thaiDate,
+  todayKey,
   type DoseLog,
   type Medication,
 } from '../../lib/meds';
+import { addDays } from '../../lib/calendar';
 import { cn } from '../../lib/cn';
 
 interface MedReportProps {
@@ -39,13 +42,20 @@ export const MedReport: React.FC<MedReportProps> = ({ meds, logs, onOpen }) => {
       taken: acc.taken + stats.taken,
       missed: acc.missed + stats.missed + stats.unrecorded,
       skipped: acc.skipped + stats.skipped,
+      late: acc.late + stats.late,
     }),
-    { expected: 0, taken: 0, missed: 0, skipped: 0 }
+    { expected: 0, taken: 0, missed: 0, skipped: 0, late: 0 }
   );
   const denom = total.expected - total.skipped;
   const overall = denom > 0 ? Math.round((total.taken / denom) * 100) : null;
 
   const names = new Map(meds.map((m) => [m.id, m.name]));
+  const since = range ? todayKey(addDays(new Date(), -(range - 1))) : '';
+  const inRange = (key: string) => !since || key >= since;
+  // เรื่องที่ควรรู้: ไม่ได้กิน (ไม่นับที่หมอสั่งงด) และกินช้า ใหม่ → เก่า
+  const issues = logs
+    .filter((l) => names.has(l.medId) && inRange(l.date) && (l.status === 'missed' || (l.status === 'taken' && l.lateMinutes)))
+    .sort((a, b) => b.at.localeCompare(a.at));
   const recent = [...logs]
     .filter((l) => names.has(l.medId))
     .sort((a, b) => b.at.localeCompare(a.at))
@@ -79,14 +89,43 @@ export const MedReport: React.FC<MedReportProps> = ({ meds, logs, onOpen }) => {
           <div className="text-base text-slate-700">
             <p className="font-semibold">กินตามนัด</p>
             <p>
-              กินแล้ว {total.taken} จาก {total.expected} มื้อ · พลาด/ไม่ได้บันทึก {total.missed} · งดตามแพทย์สั่ง{' '}
-              {total.skipped}
+              กินแล้ว {total.taken} จาก {total.expected} มื้อ · ไม่ได้กิน/ไม่ได้บันทึก {total.missed} · กินช้า{' '}
+              {total.late} · งดตามแพทย์สั่ง {total.skipped}
             </p>
           </div>
         </div>
         <p className="mt-3 text-sm text-slate-500">
-          มื้อที่เลยเวลาแล้วแต่ไม่ได้บันทึก นับเป็นพลาด · มื้อที่งดตามแพทย์สั่งไม่นำมาคิด
+          มื้อที่เลยเวลาแล้วแต่ไม่ได้บันทึก นับเป็นพลาด · กดกินช้าเกิน {LATE_THRESHOLD_MIN} นาทีนับเป็น “กินช้า” ·
+          มื้อที่งดตามแพทย์สั่งไม่นำมาคิด
         </p>
+      </Card>
+
+      <Card className="p-5 sm:p-6">
+        <h2 className="text-lg font-bold text-slate-900 mb-3">ไม่ได้กิน / กินช้า</h2>
+        {issues.length === 0 ? (
+          <p className="text-base text-slate-600">ไม่มีในช่วงนี้ ยอดเยี่ยมมาก</p>
+        ) : (
+          <ul className="space-y-2.5">
+            {issues.slice(0, 20).map((l) => (
+              <li
+                key={`${l.medId}-${l.date}-${l.period}`}
+                className={cn(
+                  'rounded-xl border px-4 py-3',
+                  l.status === 'missed' ? 'border-rose-200 bg-rose-50' : 'border-amber-200 bg-amber-50'
+                )}
+              >
+                <p className="text-base font-bold text-slate-900 break-words">
+                  {names.get(l.medId)} · {thaiDate(l.date, 'medium')} มื้อ{PERIOD_LABEL[l.period]}
+                </p>
+                <p className="text-sm text-slate-700">
+                  {l.status === 'missed'
+                    ? `ไม่ได้กิน${l.reason ? ` · เหตุผล: ${l.reason}` : ' · ไม่ได้ระบุเหตุผล'}`
+                    : `กินช้ากว่ากำหนด ${l.lateMinutes} นาที`}
+                </p>
+              </li>
+            ))}
+          </ul>
+        )}
       </Card>
 
       <Card className="p-0 overflow-hidden">
@@ -140,6 +179,8 @@ export const MedReport: React.FC<MedReportProps> = ({ meds, logs, onOpen }) => {
                 <span className="font-semibold text-slate-900">{names.get(l.medId)}</span>
                 <span className="text-slate-600">
                   {thaiDate(l.date, 'medium')} มื้อ{PERIOD_LABEL[l.period]} · {DOSE_STATUS_LABEL[l.status]}
+                  {l.lateMinutes ? ` (ช้า ${l.lateMinutes} นาที)` : ''}
+                  {l.reason ? ` · ${l.reason}` : ''}
                 </span>
               </li>
             ))}

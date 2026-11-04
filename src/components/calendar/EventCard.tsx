@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Bell,
+  Check,
   Clock,
   Flag,
   Globe,
@@ -17,7 +18,16 @@ import { CommentThread } from '../ui/CommentThread';
 import { Button } from '../ui/Button';
 import { DEFAULT_TIME_ZONE, timeZoneLabel } from '../../data/timeZones';
 import type { HouseholdMember } from '../../lib/settings';
-import { locationLines, repeatLabel, reminderText, timeLabel, type Occurrence } from '../../lib/calendar';
+import {
+  EVENT_COLORS,
+  getEventColorMeta,
+  type EventColor,
+  locationLines,
+  repeatLabel,
+  reminderText,
+  timeLabel,
+  type Occurrence,
+} from '../../lib/calendar';
 import { cn } from '../../lib/cn';
 
 interface EventCardProps {
@@ -27,6 +37,7 @@ interface EventCardProps {
   canEdit: boolean;
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
+  onChangeColor?: (id: string, color: EventColor) => void;
   onToggleVolunteer: (id: string) => void;
   onAddComment: (id: string, text: string) => void;
   onDeleteComment: (id: string, commentId: string) => void;
@@ -55,8 +66,24 @@ export const EventCard: React.FC<EventCardProps> = ({
   onToggleVolunteer,
   onAddComment,
   onDeleteComment,
+  onChangeColor,
 }) => {
   const { event } = occurrence;
+  const [colorOpen, setColorOpen] = useState(false);
+  const colorRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!colorOpen) return;
+    const onPointerDown = (e: PointerEvent) => {
+      if (!colorRef.current?.contains(e.target as Node)) {
+        setColorOpen(false);
+      }
+    };
+    document.addEventListener('pointerdown', onPointerDown);
+    return () => document.removeEventListener('pointerdown', onPointerDown);
+  }, [colorOpen]);
+
+  const colorMeta = getEventColorMeta(event.color, event.important);
   const assigned = members.filter((m) => event.assignees.includes(m.id));
   const iAmAssigned = event.assignees.includes(currentMemberId);
   const location = event.location;
@@ -72,7 +99,7 @@ export const EventCard: React.FC<EventCardProps> = ({
       aria-label={event.title}
       className={cn(
         'rounded-2xl border border-slate-200 border-l-4 bg-white p-4 sm:p-5 space-y-4',
-        event.important ? 'border-l-red-500' : 'border-l-amber-400'
+        colorMeta.borderLeft
       )}
     >
       <header className="flex items-start gap-2">
@@ -94,7 +121,55 @@ export const EventCard: React.FC<EventCardProps> = ({
           </p>
         </div>
         {canEdit && (
-          <div className="flex shrink-0 -mr-2 -mt-1">
+          <div className="flex items-center shrink-0 -mr-2 -mt-1">
+            <div ref={colorRef} className="relative">
+              <button
+                type="button"
+                onClick={() => setColorOpen((v) => !v)}
+                aria-label="เปลี่ยนสีแถบกิจกรรม"
+                title={`เปลี่ยนสีแถบกิจกรรม (ปัจจุบัน: ${colorMeta.label})`}
+                className={iconButton}
+              >
+                <span
+                  className={cn(
+                    'w-4 h-4 rounded-full ring-2 ring-white shadow-xs transition-transform hover:scale-125',
+                    colorMeta.swatchBg
+                  )}
+                  aria-hidden="true"
+                />
+              </button>
+              {colorOpen && (
+                <div
+                  role="dialog"
+                  aria-label="เลือกสีแถบกิจกรรม"
+                  className="anim-pop absolute right-0 top-full z-30 mt-1 flex flex-wrap gap-1.5 p-2 bg-white rounded-2xl border border-slate-200 shadow-xl w-44"
+                >
+                  <p className="w-full text-xs font-bold text-slate-500 px-1 mb-0.5">เลือกสีแถบ</p>
+                  {EVENT_COLORS.map((c) => {
+                    const active = (event.color ?? (event.important ? 'rose' : 'amber')) === c.key;
+                    return (
+                      <button
+                        key={c.key}
+                        type="button"
+                        title={c.label}
+                        aria-label={c.label}
+                        onClick={() => {
+                          onChangeColor?.(event.id, c.key);
+                          setColorOpen(false);
+                        }}
+                        className={cn(
+                          'w-7 h-7 rounded-full flex items-center justify-center transition-transform hover:scale-115 active:scale-95 cursor-pointer',
+                          c.swatchBg,
+                          active ? 'ring-2 ring-purple-600 ring-offset-2 scale-110' : ''
+                        )}
+                      >
+                        {active && <Check className="w-3.5 h-3.5 text-white stroke-[3]" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
             <button
               type="button"
               onClick={() => onEdit(event.id)}

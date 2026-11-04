@@ -1,6 +1,6 @@
 import React from 'react';
-import { Pill, Syringe, Droplets, Wind, FlaskConical, Layers, Package2, Circle } from 'lucide-react';
-import { StockBadge } from './StockBadge';
+import { Pill, Syringe, Droplets, Wind, FlaskConical, Layers, Package2, Circle, TestTube2 } from 'lucide-react';
+import { ExpiryBadge, StockBadge } from './StockBadge';
 import {
   PERIOD_LABEL,
   formatMedForm,
@@ -10,7 +10,7 @@ import {
   type Medication,
 } from '../../lib/meds';
 import { cn } from '../../lib/cn';
-import { getFile } from '../../lib/fileStore';
+import { MedPhoto } from './MedPhoto';
 
 interface MedCabinetProps {
   meds: Medication[];
@@ -25,6 +25,8 @@ const FORM_ICON: Record<MedForm, React.FC<{ className?: string }>> = {
   capsule: Layers,
   liquid: Droplets,
   injection: Syringe,
+  needle: Syringe,
+  testkit: TestTube2,
   topical: FlaskConical,
   drops: Droplets,
   spray: Wind,
@@ -37,6 +39,8 @@ const FORM_BG: Record<MedForm, string> = {
   capsule:   'bg-blue-50',
   liquid:    'bg-cyan-50',
   injection: 'bg-rose-50',
+  needle:    'bg-pink-50',
+  testkit:   'bg-teal-50',
   topical:   'bg-green-50',
   drops:     'bg-sky-50',
   spray:     'bg-indigo-50',
@@ -48,6 +52,8 @@ const FORM_ICON_COLOR: Record<MedForm, string> = {
   capsule:   'text-blue-500',
   liquid:    'text-cyan-500',
   injection: 'text-rose-500',
+  needle:    'text-pink-500',
+  testkit:   'text-teal-500',
   topical:   'text-green-500',
   drops:     'text-sky-500',
   spray:     'text-indigo-500',
@@ -59,21 +65,9 @@ const MedGridCard: React.FC<{ med: Medication; onOpen: (m: Medication) => void }
   const level = stockLevel(med);
   const Icon = FORM_ICON[med.form] ?? Circle;
   const formLabel = formatMedForm(med);
-  const timesText = med.periods
-    .map((p) => `${PERIOD_LABEL[p]}${med.times[p] ? ` ${med.times[p]}` : ''}`)
-    .join(' · ');
-
-  // รูปที่ถ่ายไว้ (pill photo ก่อน ถ้าไม่มีใช้ label photo)
-  const photoAtt = med.pillPhoto ?? med.labelPhoto;
-  const [photoUrl, setPhotoUrl] = React.useState<string | null>(null);
-  React.useEffect(() => {
-    if (!photoAtt) { setPhotoUrl(null); return; }
-    void getFile(photoAtt.id).then((blob) => {
-      if (blob) setPhotoUrl(URL.createObjectURL(blob));
-    });
-    return () => { if (photoUrl) URL.revokeObjectURL(photoUrl); };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [photoAtt?.id]);
+  const timesText = med.asNeeded
+    ? 'กินเมื่อจำเป็น (ไม่มีตารางประจำ)'
+    : med.periods.map((p) => `${PERIOD_LABEL[p]}${med.times[p] ? ` ${med.times[p]}` : ''}`).join(' · ');
 
   return (
     <button
@@ -90,17 +84,11 @@ const MedGridCard: React.FC<{ med: Medication; onOpen: (m: Medication) => void }
     >
       {/* ส่วนบน: รูปยา / ไอคอน */}
       <div className={cn('relative w-full aspect-square flex items-center justify-center', FORM_BG[med.form])}>
-        {photoUrl ? (
-          <img
-            src={photoUrl}
-            alt={med.name}
-            width={200}
-            height={200}
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <Icon className={cn('w-14 h-14', FORM_ICON_COLOR[med.form])} aria-hidden="true" />
-        )}
+        <MedPhoto
+          med={med}
+          className="absolute inset-0 h-full w-full"
+          fallback={<Icon className={cn('w-14 h-14', FORM_ICON_COLOR[med.form])} aria-hidden="true" />}
+        />
         {/* badge หยุดใช้ */}
         {!med.active && (
           <span className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-slate-700/80 text-white text-xs font-bold">
@@ -115,7 +103,7 @@ const MedGridCard: React.FC<{ med: Medication; onOpen: (m: Medication) => void }
               level === 'critical' ? 'bg-red-600 text-white' : 'bg-amber-500 text-white'
             )}
           >
-            {level === 'critical' ? 'ยาหมดแล้ว!' : 'ใกล้หมด'}
+            {med.remaining <= 0 ? 'หมดแล้ว' : level === 'critical' ? 'ใกล้หมดมาก' : 'ใกล้หมด'}
           </span>
         )}
       </div>
@@ -130,11 +118,13 @@ const MedGridCard: React.FC<{ med: Medication; onOpen: (m: Medication) => void }
           <p className="text-xs text-slate-500 truncate">🏥 {med.condition}</p>
         )}
         <p className="text-xs text-slate-600 mt-0.5">{timesText}</p>
-        <div className="mt-auto pt-2 flex items-center justify-between">
+
+        <div className="mt-auto pt-2 flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5">
           <span className="text-xs font-semibold text-slate-700">
             เหลือ {formatQty(med.remaining)} {med.unit}
           </span>
-          <StockBadge med={med} />
+          {!med.asNeeded && <StockBadge med={med} />}
+          <ExpiryBadge med={med} />
         </div>
       </div>
     </button>
@@ -150,10 +140,12 @@ export const MedCabinet: React.FC<MedCabinetProps> = ({ meds, onOpen }) => {
     <div className="space-y-6">
       {active.length > 0 && (
         <section>
-          <h2 className="text-base font-bold text-slate-700 mb-3">
-            กำลังใช้อยู่
-            <span className="ml-2 text-sm font-medium text-slate-400">· {active.length} รายการ</span>
-          </h2>
+          <div className="flex items-center justify-between gap-3 mb-3">
+            <h2 className="text-base font-bold text-slate-700">
+              กำลังใช้อยู่
+              <span className="ml-2 text-sm font-medium text-slate-400">· {active.length} รายการ</span>
+            </h2>
+          </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
             {active.map((med) => (
               <MedGridCard key={med.id} med={med} onOpen={onOpen} />

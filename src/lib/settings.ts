@@ -75,6 +75,8 @@ export interface UserProfile {
 export interface HomeInfo {
   /** รูปบ้าน (data URL ที่ย่อแล้ว) ว่าง = ไม่มีรูป */
   photo: string;
+  /** ภาพพื้นหลังบ้าน (แบนเนอร์ที่มุมบนซ้ายของแอป เหมือนแบนเนอร์เซิร์ฟเวอร์ใน Discord) data URL ที่ย่อแล้ว ว่าง = ไม่มี */
+  banner?: string;
   timeZone: string;
   address1: string;
   address2: string;

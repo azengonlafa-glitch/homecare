@@ -15,6 +15,7 @@ interface DayPanelProps {
   onCreate: () => void;
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
+  onChangeColor?: (id: string, color: import('../../lib/calendar').EventColor) => void;
   onToggleVolunteer: (id: string) => void;
   onAddComment: (id: string, text: string) => void;
   onDeleteComment: (id: string, commentId: string) => void;
@@ -42,7 +43,7 @@ export const DayPanel: React.FC<DayPanelProps> = ({
     <section
       ref={panelRef}
       aria-label={`กิจกรรมของ${title}`}
-      className="scroll-mt-24 bg-white border border-slate-200 rounded-3xl p-5 sm:p-6 min-[1100px]:sticky min-[1100px]:top-24"
+      className="scroll-mt-24 bg-white border border-slate-200 rounded-3xl p-5 sm:p-6 min-[1100px]:sticky min-[1100px]:top-24 min-[1100px]:max-h-[calc(100dvh-7rem)] min-[1100px]:overflow-y-auto overscroll-contain shadow-xs"
     >
       <div className="flex items-start justify-between gap-3 mb-4">
         <div className="min-w-0">

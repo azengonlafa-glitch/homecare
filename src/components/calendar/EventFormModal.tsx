@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Bell, ChevronDown, Clock, Flag, Info, MapPin, Paperclip, Repeat, ThumbsUp, Users } from 'lucide-react';
+import { Bell, Check, ChevronDown, Clock, Flag, Info, MapPin, Paperclip, Repeat, ThumbsUp, Users } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { TextField } from '../ui/TextField';
@@ -10,9 +10,18 @@ import { FieldGroup } from '../ui/ChoiceChips';
 import { AttachmentPicker } from '../ui/AttachmentPicker';
 import { ConfirmDialog } from '../settings/ConfirmDialog';
 import { DEFAULT_TIME_ZONE, TIME_ZONE_OPTIONS } from '../../data/timeZones';
+import {
+  COUNTRY_SUGGESTIONS,
+  EVENT_TAG_SUGGESTIONS,
+  EVENT_TITLE_SUGGESTIONS,
+  PLACE_SUGGESTIONS,
+  PROVINCE_SUGGESTIONS,
+} from '../../data/suggestions';
 import { deleteFiles } from '../../lib/fileStore';
 import type { HouseholdMember } from '../../lib/settings';
 import {
+  EVENT_COLORS,
+  type EventColor,
   REMINDER_OPTIONS,
   REPEAT_UNIT_LABEL,
   defaultRepeat,
@@ -47,6 +56,7 @@ interface FormState {
   title: string;
   description: string;
   important: boolean;
+  color: EventColor;
   tags: string[];
   allDay: boolean;
   startDate: string;
@@ -76,6 +86,7 @@ const fromEvent = (ev: CalendarEvent | null, defaultDate: string): FormState => 
     title: ev?.title ?? '',
     description: ev?.description ?? '',
     important: ev?.important ?? false,
+    color: ev?.color ?? (ev?.important ? 'rose' : 'amber'),
     tags: ev?.tags ?? [],
     allDay: ev?.allDay ?? false,
     startDate: ev?.startDate ?? defaultDate,
@@ -279,6 +290,7 @@ const FormDialog: React.FC<Omit<EventFormModalProps, 'open'>> = ({
       title: form.title.trim(),
       description: form.description.trim(),
       important: form.important,
+      color: form.color,
       tags: form.tags,
       allDay: form.allDay,
       startDate: form.startDate,
@@ -336,6 +348,7 @@ const FormDialog: React.FC<Omit<EventFormModalProps, 'open'>> = ({
           <div className="space-y-5">
             <TextField
               id="ev-title"
+              suggestions={EVENT_TITLE_SUGGESTIONS}
               label="ชื่อกิจกรรม"
               autoComplete="off"
               placeholder="ใส่ชื่อกิจกรรม"
@@ -356,6 +369,37 @@ const FormDialog: React.FC<Omit<EventFormModalProps, 'open'>> = ({
 
           <hr className="border-slate-200" />
 
+          {/* เลือกสีแถบกิจกรรม */}
+          <div className="space-y-2.5">
+            <span className="block text-base font-bold text-slate-900">
+              สีแถบกิจกรรม
+            </span>
+            <div className="flex flex-wrap items-center gap-2.5">
+              {EVENT_COLORS.map((c) => {
+                const active = form.color === c.key;
+                return (
+                  <button
+                    key={c.key}
+                    type="button"
+                    onClick={() => set('color', c.key)}
+                    title={c.label}
+                    aria-label={c.label}
+                    aria-pressed={active}
+                    className={cn(
+                      'group relative flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full transition-all duration-150 cursor-pointer',
+                      c.swatchBg,
+                      active
+                        ? 'scale-110 ring-4 ring-purple-600 ring-offset-2 shadow-md'
+                        : 'hover:scale-105 hover:shadow-xs active:scale-95'
+                    )}
+                  >
+                    {active && <Check className="w-5 h-5 text-white drop-shadow-xs" strokeWidth={3} aria-hidden="true" />}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           {/* สำคัญ + แท็ก */}
           <div className="space-y-3">
             <ToggleRow
@@ -366,6 +410,7 @@ const FormDialog: React.FC<Omit<EventFormModalProps, 'open'>> = ({
             />
             <ChipsWithCustom
               id="ev-tags"
+              suggestions={EVENT_TAG_SUGGESTIONS}
               label="แท็ก (ไม่บังคับ)"
               options={[]}
               value={form.tags}
@@ -588,6 +633,7 @@ const FormDialog: React.FC<Omit<EventFormModalProps, 'open'>> = ({
               <div className="space-y-5">
                 <TextField
                   id="ev-loc-name"
+                  suggestions={PLACE_SUGGESTIONS}
                   label="ชื่อสถานที่"
                   autoComplete="off"
                   placeholder="ใส่ชื่อสถานที่"
@@ -614,6 +660,7 @@ const FormDialog: React.FC<Omit<EventFormModalProps, 'open'>> = ({
                 />
                 <TextField
                   id="ev-loc-country"
+                  suggestions={COUNTRY_SUGGESTIONS}
                   label="ประเทศ"
                   labelSuffix="(ไม่บังคับ)"
                   autoComplete="off"
@@ -622,6 +669,7 @@ const FormDialog: React.FC<Omit<EventFormModalProps, 'open'>> = ({
                 />
                 <TextField
                   id="ev-loc-state"
+                  suggestions={PROVINCE_SUGGESTIONS}
                   label="จังหวัด / รัฐ"
                   labelSuffix="(ไม่บังคับ)"
                   autoComplete="off"

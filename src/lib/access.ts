@@ -1,7 +1,7 @@
 import { queueSync } from '../cloud/queue';
 import { cloudEnabled } from '../cloud/client';
 import { useEffect, useState } from 'react';
-import type { MemberRecord } from './members';
+import { loadMemberRecord, saveMemberRecord, type MemberRecord } from './members';
 import { CURRENT_MEMBER_ID, loadSettings } from './settings';
 
 /** สิ่งที่ขออนุญาต: ดูข้อมูล หรือ แก้ไขข้อมูล/จัดตาราง */
@@ -116,6 +116,21 @@ export function requestAccess(
 
 /** เจ้าของข้อมูลตอบคำขอ: อนุญาตครั้งนี้ / อนุญาตตลอด / ไม่อนุญาต */
 export function decideRequest(requestId: string, decision: AccessDecision): void {
+  // อนุมัติคำขอแก้ไข = เจ้าของเปลี่ยนใจ ต้องล้างรายการ "ห้าม" เดิมของคนนี้ ไม่งั้นสิทธิ์ที่เพิ่งให้จะไม่มีผล
+  // (การห้ามมีผลเหนือทุกอย่าง จึงทำให้ผู้ขอยังแก้ไขไม่ได้ทั้งที่ได้รับอนุญาตแล้ว)
+  const req = loadRequests().find((r) => r.id === requestId);
+  if (req && req.scope === 'edit' && decision !== 'denied') {
+    const record = loadMemberRecord(req.targetId);
+    if (record.sharing.blockedEditors.includes(req.requesterId)) {
+      saveMemberRecord({
+        ...record,
+        sharing: {
+          ...record.sharing,
+          blockedEditors: record.sharing.blockedEditors.filter((id) => id !== req.requesterId),
+        },
+      });
+    }
+  }
   persist(
     loadRequests().map((r) =>
       r.id === requestId

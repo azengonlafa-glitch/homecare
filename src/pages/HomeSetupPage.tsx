@@ -11,6 +11,7 @@ import { loadHomeData, saveHomeData } from '../lib/storage';
 import { saveHomeSetup } from '../lib/homeSetup';
 import { loadSettings, saveSettings } from '../lib/settings';
 import { cloudEnabled } from '../cloud/client';
+import { RELATION_SUGGESTIONS } from '../data/suggestions';
 import { createHome, explainError, joinHome } from '../cloud/engine';
 
 const TIME_ZONES: SelectOption[] = [
@@ -220,6 +221,7 @@ export const HomeSetupPage: React.FC = () => {
                   {cloudEnabled && (
                     <TextField
                       id="join-relation"
+                      suggestions={RELATION_SUGGESTIONS}
                       name="join-relation"
                       label="คุณเป็นอะไรกับเจ้าของบ้าน (ไม่บังคับ)"
                       autoComplete="off"
@@ -306,6 +308,7 @@ export const HomeSetupPage: React.FC = () => {
                   {cloudEnabled && (
                     <TextField
                       id="create-relation"
+                      suggestions={RELATION_SUGGESTIONS}
                       name="create-relation"
                       label="คุณเป็นอะไรกับผู้ที่เราดูแล (ไม่บังคับ)"
                       autoComplete="off"
