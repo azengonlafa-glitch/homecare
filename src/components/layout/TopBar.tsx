@@ -19,9 +19,7 @@ export const TopBar: React.FC<TopBarProps> = ({ user, photo, onLogout }) => (
       <div className="lg:hidden min-w-0 flex-1">
         <HomeHeader variant="topbar" />
       </div>
-      <p className="hidden lg:block text-base font-medium text-slate-600">ดูแลยาและสุขภาพของครอบครัว</p>
-
-      <div className="flex items-center gap-1.5 sm:gap-3 shrink-0 min-w-0">
+      <div className="flex items-center gap-1.5 sm:gap-3 shrink-0 min-w-0 ml-auto">
         <NotificationBell />
         {user ? (
           <div className="flex items-center gap-1.5 sm:gap-2.5 bg-purple-50 border border-purple-200 p-1 sm:pl-3 sm:pr-2 sm:py-1.5 rounded-2xl min-w-0">

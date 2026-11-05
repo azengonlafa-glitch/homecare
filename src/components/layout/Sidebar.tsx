@@ -74,9 +74,7 @@ export const Sidebar: React.FC = () => {
         })}
       </nav>
 
-      <div className="p-4 border-t border-slate-200">
-        <p className="text-xs text-slate-500 text-center">ดูแลยาและสุขภาพของครอบครัว</p>
-      </div>
+
     </aside>
   );
 };
