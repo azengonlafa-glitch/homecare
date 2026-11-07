@@ -12,6 +12,8 @@ import { OnboardingPage } from './pages/OnboardingPage';
 import { RequireAuth, RequireOnboarding } from './components/auth/RequireOnboarding';
 import { HomeSettingsPage } from './pages/HomeSettingsPage';
 import { HealthProfilePage } from './pages/HealthProfilePage';
+import { FoldersPage } from './pages/FoldersPage';
+import { FolderDetailPage } from './pages/FolderDetailPage';
 import { MembersPage } from './pages/MembersPage';
 import { MemberDetailPage } from './pages/MemberDetailPage';
 import { NotificationsPage } from './pages/NotificationsPage';
@@ -98,6 +100,8 @@ export const App: React.FC = () => {
           <Route path="members/:id" element={<MemberDetailPage />} />
           <Route path="notifications" element={<NotificationsPage />} />
           <Route path="health" element={<HealthProfilePage />} />
+          <Route path="folders" element={<FoldersPage />} />
+          <Route path="folders/:id" element={<FolderDetailPage />} />
           <Route path="consult" element={<ConsultShell />}>
             <Route index element={<ConsultHomePage />} />
             <Route path="providers/:id" element={<ProviderPublicPage />} />

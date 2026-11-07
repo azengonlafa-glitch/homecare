@@ -6,6 +6,7 @@
 
 @layer base {
   html {
+    color-scheme: light;
     font-size: 18px; /* ตัวอักษรหลักเริ่มต้นอย่างน้อย 18px */
     -webkit-tap-highlight-color: transparent;
   }
@@ -23,10 +24,18 @@
     min-height: 100dvh;
   }
 
+  h1,
+  h2,
+  h3 {
+    font-family: 'Anuphan', 'IBM Plex Sans Thai', sans-serif;
+    font-weight: 600 !important;
+    letter-spacing: 0 !important;
+  }
+
   /* ช่องติ๊กและปุ่มเลือกใช้สีม่วงของแอป (ค่าเริ่มต้นของเบราว์เซอร์เป็นสีน้ำเงิน) */
   input[type='checkbox'],
   input[type='radio'] {
-    accent-color: theme('colors.purple.700');
+    accent-color: #5051C3;
   }
 
   button, a, input, select {
@@ -35,7 +44,7 @@
 
   /* กรอบโฟกัสสำหรับผู้ใช้คีย์บอร์ด (ใช้สีม่วงเดิมของแอป) */
   :focus-visible {
-    outline: 2px solid theme('colors.purple.600');
+    outline: 2px solid #5E5FCE;
     outline-offset: 2px;
   }
 
@@ -43,6 +52,9 @@
     *, *::before, *::after {
       transition-duration: 0.01ms !important;
       animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      animation-delay: 0s !important;
+      animation-timeline: auto !important;
     }
   }
 }
@@ -93,10 +105,10 @@
 @keyframes ui-glow {
   0%,
   100% {
-    box-shadow: 0 0 0 0 rgba(147, 51, 234, 0.45);
+    box-shadow: 0 0 0 0 rgba(83, 82, 200, 0.45);
   }
   50% {
-    box-shadow: 0 0 0 7px rgba(147, 51, 234, 0);
+    box-shadow: 0 0 0 7px rgba(83, 82, 200, 0);
   }
 }
 
@@ -128,7 +140,7 @@
 
   /* เปลี่ยนหน้า: เนื้อหาใหม่ค่อย ๆ เลื่อนขึ้นมา */
   .anim-page {
-    animation: ui-fade-up 0.28s cubic-bezier(0.22, 0.9, 0.3, 1) both;
+    animation: ui-fade 0.2s ease-out backwards;
   }
 
   .anim-fade-up {
@@ -193,4 +205,377 @@
   .stagger > *:nth-child(8) {
     animation-delay: 0.3s;
   }
+}
+
+/* หมายเหตุ: ไฟล์นี้ใช้ค่าสีตรง ๆ ไม่ใช้ theme() กับสีที่เพิ่มใหม่ เพราะถ้า dev server ยังถือ tailwind.config.js เก่าอยู่ theme() จะ error แล้วหน้าเว็บขาวทั้งหน้า */
+
+/* ---------- ธีมตัวการ์ตูน: ท่าทางและรูปทรงที่ขยับ ----------
+   ใช้ transform/opacity เป็นหลัก จึงลื่นบนมือถือ และหยุดทั้งหมดเมื่อผู้ใช้ตั้ง "ลดการเคลื่อนไหว" */
+@keyframes blob-morph {
+  0%,
+  100% {
+    border-radius: 58% 42% 55% 45% / 48% 60% 40% 52%;
+    transform: rotate(0deg) scale(1);
+  }
+  33% {
+    border-radius: 42% 58% 38% 62% / 62% 40% 60% 38%;
+    transform: rotate(8deg) scale(1.05);
+  }
+  66% {
+    border-radius: 62% 38% 60% 40% / 40% 56% 44% 60%;
+    transform: rotate(-6deg) scale(0.97);
+  }
+}
+
+@keyframes drift {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(10px, -16px);
+  }
+}
+
+@keyframes mascot-bob {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-2deg);
+  }
+  50% {
+    transform: translateY(-7%) rotate(2deg);
+  }
+}
+
+@keyframes mascot-hop {
+  0%,
+  100% {
+    transform: translateY(0) scale(1.06, 0.94);
+  }
+  45% {
+    transform: translateY(-26%) scale(0.96, 1.04);
+  }
+}
+
+@keyframes mascot-enter {
+  0% {
+    opacity: 0;
+    transform: translateY(40%) scale(0.5) rotate(-14deg);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(-8%) scale(1.08) rotate(4deg);
+  }
+  80% {
+    transform: translateY(2%) scale(0.97) rotate(-1deg);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes mascot-blink {
+  0%,
+  92%,
+  100% {
+    transform: scaleY(1);
+  }
+  96% {
+    transform: scaleY(0.1);
+  }
+}
+
+@keyframes mascot-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes mascot-sparks {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(0.85);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+}
+
+@keyframes ui-spring {
+  0% {
+    opacity: 0;
+    transform: translateY(44px) scale(0.92);
+  }
+  65% {
+    opacity: 1;
+    transform: translateY(-6px) scale(1.01);
+  }
+  100% {
+    transform: none;
+  }
+}
+
+@keyframes ui-drop-in {
+  0% {
+    opacity: 0;
+    transform: translateY(-120%) scale(0.9);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(8%) scale(1.02);
+  }
+  100% {
+    transform: none;
+  }
+}
+
+@keyframes hero-in {
+  0% {
+    opacity: 0;
+    transform: translateY(-18px) scale(0.97);
+  }
+  70% {
+    opacity: 1;
+    transform: translateY(3px) scale(1.005);
+  }
+  100% {
+    transform: none;
+  }
+}
+
+@keyframes card-reveal {
+  from {
+    opacity: 0.35;
+    transform: translateY(28px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes nav-active {
+  0% {
+    transform: scale(0.8);
+  }
+  55% {
+    transform: scale(1.08);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@layer utilities {
+  .blob-morph {
+    animation: blob-morph 18s ease-in-out infinite;
+    border-radius: 58% 42% 55% 45% / 48% 60% 40% 52%;
+  }
+  .drift {
+    animation: drift 11s ease-in-out infinite;
+  }
+  .mascot-bob {
+    animation: mascot-bob 3.6s ease-in-out infinite;
+    transform-origin: 50% 90%;
+  }
+  .mascot-hop {
+    animation: mascot-hop 0.8s ease-in-out infinite;
+    transform-origin: 50% 100%;
+  }
+  .mascot-enter {
+    animation: mascot-enter 0.8s cubic-bezier(0.22, 0.9, 0.3, 1) backwards;
+  }
+  .mascot-eye {
+    animation: mascot-blink 4.8s linear infinite;
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+  .mascot-spin {
+    animation: mascot-spin 24s linear infinite;
+    transform-box: view-box;
+    transform-origin: center;
+  }
+  .mascot-sparks {
+    animation: mascot-sparks 2.2s ease-in-out infinite;
+    transform-box: fill-box;
+    transform-origin: left bottom;
+  }
+  .anim-spring {
+    animation: ui-spring 0.42s cubic-bezier(0.22, 0.9, 0.3, 1) backwards;
+  }
+  .anim-drop-in {
+    animation: ui-drop-in 0.48s cubic-bezier(0.22, 0.9, 0.3, 1) backwards;
+  }
+  .hero-in {
+    animation: hero-in 0.6s cubic-bezier(0.22, 0.9, 0.3, 1) backwards;
+  }
+
+  /* ปุ่มนูนแบบกดได้จริง: มีขอบหนาด้านล่าง กดแล้วยุบลง */
+  .btn-chunky {
+    box-shadow: 0 4px 0 0 var(--edge);
+    transition: transform 0.14s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.14s ease, background-color 0.15s ease;
+  }
+  .btn-chunky:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 0 0 var(--edge);
+  }
+  .btn-chunky:active:not(:disabled) {
+    transform: translateY(3px);
+    box-shadow: 0 1px 0 0 var(--edge);
+  }
+
+  .nav-item {
+    transition: background-color 0.18s ease, transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .nav-item:hover {
+    transform: translateY(-2px);
+  }
+  .nav-item:active {
+    transform: scale(0.95);
+  }
+  .nav-item-active {
+    animation: nav-active 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+  }
+
+  /* เนื้อหาในหน้าไล่โผล่ทีละชิ้นแบบเด้ง */
+  .anim-page > div > *:not(header) {
+    animation: ui-spring 0.5s cubic-bezier(0.22, 0.9, 0.3, 1) backwards;
+  }
+  .anim-page > div > *:nth-child(2) {
+    animation-delay: 0.08s;
+  }
+  .anim-page > div > *:nth-child(3) {
+    animation-delay: 0.14s;
+  }
+  .anim-page > div > *:nth-child(4) {
+    animation-delay: 0.2s;
+  }
+  .anim-page > div > *:nth-child(5) {
+    animation-delay: 0.26s;
+  }
+  .anim-page > div > *:nth-child(n + 6) {
+    animation-delay: 0.32s;
+  }
+
+  /* การ์ดที่อยู่ใต้จอค่อย ๆ ลอยขึ้นตอนเลื่อนถึง (เบราว์เซอร์ที่ไม่รองรับก็แสดงปกติ) */
+  @supports (animation-timeline: view()) {
+    .card-reveal {
+      animation: card-reveal linear backwards;
+      animation-timeline: view();
+      animation-range: entry 0% entry 45%;
+    }
+  }
+
+  /* ชุดการ์ดสีพาสเทลสลับกัน ตัวหนังสือยังเข้มเท่าเดิม */
+  .tile-cycle > *:nth-child(4n + 1):not(li),
+  .tile-cycle > li:nth-child(4n + 1) > * {
+    background-color: #FFF4E8;
+  }
+  .tile-cycle > *:nth-child(4n + 2):not(li),
+  .tile-cycle > li:nth-child(4n + 2) > * {
+    background-color: #E7E7FA;
+  }
+  .tile-cycle > *:nth-child(4n + 3):not(li),
+  .tile-cycle > li:nth-child(4n + 3) > * {
+    background-color: #FFF1C9;
+  }
+  .tile-cycle > *:nth-child(4n + 4):not(li),
+  .tile-cycle > li:nth-child(4n + 4) > * {
+    background-color: #DDF6F0;
+  }
+
+  /* การ์ดกดได้: ยกแล้วเอียงนิด ๆ */
+  .hover-lift:hover {
+    transform: translateY(-4px) rotate(-0.4deg);
+    box-shadow: 0 18px 34px -18px rgba(69, 68, 179, 0.55);
+  }
+}
+
+/* ---------- เอาเมาส์ผ่านแล้วขยาย กดแล้วหด แบบเด้ง ----------
+   ใช้คุณสมบัติ scale แยกจาก transform จึงไม่ทับการจัดตำแหน่งเดิมของปุ่ม เช่นปุ่มล้างคำค้นที่จัดกลางด้วย translate
+   ของที่ใหญ่ขยายน้อยกว่า เพื่อไม่ให้ล้นขอบ และทั้งหมดปิดเองเมื่อผู้ใช้ตั้ง "ลดการเคลื่อนไหว" */
+@media (prefers-reduced-motion: no-preference) {
+  button:not(:disabled),
+  a[href],
+  select,
+  [role='button'],
+  [role='tab'],
+  [role='radio'],
+  .card-reveal,
+  .mascot-bob {
+    transition-property: scale, transform, color, background-color, border-color, box-shadow, opacity !important;
+    transition-duration: 0.3s !important;
+    transition-timing-function: cubic-bezier(0.34, 1.9, 0.5, 1) !important;
+  }
+
+  button:not(:disabled):active,
+  a[href]:active,
+  [role='button']:active,
+  [role='tab']:active,
+  [role='radio']:active {
+    scale: 0.9 !important;
+    transition-duration: 0.1s !important;
+  }
+
+  @media (hover: hover) {
+    button:not(:disabled):hover,
+    select:hover,
+    [role='button']:hover,
+    [role='tab']:hover,
+    [role='radio']:hover {
+      scale: 1.08;
+    }
+
+    /* ลิงก์ที่เป็นบล็อกหรือปุ่ม (ลิงก์ในประโยคไม่ขยายอยู่แล้ว เพราะเป็น inline) */
+    a[href]:hover {
+      scale: 1.05;
+    }
+
+    /* ปุ่มและลิงก์เต็มแถว กว้างมากจึงขยายน้อยกว่า */
+    button.w-full:not(:disabled, [class*='w-auto']):hover,
+    a[href].w-full:not([class*='w-auto']):hover,
+    a[href].block:hover {
+      scale: 1.025;
+    }
+
+    /* การ์ดที่ไม่มีช่องกรอก: ฟอร์มจะไม่ขยายตามเมาส์ระหว่างพิมพ์ */
+    .card-reveal:not(:has(input, textarea, select)):hover {
+      scale: 1.025;
+    }
+
+    .mascot-bob:hover {
+      scale: 1.22;
+    }
+  }
+}
+
+/* ---------- โฟลเดอร์: กระดาษโผล่และฝาเอียงเมื่อเอาเมาส์ผ่าน (อยู่ใน .group ของการ์ด) ---------- */
+.folder-icon .folder-sheets,
+.folder-icon .folder-lid {
+  transform-box: fill-box;
+  transition: transform 0.45s cubic-bezier(0.34, 1.7, 0.5, 1);
+}
+.folder-icon .folder-lid {
+  transform-origin: 50% 100%;
+}
+.group:hover .folder-icon .folder-sheets,
+.group:focus-visible .folder-icon .folder-sheets {
+  transform: translateY(-16px) rotate(-2deg);
+}
+.group:hover .folder-icon .folder-lid,
+.group:focus-visible .folder-icon .folder-lid {
+  transform: scaleY(0.9) skewX(-4deg);
+}
+
+/* ปุ่มหลักในหัวหน้าจอเป็นเหลืองสด ตัวหนังสือเข้ม แบบปุ่ม Apply ในรูปอ้างอิง (ต่างจากปุ่มม่วงในเนื้อหา) */
+.hero-action .btn-chunky {
+  background-color: #FFD25E;
+  color: #23234F;
+  --edge: #D9A21F;
+}
+.hero-action .btn-chunky:hover:not(:disabled) {
+  background-color: #FFC83D;
 }

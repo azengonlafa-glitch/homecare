@@ -56,11 +56,11 @@ export const LineChart: React.FC<LineChartProps> = ({ days, label }) => {
           </g>
         ))}
         <path d={path((d) => d.completed)} fill="none" stroke="#047857" strokeWidth="2.5" strokeDasharray="6 4" strokeLinejoin="round" strokeLinecap="round" />
-        <path d={path((d) => d.requests)} fill="none" stroke="#6d28d9" strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" />
+        <path d={path((d) => d.requests)} fill="none" stroke="#5051C3" strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" />
         {showDots &&
           days.map((d, i) => (
             <g key={d.date}>
-              <circle cx={x(i)} cy={y(d.requests)} r="3.5" fill="#6d28d9">
+              <circle cx={x(i)} cy={y(d.requests)} r="3.5" fill="#5051C3">
                 <title>{`${shortDate(d.date)}: คำขอ ${d.requests} เคส, ปิดจบ ${d.completed} เคส`}</title>
               </circle>
             </g>
@@ -74,7 +74,7 @@ export const LineChart: React.FC<LineChartProps> = ({ days, label }) => {
       <ul className="mt-1 flex flex-wrap gap-x-5 gap-y-1 text-sm font-semibold text-slate-700">
         <li className="flex items-center gap-2">
           <svg width="28" height="8" aria-hidden="true">
-            <line x1="0" y1="4" x2="28" y2="4" stroke="#6d28d9" strokeWidth="3" />
+            <line x1="0" y1="4" x2="28" y2="4" stroke="#5051C3" strokeWidth="3" />
           </svg>
           คำขอที่เข้ามา
         </li>

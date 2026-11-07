@@ -19,7 +19,7 @@ export const Chip: React.FC<{
     disabled={disabled}
     onClick={onClick}
     className={cn(
-      'min-h-[48px] px-5 rounded-full text-base font-semibold border transition-all cursor-pointer',
+      'min-h-[48px] px-5 rounded-full text-base font-semibold border transition cursor-pointer',
       selected
         ? 'bg-purple-700 border-purple-700 text-white shadow-xs'
         : 'bg-white border-slate-300 text-slate-800 hover:bg-purple-50 hover:border-purple-300',
@@ -139,8 +139,9 @@ export const SingleChoiceChips: React.FC<SingleChoiceProps> = ({
             value={customText}
             onChange={handleCustomChange}
             placeholder={customPlaceholder}
+            aria-label={customPlaceholder || 'ระบุเพิ่มเติม'}
             autoFocus
-            className="w-full min-h-[50px] sm:min-h-[54px] px-5 sm:px-6 py-2.5 bg-white border border-purple-300 rounded-2xl sm:rounded-full text-base sm:text-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-600 focus:border-transparent transition-all shadow-xs"
+            className="w-full min-h-[50px] sm:min-h-[54px] px-5 sm:px-6 py-2.5 bg-white border border-purple-300 rounded-2xl sm:rounded-full text-base sm:text-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-600 focus:border-transparent transition shadow-xs"
           />
         </div>
       )}

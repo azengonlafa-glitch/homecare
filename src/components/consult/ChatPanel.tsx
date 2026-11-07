@@ -1,5 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { FileText, Loader2, MessageCircle, Paperclip, Send, X } from 'lucide-react';
+import { FileText, FolderOpen, Loader2, MessageCircle, Paperclip, Send, X } from 'lucide-react';
+import { FolderPickerModal } from '../folders/FolderPickerModal';
+import { copyManyToConsult } from '../../consult/folderFiles';
+import type { FolderDoc } from '../../lib/folders';
 import { consultErrorText, getBackend } from '../../consult/backend';
 import { CONSULT_FILE_ACCEPT, deleteLocalFile, saveLocalFile, getLocalFile } from '../../consult/files';
 import { useConsultData } from '../../consult/hooks';
@@ -65,6 +68,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ sessionId, as, canSend, cl
   const [text, setText] = useState('');
   const [files, setFiles] = useState<Attachment[]>([]);
   const [busy, setBusy] = useState(false);
+  const [picking, setPicking] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const textRef = useRef<HTMLTextAreaElement>(null);
@@ -91,6 +95,13 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ sessionId, as, canSend, cl
     } catch (err) {
       toast.show(err instanceof Error ? err.message : 'แนบไฟล์ไม่สำเร็จ', { tone: 'error' });
     }
+  };
+
+  const attachFromFolders = async (docs: FolderDoc[]) => {
+    setPicking(false);
+    const { attached, problems } = await copyManyToConsult(docs);
+    if (attached.length) setFiles((f) => [...f, ...attached]);
+    if (problems.length) toast.show(problems[0], { tone: 'error' });
   };
 
   const removeFile = (a: Attachment) => {
@@ -123,7 +134,8 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ sessionId, as, canSend, cl
 
   return (
     <div className="flex flex-col min-h-[24rem] rounded-3xl border border-slate-200 bg-white overflow-hidden">
-      <div ref={listRef} aria-live="polite" aria-label="ข้อความ" className="flex-1 max-h-[60vh] overflow-y-auto p-4 space-y-3 bg-slate-50/60">
+      <FolderPickerModal open={picking} onClose={() => setPicking(false)} onConfirm={(docs) => void attachFromFolders(docs)} />
+      <div ref={listRef} aria-live="polite" aria-label="ข้อความ" className="flex-1 max-h-[60vh] overflow-y-auto overscroll-contain p-4 space-y-3 bg-slate-50/60">
         {loading && !messages ? (
           <p className="flex items-center justify-center gap-2 py-10 text-slate-600">
             <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" />
@@ -175,6 +187,11 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ sessionId, as, canSend, cl
             <button type="button" aria-label="แนบรูปหรือไฟล์" onClick={() => inputRef.current?.click()} className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-slate-300 text-slate-700 hover:bg-purple-50 cursor-pointer">
               <Paperclip className="w-6 h-6" aria-hidden="true" />
             </button>
+            {as === 'patient' && (
+              <button type="button" aria-label="เลือกไฟล์จากโฟลเดอร์" onClick={() => setPicking(true)} className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-slate-300 text-slate-700 hover:bg-purple-50 cursor-pointer">
+                <FolderOpen className="w-6 h-6" aria-hidden="true" />
+              </button>
+            )}
             <textarea
               ref={textRef}
               rows={1}

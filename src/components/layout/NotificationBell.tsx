@@ -227,7 +227,7 @@ export const NotificationBell: React.FC = () => {
                           <p className="text-xs text-slate-600 line-clamp-1 mt-0.5">
                             {item.body}
                           </p>
-                          <div className="mt-1 flex items-center justify-between text-[11px] text-slate-400">
+                          <div className="mt-1 flex items-center justify-between text-xs text-slate-400">
                             <span>{relativeDateTime(item.createdAt)}</span>
                             {isResolved && (
                               <span className="text-emerald-700 font-bold flex items-center gap-0.5">

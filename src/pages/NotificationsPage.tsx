@@ -243,7 +243,7 @@ export const NotificationsPage: React.FC = () => {
             type="button"
             onClick={() => setStatusFilter('pending')}
             className={cn(
-              'inline-flex items-center justify-center gap-2 px-3.5 sm:px-5 py-2.5 rounded-xl transition-all cursor-pointer min-h-[44px] shrink-0',
+              'inline-flex items-center justify-center gap-2 px-3.5 sm:px-5 py-2.5 rounded-xl transition cursor-pointer min-h-[44px] shrink-0',
               statusFilter === 'pending'
                 ? 'bg-white text-purple-900 shadow-sm'
                 : 'text-slate-600 hover:text-slate-900'
@@ -261,7 +261,7 @@ export const NotificationsPage: React.FC = () => {
             type="button"
             onClick={() => setStatusFilter('unread')}
             className={cn(
-              'inline-flex items-center justify-center gap-2 px-3.5 sm:px-5 py-2.5 rounded-xl transition-all cursor-pointer min-h-[44px] shrink-0',
+              'inline-flex items-center justify-center gap-2 px-3.5 sm:px-5 py-2.5 rounded-xl transition cursor-pointer min-h-[44px] shrink-0',
               statusFilter === 'unread'
                 ? 'bg-white text-purple-900 shadow-sm'
                 : 'text-slate-600 hover:text-slate-900'
@@ -279,7 +279,7 @@ export const NotificationsPage: React.FC = () => {
             type="button"
             onClick={() => setStatusFilter('all')}
             className={cn(
-              'px-3.5 sm:px-5 py-2.5 rounded-xl transition-all cursor-pointer min-h-[44px] shrink-0 text-center',
+              'px-3.5 sm:px-5 py-2.5 rounded-xl transition cursor-pointer min-h-[44px] shrink-0 text-center',
               statusFilter === 'all'
                 ? 'bg-white text-purple-900 shadow-sm'
                 : 'text-slate-600 hover:text-slate-900'
@@ -293,7 +293,7 @@ export const NotificationsPage: React.FC = () => {
               type="button"
               onClick={() => setStatusFilter('resolved')}
               className={cn(
-                'px-3.5 sm:px-5 py-2.5 rounded-xl transition-all cursor-pointer min-h-[44px] shrink-0 hidden sm:block',
+                'px-3.5 sm:px-5 py-2.5 rounded-xl transition cursor-pointer min-h-[44px] shrink-0 hidden sm:block',
                 statusFilter === 'resolved'
                   ? 'bg-white text-purple-900 shadow-sm'
                   : 'text-slate-600 hover:text-slate-900'
@@ -310,7 +310,7 @@ export const NotificationsPage: React.FC = () => {
             value={memberFilter}
             onChange={(e) => setMemberFilter(e.target.value)}
             aria-label="เลือกสมาชิก"
-            className="col-span-1 min-h-[44px] w-full sm:w-auto rounded-xl border border-slate-300 bg-white px-3.5 text-sm sm:text-base font-bold text-slate-800 focus:border-purple-600 focus:outline-none shadow-2xs"
+            className="col-span-1 min-h-[44px] w-full sm:w-auto rounded-xl border border-slate-300 bg-white px-3.5 text-sm sm:text-base font-bold text-slate-800 focus:border-purple-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-600 shadow-2xs"
           >
             <option value="all">ทุกคนในบ้าน</option>
             {settings.members.map((m) => (
@@ -324,7 +324,7 @@ export const NotificationsPage: React.FC = () => {
             value={activeTab}
             onChange={(e) => setActiveTab(e.target.value as FilterCategory)}
             aria-label="เลือกหมวดหมู่"
-            className="col-span-1 min-h-[44px] w-full sm:w-auto rounded-xl border border-slate-300 bg-white px-3.5 text-sm sm:text-base font-bold text-slate-800 focus:border-purple-600 focus:outline-none shadow-2xs"
+            className="col-span-1 min-h-[44px] w-full sm:w-auto rounded-xl border border-slate-300 bg-white px-3.5 text-sm sm:text-base font-bold text-slate-800 focus:border-purple-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-600 shadow-2xs"
           >
             <option value="all">ทุกหมวดหมู่</option>
             <option value="medication">ยาและการดูแล</option>
@@ -334,21 +334,24 @@ export const NotificationsPage: React.FC = () => {
           </select>
 
           <div className="col-span-2 relative w-full sm:w-60">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-slate-400" />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-slate-400" aria-hidden="true" />
             <input
-              type="text"
-              placeholder="ค้นหา..."
+              type="search"
+              aria-label="ค้นหาการแจ้งเตือน"
+              autoComplete="off"
+              placeholder="ค้นหา…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full min-h-[44px] rounded-xl border border-slate-300 bg-white pl-10 pr-9 text-sm sm:text-base text-slate-900 placeholder:text-slate-400 focus:border-purple-600 focus:outline-none shadow-2xs"
+              className="w-full min-h-[44px] rounded-xl border border-slate-300 bg-white pl-10 pr-9 text-sm sm:text-base text-slate-900 placeholder:text-slate-500 focus:border-purple-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-600 shadow-2xs"
             />
             {searchQuery && (
               <button
                 type="button"
                 onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                aria-label="ล้างคำค้นหา"
+                className="absolute right-0 inset-y-0 my-auto inline-flex h-11 w-11 items-center justify-center rounded-xl text-slate-500 hover:text-slate-800 cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-purple-600"
               >
-                <X className="w-4 h-4" />
+                <X className="w-4 h-4" aria-hidden="true" />
               </button>
             )}
           </div>
@@ -379,7 +382,7 @@ export const NotificationsPage: React.FC = () => {
                 key={item.id}
                 onClick={() => handleOpenDetail(item)}
                 className={cn(
-                  'group relative rounded-2xl border-2 p-5 sm:p-6 transition-all cursor-pointer bg-white',
+                  'group relative rounded-2xl border-2 p-5 sm:p-6 transition cursor-pointer bg-white',
                   'hover:shadow-md hover:border-purple-400',
                   pStyle.border,
                   !item.isRead && 'bg-purple-50/25 ring-2 ring-purple-100',

@@ -85,7 +85,7 @@ export const ConsultHomePage: React.FC = () => {
           groups.map((group) => (
             <div key={group.kind} className="space-y-3">
               <h2 className="text-xl font-bold text-slate-900">{group.title}</h2>
-              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              <div className="tile-cycle grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 {group.items.map((p) => (
                   <ProviderCard
                     key={p.id}

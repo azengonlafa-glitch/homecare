@@ -4,6 +4,7 @@ import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
 import { MobileNav } from './MobileNav';
 import { ToastProvider } from '../ui/Toast';
+import { CanvasDecor } from '../ui/Decor';
 import { SETTINGS_CHANGED_EVENT, loadSettings } from '../../lib/settings';
 import { cloudEnabled } from '../../cloud/client';
 import { signOutAll } from '../../cloud/engine';
@@ -51,7 +52,8 @@ export const AppLayout: React.FC = () => {
 
   return (
     <ToastProvider>
-      <div className="min-h-dvh bg-slate-50 text-slate-900 lg:flex">
+      <div className="relative isolate min-h-dvh text-slate-900 lg:flex">
+        <CanvasDecor />
         <a
           href="#main-content"
           className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:px-4 focus:py-2 focus:rounded-xl focus:bg-purple-700 focus:text-white"

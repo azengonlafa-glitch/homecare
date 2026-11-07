@@ -115,7 +115,7 @@ const PickerDialog: React.FC<DialogProps> = ({
               }}
               onMouseLeave={() => setHovered(null)}
               className={cn(
-                'w-9 h-9 shrink-0 flex items-center justify-center rounded-full transition-all cursor-pointer',
+                'w-9 h-9 shrink-0 flex items-center justify-center rounded-full transition cursor-pointer',
                 isInfoOpen
                   ? 'bg-purple-600 text-white shadow-sm ring-2 ring-purple-300'
                   : 'text-slate-400 hover:text-purple-700 hover:bg-purple-100/80 active:scale-95'
@@ -137,7 +137,7 @@ const PickerDialog: React.FC<DialogProps> = ({
                 <div className="flex items-center gap-1.5 font-bold text-purple-900 text-xs sm:text-sm">
                   <Info className="w-4 h-4 text-purple-600 shrink-0" aria-hidden="true" />
                   <span>{item}</span>
-                  <span className="text-[11px] font-medium text-purple-700 bg-purple-100/90 px-2 py-0.5 rounded-full border border-purple-200">
+                  <span className="text-xs font-medium text-purple-700 bg-purple-100/90 px-2 py-0.5 rounded-full border border-purple-200">
                     ข้อมูลทางการแพทย์
                   </span>
                 </div>
@@ -320,12 +320,12 @@ const PickerDialog: React.FC<DialogProps> = ({
                 <Info className="w-3.5 h-3.5 text-purple-400 shrink-0" aria-hidden="true" />
                 <span>{hovered.item}</span>
               </div>
-              <span className="text-[10px] font-medium text-purple-200 bg-purple-950/80 px-2 py-0.5 rounded-full border border-purple-700/50">
+              <span className="text-xs font-medium text-purple-200 bg-purple-950/80 px-2 py-0.5 rounded-full border border-purple-700/50">
                 ข้อมูลทางการแพทย์
               </span>
             </div>
             <p className="text-xs sm:text-sm text-slate-200 leading-relaxed font-normal">{hovered.desc}</p>
-            <p className="text-[11px] text-slate-400 mt-2 pt-1.5 border-t border-slate-800 flex items-center justify-between">
+            <p className="text-xs text-slate-400 mt-2 pt-1.5 border-t border-slate-800 flex items-center justify-between">
               <span>แตะหรือคลิก ℹ️ เพื่อเปิดค้างไว้</span>
             </p>
           </div>,

@@ -386,7 +386,7 @@ const FormDialog: React.FC<Omit<EventFormModalProps, 'open'>> = ({
                     aria-label={c.label}
                     aria-pressed={active}
                     className={cn(
-                      'group relative flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full transition-all duration-150 cursor-pointer',
+                      'group relative flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full transition duration-150 cursor-pointer',
                       c.swatchBg,
                       active
                         ? 'scale-110 ring-4 ring-purple-600 ring-offset-2 shadow-md'

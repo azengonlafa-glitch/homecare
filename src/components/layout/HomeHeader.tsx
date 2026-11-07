@@ -62,7 +62,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({ variant }) => {
           className={cn(
             'block truncate font-bold tracking-tight',
             isSidebar ? 'text-lg' : 'text-base sm:text-lg',
-            banner ? 'text-white drop-shadow' : 'text-purple-700'
+            banner ? 'text-white drop-shadow' : 'text-slate-900'
           )}
         >
           {name}
@@ -70,7 +70,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({ variant }) => {
         <span
           className={cn(
             'mt-0.5 flex items-center gap-1 text-sm font-semibold',
-            banner ? 'text-white/90 drop-shadow' : 'text-slate-500'
+            banner ? 'text-white/90 drop-shadow' : 'text-slate-700'
           )}
         >
           <Users className="w-4 h-4 shrink-0" aria-hidden="true" />

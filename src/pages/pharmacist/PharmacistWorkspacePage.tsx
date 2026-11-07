@@ -364,7 +364,7 @@ export const PharmacistWorkspacePage: React.FC = () => {
             </Card>
           )}
           {canWork && (
-            <Button fullWidth className="!bg-none !bg-emerald-700 hover:!bg-emerald-800 !shadow-emerald-200" onClick={() => setPhase('note')}>
+            <Button fullWidth className="!bg-emerald-700 hover:!bg-emerald-800 [--edge:#064E3B]" onClick={() => setPhase('note')}>
               <CheckCircle2 className="w-5 h-5" aria-hidden="true" />
               เสร็จแล้ว ไปเขียนบันทึก
             </Button>

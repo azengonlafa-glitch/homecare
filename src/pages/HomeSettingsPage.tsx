@@ -121,7 +121,7 @@ const RoleMenu: React.FC<{
                       if (!selected) onSelect(role);
                     }}
                     className={cn(
-                      'flex w-full items-start gap-3.5 rounded-2xl p-4 text-left border transition-all cursor-pointer',
+                      'flex w-full items-start gap-3.5 rounded-2xl p-4 text-left border transition cursor-pointer',
                       selected
                         ? 'border-purple-600 bg-purple-50/60 shadow-xs ring-1 ring-purple-600'
                         : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'

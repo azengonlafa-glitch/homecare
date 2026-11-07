@@ -1,3 +1,4 @@
+import { celebrate } from '../lib/celebrate';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { HeartPulse, Image as ImageIcon, NotebookPen, PenLine, Smile } from 'lucide-react';
 import { Card } from '../components/ui/Card';
@@ -76,6 +77,7 @@ export const JournalPage: React.FC = () => {
       })
     );
     toast.show(`บันทึกว่า${med.name} กินแล้ว`);
+    celebrate();
   };
 
   const [step, setStep] = useState<Step>(null);

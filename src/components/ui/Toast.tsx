@@ -1,6 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
 import { cn } from '../../lib/cn';
+import { Mascot } from './Mascot';
 
 type ToastTone = 'success' | 'error';
 
@@ -25,28 +26,22 @@ export const TOAST_DURATION_MS = 3000;
 const ToastContext = createContext<ToastApi | null>(null);
 
 const ToastItem: React.FC<{ toast: ToastState }> = ({ toast }) => {
-  // เริ่มโปร่งใสแล้วค่อยเลื่อนลงมา (ปิดอนิเมชันเองเมื่อผู้ใช้ตั้งค่า reduced motion ผ่าน index.css)
-  const [shown, setShown] = useState(false);
-  useEffect(() => {
-    const frame = requestAnimationFrame(() => setShown(true));
-    return () => cancelAnimationFrame(frame);
-  }, []);
-
-  const Icon = toast.tone === 'error' ? AlertCircle : CheckCircle2;
 
   return (
     <div
       className={cn(
-        'flex items-center gap-3 rounded-2xl px-5 py-3.5 text-white shadow-lg shadow-slate-900/20',
-        'transition-all duration-200',
-        shown ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-3',
-        toast.tone === 'error' ? 'bg-red-700' : 'bg-slate-900'
+        'anim-drop-in flex items-center gap-3 rounded-[1.5rem] px-5 py-3.5 text-white shadow-xl shadow-purple-950/30',
+        toast.tone === 'error' ? 'bg-red-700' : 'bg-purple-950'
       )}
     >
-      <Icon
-        className={cn('w-7 h-7 shrink-0', toast.tone === 'error' ? 'text-red-100' : 'text-emerald-400')}
-        aria-hidden="true"
-      />
+      {toast.tone === 'error' ? (
+        <AlertCircle className="w-7 h-7 shrink-0 text-red-100" aria-hidden="true" />
+      ) : (
+        <span className="relative shrink-0">
+          <Mascot kind="sun" still className="h-10 w-10" />
+          <CheckCircle2 className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-purple-950 text-emerald-400" aria-hidden="true" />
+        </span>
+      )}
       <p className="text-base font-bold leading-snug break-words min-w-0">{toast.message}</p>
     </div>
   );

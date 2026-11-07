@@ -3,7 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#F8FAFC" />
+    <meta name="theme-color" content="#EEEEFD" />
+    <meta name="color-scheme" content="light" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Growa Homecare" />
@@ -12,15 +13,56 @@
     <!-- ฟอนต์ภาษาไทยที่อ่านง่ายสำหรับผู้สูงอายุ -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=Anuphan:wght@400;500;600&display=swap" rel="stylesheet">
     
     <link rel="icon" type="image/svg+xml" href="/icon.svg" />
     <link rel="apple-touch-icon" href="/icon.svg" />
     <title>Growa Homecare</title>
     <link rel="manifest" href="/manifest.webmanifest" />
   </head>
-  <body class="bg-[#F8FAFC] text-[#0F172A] font-sans text-base antialiased selection:bg-purple-100 selection:text-purple-900 min-h-screen">
-    <div id="root"></div>
+  <body class="bg-canvas text-slate-900 font-sans text-base antialiased selection:bg-purple-100 selection:text-purple-900 min-h-screen">
+    <div id="root">
+      <!-- แสดงระหว่างรอแอปเริ่มทำงาน (React จะแทนที่ทันที) จะได้ไม่เห็นเป็นหน้าจอขาวเปล่า -->
+      <div id="boot-splash" style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px;text-align:center;color:#343582;background:#EEEEFD">
+        <div style="width:64px;height:64px;border-radius:50%;background:#FFD25E;animation:boot-pulse 1.2s ease-in-out infinite"></div>
+        <p style="margin:0;font-size:20px;font-weight:600">กำลังเปิด Growa Homecare...</p>
+        <p id="boot-slow" style="margin:0;font-size:16px;display:none">เชื่อมต่อช้ากว่าปกติ รอสักครู่ หรือลองโหลดหน้าใหม่</p>
+      </div>
+      <style>@keyframes boot-pulse{0%,100%{transform:scale(.85)}50%{transform:scale(1.1)}}@media (prefers-reduced-motion:reduce){#boot-splash div{animation:none!important}}</style>
+    </div>
+    <script>
+      // ทำงานก่อนไฟล์ของแอป: ถ้าแอปโหลดหรือเริ่มทำงานไม่สำเร็จ จะเห็นข้อความบนจอแทนหน้าขาว (ใช้ส่งภาพมาแจ้งได้)
+      (function () {
+        function showError(message) {
+          var splash = document.getElementById('boot-splash');
+          if (!splash) return; // วาดหน้าแล้ว: ให้ ErrorBoundary ของแอปดูแล
+          while (splash.firstChild) splash.removeChild(splash.firstChild);
+          var title = document.createElement('p');
+          title.style.cssText = 'margin:0;font-size:20px;font-weight:700';
+          title.textContent = 'เปิดแอปไม่สำเร็จ';
+          var detail = document.createElement('p');
+          detail.style.cssText = 'margin:0;font-size:14px;max-width:32rem;word-break:break-word';
+          detail.textContent = message;
+          var button = document.createElement('button');
+          button.textContent = 'โหลดหน้าใหม่';
+          button.style.cssText = 'min-height:48px;padding:0 24px;border:0;border-radius:24px;background:#5051C3;color:#fff;font-size:18px;font-weight:600;cursor:pointer';
+          button.onclick = function () { window.location.reload(); };
+          splash.appendChild(title);
+          splash.appendChild(detail);
+          splash.appendChild(button);
+        }
+        window.addEventListener('error', function (e) {
+          showError(e.message || 'เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ');
+        });
+        window.addEventListener('unhandledrejection', function (e) {
+          showError(e.reason && e.reason.message ? e.reason.message : String(e.reason));
+        });
+        window.setTimeout(function () {
+          var note = document.getElementById('boot-slow');
+          if (note) note.style.display = 'block';
+        }, 3000);
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

@@ -99,7 +99,7 @@ export const StaffDashboardPage: React.FC = () => {
         </p>
       )}
 
-      <section aria-label="ตัวเลขสรุป" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <section aria-label="ตัวเลขสรุป" className="tile-cycle grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Kpi icon={Inbox} label="คำขอที่เข้ามา" value={`${stats.requests}`} hint={`ยังเปิดอยู่ ${stats.open} เคส`} />
         <Kpi icon={UserCheck} label="ปรึกษาจบ" value={`${stats.completed}`} hint="ปิดจบเรียบร้อยแล้ว" tone="text-emerald-800 bg-emerald-50" />
         <Kpi icon={XCircle} label="ยกเลิก" value={`${stats.cancelled}`} tone="text-slate-700 bg-slate-100" />

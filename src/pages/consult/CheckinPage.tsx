@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Bot, FileText, Mic, MicOff, Paperclip, Pencil, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Bot, FileText, FolderOpen, Mic, MicOff, Paperclip, Pencil, X } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { CheckboxField } from '../../components/ui/CheckboxField';
@@ -12,6 +12,9 @@ import { useToast } from '../../components/ui/Toast';
 import { SeverityScale, Stepper } from '../../components/consult/ConsultUI';
 import { findMissing, structureText } from '../../consult/assistant';
 import { CONSULT_FILE_ACCEPT, deleteLocalFile, saveLocalFile } from '../../consult/files';
+import { copyManyToConsult } from '../../consult/folderFiles';
+import { FolderPickerModal } from '../../components/folders/FolderPickerModal';
+import type { FolderDoc } from '../../lib/folders';
 import { clearDraft, loadDraft, saveDraft } from '../../consult/hooks';
 import {
   DESCRIBE_STARTERS,
@@ -183,6 +186,14 @@ export const CheckinPage: React.FC = () => {
     } catch (err) {
       toast.show(err instanceof Error ? err.message : 'แนบไฟล์ไม่สำเร็จ', { tone: 'error' });
     }
+  };
+
+  const [picking, setPicking] = useState(false);
+  const attachFromFolders = async (docs: FolderDoc[]) => {
+    setPicking(false);
+    const { attached, problems } = await copyManyToConsult(docs);
+    if (attached.length) update({ attachments: [...answers.attachments, ...attached] });
+    if (problems.length) toast.show(problems[0], { tone: 'error' });
   };
 
   const hints = structureText(answers);
@@ -378,10 +389,17 @@ export const CheckinPage: React.FC = () => {
                   ))}
                 </ul>
                 <input ref={fileRef} type="file" accept={CONSULT_FILE_ACCEPT} className="sr-only" tabIndex={-1} aria-label="เลือกไฟล์" onChange={(e) => void pickFile(e)} />
-                <Button variant="neutral" size="sm" onClick={() => fileRef.current?.click()}>
-                  <Paperclip className="w-5 h-5" aria-hidden="true" />
-                  แนบไฟล์
-                </Button>
+                <div className="flex flex-wrap gap-2">
+                  <Button variant="neutral" size="sm" onClick={() => fileRef.current?.click()}>
+                    <Paperclip className="w-5 h-5" aria-hidden="true" />
+                    แนบไฟล์
+                  </Button>
+                  <Button variant="soft" size="sm" onClick={() => setPicking(true)}>
+                    <FolderOpen className="w-5 h-5" aria-hidden="true" />
+                    เลือกจากโฟลเดอร์
+                  </Button>
+                </div>
+                <FolderPickerModal open={picking} onClose={() => setPicking(false)} onConfirm={(docs) => void attachFromFolders(docs)} />
               </div>
             </>
           )}
