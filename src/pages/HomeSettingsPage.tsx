@@ -75,82 +75,83 @@ const RoleChip: React.FC<{ role: MemberRole; className?: string }> = ({ role, cl
   </span>
 );
 
-/** ปุ่ม “บทบาท +” เปิดเมนูเลือกบทบาท (หนึ่งคนมีหนึ่งบทบาท) */
+/** ปุ่ม “บทบาท +” เปิดหน้าต่างเลือกบทบาท (หนึ่งคนมีหนึ่งบทบาท) */
 const RoleMenu: React.FC<{
   member: HouseholdMember;
   onSelect: (role: MemberRole) => void;
 }> = ({ member, onSelect }) => {
   const [open, setOpen] = useState(false);
-  const rootRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const onPointer = (e: PointerEvent) => {
-      if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
-    };
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false);
-    };
-    document.addEventListener('pointerdown', onPointer);
-    document.addEventListener('keydown', onKey);
-    return () => {
-      document.removeEventListener('pointerdown', onPointer);
-      document.removeEventListener('keydown', onKey);
-    };
-  }, [open]);
 
   return (
-    <div ref={rootRef} className="relative">
+    <>
       <button
         type="button"
-        aria-haspopup="menu"
+        aria-haspopup="dialog"
         aria-expanded={open}
         aria-label={`เปลี่ยนบทบาทของ ${member.name}`}
-        onClick={() => setOpen((v) => !v)}
-        className="inline-flex items-center gap-1 min-h-[40px] px-3 rounded-full border border-dashed border-slate-400 text-sm font-semibold text-slate-700 hover:bg-slate-100 cursor-pointer"
+        onClick={() => setOpen(true)}
+        className="inline-flex items-center gap-1.5 min-h-[40px] px-3.5 rounded-full border border-dashed border-slate-400 text-sm font-bold text-slate-700 hover:bg-slate-100 hover:border-purple-600 active:bg-slate-200 transition-colors cursor-pointer"
       >
-        <Plus className="w-4 h-4" aria-hidden="true" />
+        <Plus className="w-4 h-4 text-purple-700" aria-hidden="true" />
         <span>บทบาท</span>
-        <ChevronDown className="w-4 h-4" aria-hidden="true" />
+        <ChevronDown className="w-4 h-4 text-slate-500" aria-hidden="true" />
       </button>
 
       {open && (
-        <div
-          role="menu"
-          aria-label={`บทบาทของ ${member.name}`}
-          className="absolute left-0 sm:left-auto sm:right-0 top-full z-30 mt-2 w-[min(20rem,calc(100vw-3rem))] rounded-2xl border border-slate-200 bg-white p-2 shadow-xl"
+        <Modal
+          open={open}
+          onClose={() => setOpen(false)}
+          title={`เปลี่ยนบทบาท: ${member.name}`}
         >
-          {ROLE_ORDER.map((role) => {
-            const meta = ROLE_META[role];
-            const selected = member.role === role;
-            return (
-              <button
-                key={role}
-                type="button"
-                role="menuitemradio"
-                aria-checked={selected}
-                onClick={() => {
-                  setOpen(false);
-                  if (!selected) onSelect(role);
-                }}
-                className="flex w-full items-start gap-3 rounded-xl px-3 py-3 text-left hover:bg-slate-50 cursor-pointer"
-              >
-                {role === 'owner' ? (
-                  <Crown className="w-5 h-5 mt-0.5 shrink-0 text-amber-500 fill-amber-400" aria-hidden="true" />
-                ) : (
-                  <span className={cn('w-4 h-4 mt-1 mx-0.5 shrink-0 rounded-full', meta.dot)} aria-hidden="true" />
-                )}
-                <span className="min-w-0 flex-1">
-                  <span className="block text-base font-bold text-slate-900">{meta.label}</span>
-                  <span className="block text-sm text-slate-600">{meta.description}</span>
-                </span>
-                {selected && <Check className="w-5 h-5 mt-0.5 shrink-0 text-purple-700" aria-hidden="true" />}
-              </button>
-            );
-          })}
-        </div>
+          <div className="py-2 space-y-3">
+            <p className="text-sm sm:text-base text-slate-600">
+              เลือกบทบาทของ <strong className="text-slate-900">{member.name}</strong> ในบ้านนี้ (หนึ่งคนมีหนึ่งบทบาท)
+            </p>
+
+            <div className="space-y-2">
+              {ROLE_ORDER.map((role) => {
+                const meta = ROLE_META[role];
+                const selected = member.role === role;
+                return (
+                  <button
+                    key={role}
+                    type="button"
+                    onClick={() => {
+                      setOpen(false);
+                      if (!selected) onSelect(role);
+                    }}
+                    className={cn(
+                      'flex w-full items-start gap-3.5 rounded-2xl p-4 text-left border transition-all cursor-pointer',
+                      selected
+                        ? 'border-purple-600 bg-purple-50/60 shadow-xs ring-1 ring-purple-600'
+                        : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                    )}
+                  >
+                    {role === 'owner' ? (
+                      <Crown className="w-6 h-6 mt-0.5 shrink-0 text-amber-500 fill-amber-400" aria-hidden="true" />
+                    ) : (
+                      <span className={cn('w-4 h-4 mt-1.5 shrink-0 rounded-full', meta.dot)} aria-hidden="true" />
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-base font-extrabold text-slate-900">{meta.label}</span>
+                        {selected && (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-800 text-xs font-bold">
+                            <Check className="w-3.5 h-3.5" />
+                            <span>ปัจจุบัน</span>
+                          </span>
+                        )}
+                      </div>
+                      <p className="mt-1 text-sm sm:text-base text-slate-600 leading-relaxed">{meta.description}</p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </Modal>
       )}
-    </div>
+    </>
   );
 };
 
@@ -784,7 +785,7 @@ export const HomeSettingsPage: React.FC = () => {
               return (
                 <li
                   key={member.id}
-                  className="px-6 sm:px-8 py-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6"
+                  className="px-4 sm:px-8 py-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6"
                 >
                   <div className="flex items-center gap-4 min-w-0 flex-1">
                     <Avatar

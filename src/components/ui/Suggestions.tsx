@@ -83,7 +83,7 @@ export const SuggestionList: React.FC<SuggestionListProps> = ({ id, items, activ
       id={`${id}-suggestions`}
       role="listbox"
       aria-label="คำแนะนำ"
-      className="absolute left-0 right-0 top-full z-30 mt-1 rounded-2xl border border-slate-200 bg-white p-1 shadow-xl"
+      className="absolute left-0 right-0 top-full z-40 mt-1 rounded-2xl border border-slate-200 bg-white p-1 shadow-xl"
     >
       {items.map((s, i) => (
         <li key={s.value}>

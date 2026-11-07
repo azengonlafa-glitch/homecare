@@ -15,13 +15,11 @@ interface TopBarProps {
 /** แถบบน: ขนาดใหญ่เต็มตา ฟอนต์อ่านง่าย ตอบสนองทั้งจอมือถือและจอคอม */
 export const TopBar: React.FC<TopBarProps> = ({ user, photo, onLogout }) => (
   <header className="sticky top-0 z-40 h-20 bg-white/95 backdrop-blur-md border-b border-slate-200">
-    <div className="h-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-2 sm:gap-4">
+    <div className="h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-2 sm:gap-4">
       <div className="lg:hidden min-w-0 flex-1">
         <HomeHeader variant="topbar" />
       </div>
-      <p className="hidden lg:block text-base font-medium text-slate-600">ดูแลยาและสุขภาพของครอบครัว</p>
-
-      <div className="flex items-center gap-1.5 sm:gap-3 shrink-0 min-w-0">
+      <div className="flex items-center gap-1.5 sm:gap-3 shrink-0 min-w-0 ml-auto">
         <NotificationBell />
         {user ? (
           <div className="flex items-center gap-1.5 sm:gap-2.5 bg-purple-50 border border-purple-200 p-1 sm:pl-3 sm:pr-2 sm:py-1.5 rounded-2xl min-w-0">

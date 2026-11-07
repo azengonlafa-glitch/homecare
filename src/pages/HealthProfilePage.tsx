@@ -9,6 +9,7 @@ import { StepBody, StepPersonal } from '../components/onboarding/PersonalSteps';
 import { StepAllergies, StepConditions, StepFamily } from '../components/onboarding/HealthSteps';
 import { StepContact } from '../components/onboarding/ContactConsentSteps';
 import { HealthAnalysis } from '../components/health/HealthAnalysis';
+import { ConsultEntryCard } from '../components/consult/ConsultEntryCard';
 import type { StepProps } from '../components/onboarding/stepTypes';
 import { STEPS } from '../data/onboardingOptions';
 import { loadOnboarding, saveOnboarding, validateStep, type OnboardingProfile } from '../lib/onboarding';
@@ -148,6 +149,7 @@ export const HealthProfilePage: React.FC = () => {
   return (
     <div className="mx-auto w-full max-w-5xl space-y-6">
       <PageHeader title="ข้อมูลสุขภาพ" description="ประวัติส่วนตัวของคุณ แก้ไขได้ และดูวิเคราะห์เทียบกับคนสุขภาพดี" />
+      <ConsultEntryCard />
 
       <div
         role="tablist"

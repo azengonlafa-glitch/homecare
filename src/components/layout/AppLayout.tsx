@@ -7,6 +7,7 @@ import { ToastProvider } from '../ui/Toast';
 import { SETTINGS_CHANGED_EVENT, loadSettings } from '../../lib/settings';
 import { cloudEnabled } from '../../cloud/client';
 import { signOutAll } from '../../cloud/engine';
+import { unsubscribeOnSignOut } from '../../consult/push';
 
 export const AppLayout: React.FC = () => {
   const location = useLocation();
@@ -39,7 +40,8 @@ export const AppLayout: React.FC = () => {
 
   const handleLogout = () => {
     if (cloudEnabled) {
-      void signOutAll();
+      // ต้องลบการสมัครก่อน เพราะหลังออกจากระบบไม่มีสิทธิ์ลบแล้ว และเครื่องนี้ไม่ควรรับแจ้งเตือนของบัญชีนี้ต่อ
+      void unsubscribeOnSignOut().finally(() => void signOutAll());
       return;
     }
     localStorage.removeItem('growa_auth_user');
@@ -64,7 +66,7 @@ export const AppLayout: React.FC = () => {
           <TopBar user={user} photo={photo} onLogout={handleLogout} />
 
           {/* ระยะขอบ: เว้นที่ให้เมนูล่างบนมือถือ (pb-28) และลดเหลือ pb-8 บนจอใหญ่ */}
-          <main id="main-content" className="flex-1 w-full max-w-6xl mx-auto p-4 sm:px-6 sm:pt-6 lg:px-8 lg:pt-8 pb-28 lg:pb-8">
+          <main id="main-content" className="flex-1 w-full max-w-7xl mx-auto p-4 sm:px-6 sm:pt-6 lg:px-8 lg:pt-8 pb-28 lg:pb-8">
             {/* เปลี่ยนหน้าเมื่อไรเนื้อหาจะค่อย ๆ เลื่อนขึ้นมาเบา ๆ */}
             <div key={location.pathname} className="anim-page">
               <Outlet />

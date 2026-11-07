@@ -5,8 +5,9 @@ import { loadEvents, eventsByDay, dateKey, CALENDAR_CHANGED_EVENT } from './cale
 import { useAccessRequests, pendingIncoming, ACCESS_CHANGED_EVENT } from './access';
 import { useMedAlerts } from './medAlerts';
 import { MEDS_CHANGED_EVENT } from './meds';
-import { SETTINGS_CHANGED_EVENT } from './settings';
+import { SETTINGS_CHANGED_EVENT, CURRENT_MEMBER_ID } from './settings';
 import { MEMBERS_CHANGED_EVENT } from './members';
+import { NOTIFICATIONS_CHANGED_EVENT, loadStoredNotifications } from './notifications';
 
 export const NAV_BADGES_CHANGED_EVENT = 'growa-nav-badges-changed';
 
@@ -100,6 +101,24 @@ export function computeNavBadges(
   // 4. ช่องยาและการดูแล (/meds)
   badges['/meds'] = currentPath === '/meds' ? 0 : medAlertsCount;
 
+  // 5. ช่องศูนย์การแจ้งเตือน (/notifications)
+  if (currentPath === '/notifications') {
+    badges['/notifications'] = 0;
+  } else {
+    try {
+      const allNotifs = loadStoredNotifications();
+      const unread = allNotifs.filter((n) => {
+        const forUser = n.recipients.length === 0 || n.recipients.some((r) => r.memberId === CURRENT_MEMBER_ID);
+        if (!forUser) return false;
+        const recipient = n.recipients.find((r) => r.memberId === CURRENT_MEMBER_ID);
+        return recipient ? !recipient.readAt : !n.isRead;
+      }).length;
+      badges['/notifications'] = unread;
+    } catch {
+      badges['/notifications'] = 0;
+    }
+  }
+
   return badges;
 }
 
@@ -137,6 +156,7 @@ export function useNavBadges(): Record<string, number> {
     window.addEventListener(CALENDAR_CHANGED_EVENT, update);
     window.addEventListener(ACCESS_CHANGED_EVENT, update);
     window.addEventListener(MEDS_CHANGED_EVENT, update);
+    window.addEventListener(NOTIFICATIONS_CHANGED_EVENT, update);
     window.addEventListener(MEMBERS_CHANGED_EVENT, update);
     window.addEventListener(SETTINGS_CHANGED_EVENT, update);
     window.addEventListener('storage', update);
@@ -149,6 +169,7 @@ export function useNavBadges(): Record<string, number> {
       window.removeEventListener(CALENDAR_CHANGED_EVENT, update);
       window.removeEventListener(ACCESS_CHANGED_EVENT, update);
       window.removeEventListener(MEDS_CHANGED_EVENT, update);
+      window.removeEventListener(NOTIFICATIONS_CHANGED_EVENT, update);
       window.removeEventListener(MEMBERS_CHANGED_EVENT, update);
       window.removeEventListener(SETTINGS_CHANGED_EVENT, update);
       window.removeEventListener('storage', update);

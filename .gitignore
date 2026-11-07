@@ -33,3 +33,6 @@ skills-lock.json
 .env.development.local
 .env.test.local
 .env.production.local
+
+# Supabase CLI local state
+supabase/.temp/

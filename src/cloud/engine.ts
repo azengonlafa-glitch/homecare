@@ -1,6 +1,6 @@
 import type { RealtimeChannel, User } from '@supabase/supabase-js';
 import { cloudEnabled, requireClient, supabase } from './client';
-import { AUTH_KEY, readAuthUser } from './identity';
+import { AUTH_KEY, CURRENT_MEMBER_ID, readAuthUser } from './identity';
 import { CLOUD_UPDATED_EVENT, setSyncHandler, type StoreName } from './queue';
 
 /**
@@ -661,6 +661,13 @@ export async function bootCloud(): Promise<void> {
 
   ensureCacheOwner(user.id);
   storeAuthUser(user);
+  // CURRENT_MEMBER_ID คำนวณตอนโหลดไฟล์ ซึ่งเกิดก่อนบรรทัดนี้ ถ้าตอนนั้นยังไม่มีข้อมูลล็อกอิน (เพิ่งเข้าสู่ระบบ/กลับจากลิงก์ยืนยัน)
+  // รหัสสมาชิกของเราจะเป็น 'me' ทั้งเซสชัน ทำให้ระบบไม่รู้ว่าเราเป็นเจ้าของบ้านและส่งคำขอหาตัวเองได้ จึงโหลดหน้าใหม่หนึ่งครั้ง
+  if (CURRENT_MEMBER_ID !== user.id && sessionStorage.getItem('growa_identity_reload') !== user.id) {
+    sessionStorage.setItem('growa_identity_reload', user.id);
+    window.location.reload();
+    return;
+  }
   ctx = { userId: user.id, homeId: null, role: null };
   setSyncHandler(onQueue);
 
@@ -714,6 +721,8 @@ export function clearHomeCaches() {
     localStorage.removeItem(KEYS[store]);
     itemSnapshots.delete(store);
   }
+  localStorage.removeItem('growa_notifications_v2');
+  localStorage.removeItem('growa_notification_routing_v1');
   const s = parse(localStorage.getItem(KEYS.settings)) as Record<string, Json> | null;
   if (s) {
     delete s.members;
@@ -775,8 +784,10 @@ export async function signUpWithEmail(email: string, password: string, name: str
 }
 
 export async function signInWithEmail(email: string, password: string): Promise<void> {
-  const { error } = await requireClient().auth.signInWithPassword({ email: email.trim(), password });
+  const { data, error } = await requireClient().auth.signInWithPassword({ email: email.trim(), password });
   if (error) throw error;
+  // เก็บตัวตนไว้ก่อนโหลดหน้าใหม่ เพื่อให้ CURRENT_MEMBER_ID ถูกต้องตั้งแต่โหลดแรก
+  if (data.user) storeAuthUser(data.user);
 }
 
 export async function signInWithProvider(provider: 'google' | 'apple'): Promise<void> {

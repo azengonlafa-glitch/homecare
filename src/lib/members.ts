@@ -3,10 +3,13 @@ import {
   formatMedForm,
   instructionText,
   loadMeds,
+  todayKey,
+  type DoseLog,
   type DosePeriod,
   type Medication,
 } from './meds';
 import { loadOnboarding, ONBOARDING_CHANGED_EVENT, isOnboardingDone } from './onboarding';
+import { birthFromProfile, type BirthDate } from './memberDashboard';
 import { cloudEnabled } from '../cloud/client';
 import { queueSync } from '../cloud/queue';
 import { CURRENT_MEMBER_ID, loadSettings, type Gender, type HouseholdMember } from './settings';
@@ -58,6 +61,24 @@ export interface MemberHealth {
   history: HealthHistoryItem[];
 }
 
+/** ช่วงที่วัดน้ำตาล */
+export type GlucoseTiming = 'fasting' | 'after-meal' | 'unknown';
+
+/** ค่าสุขภาพที่บันทึกไว้หนึ่งครั้ง (ใช้ทำประวัติความดัน น้ำตาล น้ำหนัก) */
+export interface VitalReading {
+  id: string;
+  /** เวลาที่วัด (ISO) */
+  at: string;
+  systolic?: number;
+  diastolic?: number;
+  /** น้ำตาลในเลือด มก./ดล. */
+  glucose?: number;
+  glucoseTiming?: GlucoseTiming;
+  weightKg?: number;
+  note?: string;
+  byName?: string;
+}
+
 export interface MemberRecord {
   id: string;
   age: number | null;
@@ -66,6 +87,16 @@ export interface MemberRecord {
   sharing: MemberSharing;
   health: MemberHealth;
   meds: MemberMed[];
+  /** วันเกิด (ปี พ.ศ. จำเป็น วัน/เดือนไม่บังคับ) */
+  birthDate?: BirthDate | null;
+  heightCm?: number | null;
+  /** น้ำหนักตั้งต้น ใช้เมื่อยังไม่มีบันทึกน้ำหนัก */
+  weightKg?: number | null;
+  /** ผู้ดูแลหลักของสมาชิกคนนี้ (ว่าง = ใช้ผู้ดูแลหลักของบ้าน) */
+  caregiverId?: string;
+  vitals?: VitalReading[];
+  /** บันทึกการกินยาของสมาชิก (ของฉันเองอยู่ในตู้ยา ใช้เก็บของคนอื่นและสำหรับเผยแพร่ให้คนในบ้านเห็น) */
+  doseLogs?: DoseLog[];
   todayMood?: {
     date: string;
     main: import('../data/journalOptions').MoodKey;
@@ -101,6 +132,29 @@ const sharingFor = (id: string): MemberSharing => ({
 });
 
 const GENDER_FROM_LABEL: Record<string, Gender> = { ชาย: 'male', หญิง: 'female', 'อื่น ๆ': 'other' };
+
+const isoDaysAgo = (days: number, hour = 8, minute = 0): string => {
+  const d = new Date();
+  d.setDate(d.getDate() - days);
+  d.setHours(hour, minute, 0, 0);
+  return d.toISOString();
+};
+
+const demoReading = (id: string, days: number, rest: Partial<VitalReading>, hour = 8): VitalReading => ({
+  id,
+  at: isoDaysAgo(days, hour),
+  ...rest,
+});
+
+const num = (v: string | undefined): number | null => {
+  const n = parseFloat(v ?? '');
+  return Number.isFinite(n) ? n : null;
+};
+
+/** วันเกิด ส่วนสูง น้ำหนักของตัวเองจากข้อมูลพื้นฐาน (ใช้เผยแพร่ให้คนในบ้านเห็น) */
+function ownBody(profile: ReturnType<typeof loadOnboarding>['profile']): Pick<MemberRecord, 'birthDate' | 'heightCm' | 'weightKg'> {
+  return { birthDate: birthFromProfile(profile), heightCm: num(profile.heightCm), weightKg: num(profile.weightKg) };
+}
 
 /** อายุและเพศของตัวเองจากข้อมูลพื้นฐานที่กรอกไว้ */
 function ownIdentity(profile: ReturnType<typeof loadOnboarding>['profile']): { age: number | null; gender: Gender | '' } {
@@ -140,7 +194,7 @@ function seedRecord(id: string): MemberRecord {
         }));
       return {
         ...base,
-        ...(cloudEnabled ? ownIdentity(profile) : { age: 68, gender: 'female' as Gender }),
+        ...(cloudEnabled ? { ...ownIdentity(profile), ...ownBody(profile) } : { age: 68, gender: 'female' as Gender }),
         health: {
           conditions: profile.noConditions ? [] : profile.conditions ?? [],
           allergies: profile.noAllergies
@@ -159,6 +213,16 @@ function seedRecord(id: string): MemberRecord {
         ...base,
         age: 34,
         gender: 'female',
+        birthDate: { day: 12, month: 5, yearBE: 2535 },
+        heightCm: 160,
+        weightKg: 56,
+        vitals: [
+          demoReading('mint-v1', 21, { systolic: 126, diastolic: 80 }),
+          demoReading('mint-v2', 14, { systolic: 130, diastolic: 84 }),
+          demoReading('mint-v3', 7, { systolic: 124, diastolic: 80, weightKg: 56 }),
+          demoReading('mint-v4', 2, { systolic: 128, diastolic: 82 }),
+          demoReading('mint-v5', 30, { glucose: 95, glucoseTiming: 'fasting', weightKg: 56.5 }),
+        ],
         health: {
           conditions: ['ความดันโลหิตสูง'],
           allergies: [],
@@ -188,6 +252,16 @@ function seedRecord(id: string): MemberRecord {
         ...base,
         age: 41,
         gender: 'male',
+        birthDate: { day: 3, month: 9, yearBE: 2528 },
+        heightCm: 172,
+        weightKg: 78,
+        vitals: [
+          demoReading('chai-v1', 14, { glucose: 131, glucoseTiming: 'fasting', systolic: 134, diastolic: 88 }),
+          demoReading('chai-v2', 10, { weightKg: 78.2 }),
+          demoReading('chai-v3', 7, { glucose: 124, glucoseTiming: 'fasting' }),
+          demoReading('chai-v4', 3, { glucose: 118, glucoseTiming: 'fasting', systolic: 132, diastolic: 86 }),
+          demoReading('chai-v5', 2, { weightKg: 77.8 }),
+        ],
         health: {
           conditions: ['เบาหวานชนิดที่ 2'],
           allergies: ['แพ้ยาเพนิซิลลิน'],
@@ -227,6 +301,13 @@ function seedRecord(id: string): MemberRecord {
         ...base,
         age: 63,
         gender: 'female',
+        birthDate: { day: null, month: null, yearBE: 2506 },
+        heightCm: 155,
+        weightKg: 61,
+        vitals: [
+          demoReading('daeng-v1', 12, { systolic: 136, diastolic: 86 }),
+          demoReading('daeng-v2', 5, { systolic: 138, diastolic: 88, glucose: 102, glucoseTiming: 'fasting', weightKg: 61 }),
+        ],
         health: {
           conditions: ['ข้อเข่าเสื่อม'],
           allergies: ['แพ้ฝุ่น'],
@@ -272,7 +353,7 @@ export function loadMemberRecords(): Record<string, MemberRecord> {
       if (member.id === CURRENT_MEMBER_ID) {
         // ข้อมูลสุขภาพของตัวเองอ้างอิงจากข้อมูลพื้นฐานเสมอ เพื่อให้คนในบ้านเห็นข้อมูลล่าสุด
         const fresh = seedRecord(member.id);
-        record = { ...record, age: fresh.age, gender: fresh.gender, health: { ...record.health, ...fresh.health, note: record.health.note, history: record.health.history } };
+        record = { ...record, age: fresh.age, gender: fresh.gender, birthDate: fresh.birthDate, heightCm: fresh.heightCm, weightKg: fresh.weightKg, health: { ...record.health, ...fresh.health, note: record.health.note, history: record.health.history } };
       }
       if (member.photo) record = { ...record, photo: member.photo };
     }
@@ -307,6 +388,7 @@ export function saveMemberRecord(record: MemberRecord): void {
  * เผยแพร่ข้อมูลของตัวเอง (สุขภาพ + สรุปตารางยา) ให้คนในบ้านเห็น
  * เรียกเมื่อกรอกข้อมูลพื้นฐานหรือแก้ตู้ยา (เฉพาะโหมดคลาวด์)
  */
+const PUBLISHED_LOG_DAYS = 45;
 let publishTimer: number | undefined;
 function publishOwnRecord(): void {
   if (!cloudEnabled || !isOnboardingDone()) return;
@@ -325,7 +407,11 @@ function publishOwnRecord(): void {
         condition: m.condition,
         instruction: instructionText(m),
       }));
-    saveMemberRecord({ ...mine, meds });
+    const oldest = new Date();
+    oldest.setDate(oldest.getDate() - PUBLISHED_LOG_DAYS);
+    const since = todayKey(oldest);
+    const doseLogs = loadMeds().logs.filter((l) => l.date >= since);
+    saveMemberRecord({ ...mine, meds, doseLogs });
   }, 600);
 }
 

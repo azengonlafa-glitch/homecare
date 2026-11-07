@@ -387,7 +387,7 @@ export const CalendarPage: React.FC = () => {
           </div>
 
           {/* ค้นหา + ตัวกรอง */}
-          <div className="flex items-center gap-3 mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
             <div className="relative flex-1 min-w-0">
               <Search
                 className="w-5 h-5 text-slate-500 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none"
@@ -413,12 +413,12 @@ export const CalendarPage: React.FC = () => {
                 </button>
               )}
             </div>
-            <div className="relative shrink-0">
+            <div className="relative w-full sm:w-auto shrink-0">
               <select
                 aria-label="กรองกิจกรรม"
                 value={filter}
                 onChange={(e) => setFilter(e.target.value as EventFilter)}
-                className="appearance-none min-h-[48px] pl-5 pr-11 rounded-full bg-purple-50 border border-purple-100 text-base font-bold text-purple-900 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-600"
+                className="appearance-none w-full sm:w-auto min-h-[48px] pl-5 pr-11 rounded-full bg-purple-50 border border-purple-100 text-base font-bold text-purple-900 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-600"
               >
                 {FILTER_OPTIONS.map((o) => (
                   <option key={o.value} value={o.value}>

@@ -1,0 +1,9 @@
+{
+  "name": "Growa Homecare",
+  "short_name": "Growa",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FFFFFF",
+  "theme_color": "#6D28D9",
+  "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}
