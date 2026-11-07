@@ -41,5 +41,5 @@ export const MedPhoto: React.FC<MedPhotoProps> = ({ med, className, fallback = n
   if (!src) {
     return <div className={cn('flex items-center justify-center', className)}>{fallback}</div>;
   }
-  return <img src={src} alt={med.name} className={cn('object-cover', className)} />;
+  return <img src={src} alt={med.name} loading="lazy" decoding="async" className={cn('object-cover', className)} />;
 };

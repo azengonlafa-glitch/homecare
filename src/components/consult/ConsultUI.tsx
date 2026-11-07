@@ -1,5 +1,6 @@
 import React from 'react';
-import { AlertTriangle, FlaskConical, Loader2, RotateCcw } from 'lucide-react';
+import { AlertTriangle, FlaskConical, RotateCcw } from 'lucide-react';
+import { Mascot } from '../ui/Mascot';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
 import { CONSULT_MODE } from '../../consult/backend';
@@ -20,7 +21,7 @@ export const ModeBanner: React.FC = () =>
 
 export const LoadingCard: React.FC<{ label?: string }> = ({ label = 'กำลังโหลด...' }) => (
   <Card role="status" className="flex items-center justify-center gap-3 py-12 text-slate-600">
-    <Loader2 className="w-6 h-6 animate-spin text-purple-700" aria-hidden="true" />
+    <Mascot kind="ball" className="h-12 w-12 mascot-hop" still />
     <span className="font-semibold">{label}</span>
   </Card>
 );

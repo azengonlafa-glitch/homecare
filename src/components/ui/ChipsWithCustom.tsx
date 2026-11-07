@@ -85,7 +85,7 @@ export const ChipsWithCustom: React.FC<ChipsWithCustomProps> = ({
                 type="button"
                 onClick={() => onChange(value.filter((v) => v !== item))}
                 aria-label={`ลบ ${item}`}
-                className="inline-flex items-center justify-center w-9 h-9 rounded-full hover:bg-purple-200 cursor-pointer"
+                className="inline-flex items-center justify-center w-11 h-11 rounded-full hover:bg-purple-200 cursor-pointer"
               >
                 <X className="w-4 h-4" aria-hidden="true" />
               </button>

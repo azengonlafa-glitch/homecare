@@ -1,4 +1,4 @@
-import { Pill, Calendar, CalendarDays, NotebookPen, Settings, HeartPulse, House, Stethoscope, Users, Bell } from 'lucide-react';
+import { Pill, Calendar, CalendarDays, NotebookPen, Settings, HeartPulse, House, Stethoscope, Users, Bell, FolderOpen } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 /** home = ระบบบ้าน (ทุกคนในบ้านเห็นสิ่งที่เราทำ) · personal = ส่วนตัว (เห็นเฉพาะเรา) */
@@ -9,7 +9,20 @@ export const NAV_GROUP_META: Record<NavGroup, { title: string; hint: string }> =
   personal: { title: 'ส่วนตัว', hint: 'เห็นเฉพาะคุณ' },
 };
 
+/** สีวงไอคอนของแต่ละเมนู (พื้นพาสเทล ไอคอนสีเข้ม) */
+export type NavTint = 'sun' | 'coral' | 'mint' | 'sky' | 'lilac' | 'cream';
+
+export const NAV_TINT: Record<NavTint, string> = {
+  sun: 'bg-sun text-slate-900',
+  coral: 'bg-coral text-slate-900',
+  mint: 'bg-mint text-slate-900',
+  sky: 'bg-sky text-slate-900',
+  lilac: 'bg-purple-200 text-purple-900',
+  cream: 'bg-peach text-slate-900',
+};
+
 export interface NavItem {
+  tint: NavTint;
   group: NavGroup;
   to: string;
   label: string;
@@ -29,11 +42,12 @@ export interface NavItem {
 
 /** รายการเมนูหลัก เรียงตามลำดับ: บันทึกอาการ -> ปฏิทิน -> ตั้งค่าบ้าน */
 export const NAV_ITEMS: NavItem[] = [
-  { group: 'home', to: '/journal', label: 'บันทึกอาการ', mobileLabel: 'บันทึก', icon: NotebookPen, sidebarIcon: true },
-  { group: 'home', to: '/calendar', label: 'ปฏิทิน', icon: CalendarDays, sidebarIcon: true },
-  { group: 'home', to: '/appointments', label: 'นัดหมอ', icon: Calendar, hidden: true },
+  { group: 'home', tint: 'sun', to: '/journal', label: 'บันทึกอาการ', mobileLabel: 'บันทึก', icon: NotebookPen, sidebarIcon: true },
+  { group: 'home', tint: 'sky', to: '/calendar', label: 'ปฏิทิน', icon: CalendarDays, sidebarIcon: true },
+  { group: 'home', tint: 'sky', to: '/appointments', label: 'นัดหมอ', icon: Calendar, hidden: true },
   {
     group: 'home',
+    tint: 'coral',
     to: '/members',
     label: 'สมาชิกในบ้าน',
     mobileLabel: 'สมาชิก',
@@ -42,6 +56,7 @@ export const NAV_ITEMS: NavItem[] = [
   },
   {
     group: 'home',
+    tint: 'mint',
     to: '/home-settings',
     label: 'ตั้งค่าบ้าน',
     mobileLabel: 'บ้าน',
@@ -49,9 +64,10 @@ export const NAV_ITEMS: NavItem[] = [
     sidebarIcon: true,
     ownerOnly: true,
   },
-  { group: 'personal', to: '/meds', label: 'ยาและการดูแล', mobileLabel: 'ยา/ดูแล', icon: Pill, sidebarIcon: true },
-  { group: 'personal', to: '/notifications', label: 'การแจ้งเตือน', mobileLabel: 'แจ้งเตือน', icon: Bell, sidebarIcon: true, mobileHidden: true },
-  { group: 'personal', to: '/health', label: 'ข้อมูลสุขภาพ', mobileLabel: 'สุขภาพ', icon: HeartPulse, sidebarIcon: true },
-  { group: 'personal', to: '/consult', label: 'ปรึกษาผู้เชี่ยวชาญ', mobileLabel: 'ปรึกษา', icon: Stethoscope, sidebarIcon: true, mobileHidden: true },
-  { group: 'personal', to: '/settings', label: 'ตั้งค่าส่วนตัว', mobileLabel: 'ตั้งค่า', icon: Settings, sidebarIcon: true },
+  { group: 'personal', tint: 'coral', to: '/meds', label: 'ยาและการดูแล', mobileLabel: 'ยา/ดูแล', icon: Pill, sidebarIcon: true },
+  { group: 'personal', tint: 'sun', to: '/notifications', label: 'การแจ้งเตือน', mobileLabel: 'แจ้งเตือน', icon: Bell, sidebarIcon: true, mobileHidden: true },
+  { group: 'personal', tint: 'cream', to: '/folders', label: 'โฟลเดอร์เอกสาร', mobileLabel: 'โฟลเดอร์', icon: FolderOpen, sidebarIcon: true, mobileHidden: true },
+  { group: 'personal', tint: 'coral', to: '/health', label: 'ข้อมูลสุขภาพ', mobileLabel: 'สุขภาพ', icon: HeartPulse, sidebarIcon: true },
+  { group: 'personal', tint: 'lilac', to: '/consult', label: 'ปรึกษาผู้เชี่ยวชาญ', mobileLabel: 'ปรึกษา', icon: Stethoscope, sidebarIcon: true, mobileHidden: true },
+  { group: 'personal', tint: 'mint', to: '/settings', label: 'ตั้งค่าส่วนตัว', mobileLabel: 'ตั้งค่า', icon: Settings, sidebarIcon: true },
 ];

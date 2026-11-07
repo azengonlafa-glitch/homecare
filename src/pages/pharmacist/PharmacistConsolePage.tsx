@@ -177,15 +177,15 @@ export const QueuePanel: React.FC<{ selectedId?: string; onPick?: () => void }> 
           </Button>
         )}
         <div className="grid grid-cols-3 gap-2 text-center" aria-label="สรุปคิว">
-          <div className="rounded-xl bg-amber-50 p-2">
+          <div className="rounded-[1.25rem] bg-sun-soft p-2">
             <p className="text-3xl font-extrabold text-amber-950">{waiting.length}</p>
             <p className="text-sm font-semibold text-amber-900">รอรับเรื่อง</p>
           </div>
-          <div className="rounded-xl bg-purple-50 p-2">
+          <div className="rounded-[1.25rem] bg-purple-100 p-2">
             <p className="text-3xl font-extrabold text-purple-950">{mine.length}</p>
             <p className="text-sm font-semibold text-purple-900">ของฉัน{unreplied > 0 && ` · รอตอบ ${unreplied}`}</p>
           </div>
-          <div className="rounded-xl bg-slate-100 p-2">
+          <div className="rounded-[1.25rem] bg-peach-soft p-2">
             <p className="text-3xl font-extrabold text-slate-900">{others.length}</p>
             <p className="text-sm font-semibold text-slate-700">เพื่อนร่วมงาน</p>
           </div>

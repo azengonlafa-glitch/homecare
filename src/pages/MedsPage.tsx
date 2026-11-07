@@ -1,3 +1,4 @@
+import { celebrate } from '../lib/celebrate';
 import React, { useMemo, useState } from 'react';
 import { AlertTriangle, BarChart3, BellRing, ClipboardCheck, Pill, Plus } from 'lucide-react';
 import { Card } from '../components/ui/Card';
@@ -142,6 +143,7 @@ export const MedsPage: React.FC = () => {
     const next = applyDoseStatus(state, med, period, status, by, todayKey(), { reason });
     commit(next);
     const updated = next.meds.find((m) => m.id === med.id);
+    if (status === 'taken') celebrate();
     if (status === 'taken' && updated) {
       const left = daysLeft(updated);
       const stock = `เหลือ ${formatQty(updated.remaining)} ${updated.unit}${left !== null ? ` (พออีก ${left} วัน)` : ''}`;

@@ -20,6 +20,7 @@ const KEYS: Record<StoreName, string> = {
   access: 'growa_access_requests_v1',
   notices: 'growa_family_notices_v1',
   onboarding: 'growa_onboarding_v1',
+  folders: 'growa_folders_v1',
 };
 
 /** เหตุการณ์ของแต่ละข้อมูล (ต้องตรงกับค่าที่ประกาศใน lib/) */
@@ -32,6 +33,7 @@ const EVENTS: Record<StoreName, string[]> = {
   access: ['growa-access-changed'],
   notices: ['growa-notices-changed'],
   onboarding: [],
+  folders: ['growa-folders-changed'],
 };
 
 const OWNER_KEY = 'growa_cache_owner';
@@ -173,7 +175,7 @@ const ITEM_STORES: Partial<Record<StoreName, ItemStoreDef>> = {
 };
 
 /** ข้อมูลส่วนตัวที่เก็บเป็นเอกสารเดียวต่อผู้ใช้ (ตาราง user_docs) */
-const DOC_STORES: Partial<Record<StoreName, string>> = { meds: 'meds', onboarding: 'onboarding' };
+const DOC_STORES: Partial<Record<StoreName, string>> = { meds: 'meds', onboarding: 'onboarding', folders: 'folders' };
 
 const COLLECTION_TO_STORE: Record<string, StoreName> = {
   calendar: 'calendar',
@@ -518,6 +520,7 @@ const REFRESHERS: Record<StoreName, () => Promise<void>> = {
   access: () => refreshItems('access'),
   notices: () => refreshItems('notices'),
   onboarding: () => refreshDoc('onboarding'),
+  folders: () => refreshDoc('folders'),
 };
 
 const ALL_STORES = Object.keys(REFRESHERS) as StoreName[];

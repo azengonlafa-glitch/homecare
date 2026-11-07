@@ -59,7 +59,7 @@ export const AttachmentImage: React.FC<AttachmentImageProps> = ({ attachment, al
       className={cn('block w-full overflow-hidden rounded-2xl bg-slate-100 cursor-zoom-in', className)}
     >
       {src ? (
-        <img src={src} alt={alt} className="mx-auto w-full max-h-[28rem] object-contain" />
+        <img src={src} alt={alt} loading="lazy" decoding="async" className="mx-auto w-full max-h-[28rem] object-contain" />
       ) : (
         <span className="block w-full h-full min-h-[8rem] animate-pulse bg-slate-200" aria-hidden="true" />
       )}

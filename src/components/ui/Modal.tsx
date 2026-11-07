@@ -102,7 +102,7 @@ export const Modal: React.FC<ModalProps> = ({
 
   return createPortal(
     <div
-      className="anim-fade fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-slate-900/50 sm:p-4"
+      className="anim-fade fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-purple-950/50 sm:p-4"
       onMouseDown={(e) => {
         if (dismissable && e.target === e.currentTarget) onClose();
       }}
@@ -113,7 +113,7 @@ export const Modal: React.FC<ModalProps> = ({
         aria-modal="true"
         aria-labelledby={titleId}
         onKeyDown={handleKeyDown}
-        className="anim-pop flex flex-col w-full sm:max-w-3xl max-h-[92dvh] sm:max-h-[86dvh] bg-white rounded-t-3xl sm:rounded-3xl shadow-xl overflow-hidden"
+        className="anim-spring flex flex-col w-full sm:max-w-3xl max-h-[92dvh] sm:max-h-[86dvh] bg-white rounded-t-[2.25rem] sm:rounded-[2.25rem] shadow-2xl overflow-hidden"
       >
         <div className="px-5 sm:px-8 pt-5 sm:pt-7 pb-4 shrink-0">
           <div className="flex items-start justify-between gap-4">
@@ -138,7 +138,7 @@ export const Modal: React.FC<ModalProps> = ({
           tabIndex={bodyLabel ? 0 : undefined}
           aria-label={bodyLabel}
           className={cn(
-            'flex-1 min-h-0 overflow-y-auto px-5 sm:px-8 border-t border-slate-200',
+            'flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 sm:px-8 border-t border-slate-200',
             bodyLabel && 'focus-visible:outline-offset-[-3px]'
           )}
         >

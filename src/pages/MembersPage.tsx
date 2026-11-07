@@ -95,7 +95,7 @@ const MemberTile: React.FC<{
               onOpenMoodPicker();
             }}
             title="แตะเพื่อบันทึกอารมณ์ของคุณวันนี้"
-            className="inline-flex max-w-full shrink-0 items-center gap-1 rounded-full bg-purple-50 border border-purple-200 px-2 py-0.5 text-xs font-bold text-purple-700 hover:bg-purple-100 cursor-pointer transition-transform hover:scale-105 active:scale-95"
+            className="relative inline-flex max-w-full shrink-0 items-center gap-1 rounded-full bg-purple-50 border border-purple-200 px-2 py-0.5 text-xs font-bold text-purple-700 hover:bg-purple-100 cursor-pointer transition-transform hover:scale-105 active:scale-95 before:absolute before:-inset-y-2.5 before:inset-x-0 before:content-[''] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600"
           >
             <Smile className="w-3.5 h-3.5 shrink-0 text-purple-600" aria-hidden="true" />
             <span className="truncate">+ บันทึกอารมณ์</span>
@@ -184,7 +184,7 @@ export const MembersPage: React.FC = () => {
         </Link>
       )}
 
-      <ul className="stagger grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 sm:gap-4">
+      <ul className="stagger tile-cycle grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 sm:gap-4">
         {settings.members.map((member) => {
           const record = records[member.id];
           if (!record) return null;

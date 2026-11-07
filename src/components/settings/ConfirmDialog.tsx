@@ -16,10 +16,10 @@ interface ConfirmDialogProps {
 
 const confirmClass = (tone: 'danger' | 'primary') =>
   cn(
-    'w-full inline-flex items-center justify-center min-h-[54px] px-4 rounded-2xl sm:rounded-full text-base sm:text-lg font-bold leading-tight text-center text-white transition-colors cursor-pointer active:scale-[0.99]',
+    'btn-chunky w-full inline-flex items-center justify-center min-h-[54px] px-4 rounded-[1.5rem] text-base sm:text-lg font-bold leading-tight text-center text-white cursor-pointer',
     tone === 'danger'
-      ? 'bg-red-600 hover:bg-red-700 active:bg-red-800'
-      : 'bg-gradient-to-r from-primary-800 via-primary-700 to-primary-600 hover:from-primary-900 hover:via-primary-800 hover:to-primary-700'
+      ? 'bg-red-600 hover:bg-red-700 [--edge:#7F1D1D]'
+      : 'bg-purple-700 hover:bg-purple-800 [--edge:#343582]'
   );
 
 /**

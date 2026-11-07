@@ -6,8 +6,14 @@ import { Button } from '../ui/Button';
 import { Chip } from '../ui/ChoiceChips';
 import { MOODS, MOOD_TONE, moodMeta, type MoodKey } from '../../data/journalOptions';
 import { cn } from '../../lib/cn';
+import { Mascot, type MascotKind, type MascotMood } from '../ui/Mascot';
 
 const MOOD_ICON: Record<MoodKey, LucideIcon> = { great: Smile, complicated: Meh, down: Frown };
+const MOOD_FACE: Record<MoodKey, { kind: MascotKind; mood: MascotMood; tile: string }> = {
+  great: { kind: 'sun', mood: 'happy', tile: 'bg-sun-soft' },
+  complicated: { kind: 'cloud', mood: 'calm', tile: 'bg-purple-100' },
+  down: { kind: 'tri', mood: 'sad', tile: 'bg-mint-soft' },
+};
 
 interface MoodPickerModalProps {
   open: boolean;
@@ -66,7 +72,7 @@ const MoodDialog: React.FC<Omit<MoodPickerModalProps, 'open'>> = ({
       <div className="py-6 space-y-7">
         <div role="group" aria-label="กลุ่มอารมณ์" className="grid grid-cols-3 gap-3">
           {MOODS.map((mood) => {
-            const Icon = MOOD_ICON[mood.key];
+            const face = MOOD_FACE[mood.key];
             const active = selectedMain === mood.key;
             return (
               <button
@@ -75,18 +81,12 @@ const MoodDialog: React.FC<Omit<MoodPickerModalProps, 'open'>> = ({
                 aria-pressed={active}
                 onClick={() => chooseMain(mood.key)}
                 className={cn(
-                  'flex flex-col items-center gap-2 rounded-2xl border p-3 sm:p-4 text-center transition-colors cursor-pointer',
-                  active ? MOOD_TONE[mood.key].selected : 'bg-white border-slate-200 hover:bg-slate-50'
+                  'hover-lift flex flex-col items-center gap-2 rounded-[1.75rem] border-2 p-3 sm:p-4 text-center cursor-pointer',
+                  face.tile,
+                  active ? 'border-purple-700' : 'border-transparent'
                 )}
               >
-                <span
-                  className={cn(
-                    'inline-flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 rounded-full',
-                    MOOD_TONE[mood.key].icon
-                  )}
-                >
-                  <Icon className="w-8 h-8 sm:w-9 sm:h-9" aria-hidden="true" />
-                </span>
+                <Mascot kind={face.kind} mood={face.mood} still={!active} className="h-16 w-16 sm:h-20 sm:w-20" />
                 <span className="text-base sm:text-lg font-bold text-slate-900 leading-tight min-[360px]:whitespace-nowrap">
                   {mood.label}
                 </span>

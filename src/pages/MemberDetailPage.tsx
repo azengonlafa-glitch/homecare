@@ -527,7 +527,7 @@ const BasicProfileModal: React.FC<{
                 id="basic-month"
                 value={birthMonth}
                 onChange={(e) => setBirthMonth(e.target.value)}
-                className="w-full min-h-[48px] rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 focus:border-purple-600 focus:outline-none"
+                className="w-full min-h-[48px] rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 focus:border-purple-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-600"
               >
                 <option value="">ไม่ระบุ</option>
                 {MONTHS.map((m) => (
@@ -576,7 +576,7 @@ const BasicProfileModal: React.FC<{
             id="basic-caregiver"
             value={caregiverId}
             onChange={(e) => setCaregiverId(e.target.value)}
-            className="w-full min-h-[48px] rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 focus:border-purple-600 focus:outline-none"
+            className="w-full min-h-[48px] rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 focus:border-purple-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-600"
           >
             <option value="">ใช้ค่าเริ่มต้นของผู้ดูแลบ้าน</option>
             {members.map((m) => (
@@ -1322,7 +1322,7 @@ export const MemberDetailPage: React.FC = () => {
               aria-selected={activeTab === 'overview'}
               onClick={() => setActiveTab('overview')}
               className={cn(
-                'flex items-center justify-center gap-1 sm:gap-2 rounded-xl px-1.5 sm:px-2.5 py-2.5 sm:py-3 text-xs sm:text-base font-extrabold transition-all cursor-pointer min-w-0',
+                'flex items-center justify-center gap-1 sm:gap-2 rounded-xl px-1.5 sm:px-2.5 py-2.5 sm:py-3 text-xs sm:text-base font-extrabold transition cursor-pointer min-w-0',
                 activeTab === 'overview'
                   ? 'bg-purple-700 text-white shadow-xs'
                   : 'text-slate-700 hover:bg-purple-50'
@@ -1336,7 +1336,7 @@ export const MemberDetailPage: React.FC = () => {
               {followUps.length > 0 && (
                 <span
                   className={cn(
-                    'inline-flex h-4 min-w-4 sm:h-5 sm:min-w-5 items-center justify-center rounded-full px-1 text-[10px] sm:text-xs font-extrabold shrink-0',
+                    'inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-xs leading-none font-extrabold shrink-0',
                     activeTab === 'overview' ? 'bg-white text-purple-800' : 'bg-amber-100 text-amber-900'
                   )}
                 >
@@ -1351,7 +1351,7 @@ export const MemberDetailPage: React.FC = () => {
               aria-selected={activeTab === 'meds'}
               onClick={() => setActiveTab('meds')}
               className={cn(
-                'flex items-center justify-center gap-1 sm:gap-2 rounded-xl px-1.5 sm:px-2.5 py-2.5 sm:py-3 text-xs sm:text-base font-extrabold transition-all cursor-pointer min-w-0',
+                'flex items-center justify-center gap-1 sm:gap-2 rounded-xl px-1.5 sm:px-2.5 py-2.5 sm:py-3 text-xs sm:text-base font-extrabold transition cursor-pointer min-w-0',
                 activeTab === 'meds'
                   ? 'bg-purple-700 text-white shadow-xs'
                   : 'text-slate-700 hover:bg-purple-50'
@@ -1370,7 +1370,7 @@ export const MemberDetailPage: React.FC = () => {
               aria-selected={activeTab === 'history'}
               onClick={() => setActiveTab('history')}
               className={cn(
-                'flex items-center justify-center gap-1 sm:gap-2 rounded-xl px-1.5 sm:px-2.5 py-2.5 sm:py-3 text-xs sm:text-base font-extrabold transition-all cursor-pointer min-w-0',
+                'flex items-center justify-center gap-1 sm:gap-2 rounded-xl px-1.5 sm:px-2.5 py-2.5 sm:py-3 text-xs sm:text-base font-extrabold transition cursor-pointer min-w-0',
                 activeTab === 'history'
                   ? 'bg-purple-700 text-white shadow-xs'
                   : 'text-slate-700 hover:bg-purple-50'
@@ -1401,7 +1401,7 @@ export const MemberDetailPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setActiveTab('meds')}
-                    className="text-left rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-purple-50/40 p-4 hover:border-purple-300 hover:shadow-xs transition-all cursor-pointer group"
+                    className="text-left rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-purple-50/40 p-4 hover:border-purple-300 hover:shadow-xs transition cursor-pointer group"
                   >
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-extrabold uppercase tracking-wide text-purple-800">
@@ -1423,7 +1423,7 @@ export const MemberDetailPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setActiveTab('meds')}
-                    className="text-left rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-emerald-50/30 p-4 hover:border-purple-300 hover:shadow-xs transition-all cursor-pointer group"
+                    className="text-left rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-emerald-50/30 p-4 hover:border-purple-300 hover:shadow-xs transition cursor-pointer group"
                   >
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-extrabold uppercase tracking-wide text-emerald-800">
@@ -1461,7 +1461,7 @@ export const MemberDetailPage: React.FC = () => {
                       setActiveTab('history');
                       setHistoryFilter('symptoms');
                     }}
-                    className="text-left rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-pink-50/30 p-4 hover:border-purple-300 hover:shadow-xs transition-all cursor-pointer group"
+                    className="text-left rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-pink-50/30 p-4 hover:border-purple-300 hover:shadow-xs transition cursor-pointer group"
                   >
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-extrabold uppercase tracking-wide text-pink-800">
@@ -1585,7 +1585,7 @@ export const MemberDetailPage: React.FC = () => {
                       setActiveTab('history');
                       setHistoryFilter('appointments');
                     }}
-                    className="text-left rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-amber-50/40 p-4 hover:border-purple-300 hover:shadow-xs transition-all cursor-pointer group"
+                    className="text-left rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-amber-50/40 p-4 hover:border-purple-300 hover:shadow-xs transition cursor-pointer group"
                   >
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-extrabold uppercase tracking-wide text-amber-900">
@@ -1832,7 +1832,7 @@ export const MemberDetailPage: React.FC = () => {
                           key={med.id}
                           type="button"
                           onClick={() => setSelectedMedId(med.id)}
-                          className="text-left rounded-2xl border border-slate-200 bg-white p-4 hover:border-purple-400 hover:shadow-sm transition-all cursor-pointer flex items-start gap-3.5 group"
+                          className="text-left rounded-2xl border border-slate-200 bg-white p-4 hover:border-purple-400 hover:shadow-sm transition cursor-pointer flex items-start gap-3.5 group"
                         >
                           {/* รูปภาพยา (ถ้ามี) หรือไอคอนยา */}
                           <MedPhoto

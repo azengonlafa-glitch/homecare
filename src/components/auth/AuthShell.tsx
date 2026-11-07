@@ -2,6 +2,7 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { cn } from '../../lib/cn';
+import { MascotFamily } from '../ui/Mascot';
 
 interface AuthShellProps {
   onBack: () => void;
@@ -22,8 +23,18 @@ export const AuthShell: React.FC<AuthShellProps> = ({
   subtitle,
   children,
 }) => (
-  <div className="min-h-dvh w-full bg-[#FAF5FF]/40 sm:bg-slate-100/70 flex items-center justify-center p-4 sm:p-8 md:p-12">
-    <div className="w-full max-w-xl md:max-w-[580px] bg-white rounded-3xl p-6 sm:p-10 md:p-12 shadow-xl shadow-purple-900/5 sm:border sm:border-slate-200/80 transition-all">
+  <div className="relative isolate min-h-dvh w-full overflow-hidden bg-peach lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+    <span aria-hidden="true" className="blob-morph absolute -right-24 -top-24 -z-10 h-80 w-80 bg-purple-700" />
+    <span aria-hidden="true" className="blob-morph absolute -bottom-32 -left-24 -z-10 h-96 w-96 bg-purple-200" style={{ animationDelay: '-7s' }} />
+
+    {/* ภาพเปิด: จอกว้างอยู่ซ้าย มือถืออยู่เหนือการ์ด */}
+    <div className="mx-auto flex w-full max-w-xl flex-col items-center justify-center px-6 pb-2 pt-6 text-center text-slate-900 lg:max-w-none lg:px-14">
+      <MascotFamily className="max-w-[17rem] sm:max-w-sm lg:max-w-xl" />
+      <p className="hero-in mt-4 hidden font-display text-3xl font-medium leading-snug lg:block">ดูแลยาของคนในบ้าน<br />ไปด้วยกันทุกวัน</p>
+    </div>
+
+    <div className="flex items-center justify-center p-4 sm:p-8">
+    <div className="anim-spring w-full max-w-xl md:max-w-[580px] bg-white rounded-[2.5rem] p-6 sm:p-10 md:p-12 shadow-2xl shadow-purple-900/20">
       {/* แถวบนสุด: ปุ่มย้อนกลับและชื่อแอป */}
       <div className="flex items-center justify-between gap-3 mb-6">
         <button
@@ -37,23 +48,23 @@ export const AuthShell: React.FC<AuthShellProps> = ({
 
         <div className="flex items-center gap-3">
           {headerExtra}
-          <span className="max-[359px]:hidden text-base font-semibold text-purple-700 bg-purple-50 border border-purple-200/60 px-4 py-1.5 rounded-full">
+          <span className="max-[419px]:hidden whitespace-nowrap font-display text-base text-purple-800 bg-purple-100 px-4 py-1.5 rounded-full">
             Growa Homecare
           </span>
         </div>
       </div>
 
       {/* แถบเลือกด้านบนระหว่าง Log in และ Sign up ตามคำขอ */}
-      <div className="p-1.5 bg-slate-100 rounded-2xl mb-8 border border-slate-200/80">
+      <div className="p-1.5 bg-purple-100 rounded-[1.5rem] mb-8">
         <div className="grid grid-cols-2 gap-1.5">
           <NavLink
             to="/login"
             className={({ isActive }) =>
               cn(
-                'flex items-center justify-center min-h-[48px] px-4 rounded-xl text-base sm:text-lg font-bold transition-all cursor-pointer',
+                'flex items-center justify-center min-h-[48px] px-4 rounded-xl text-base sm:text-lg font-bold transition cursor-pointer',
                 isActive
-                  ? 'bg-white text-purple-700 shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
+                  ? 'bg-white text-purple-800 shadow-sm'
+                  : 'text-purple-900 hover:bg-white/50'
               )
             }
           >
@@ -64,10 +75,10 @@ export const AuthShell: React.FC<AuthShellProps> = ({
             to="/signup"
             className={({ isActive }) =>
               cn(
-                'flex items-center justify-center min-h-[48px] px-4 rounded-xl text-base sm:text-lg font-bold transition-all cursor-pointer',
+                'flex items-center justify-center min-h-[48px] px-4 rounded-xl text-base sm:text-lg font-bold transition cursor-pointer',
                 isActive
-                  ? 'bg-white text-purple-700 shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
+                  ? 'bg-white text-purple-800 shadow-sm'
+                  : 'text-purple-900 hover:bg-white/50'
               )
             }
           >
@@ -87,6 +98,7 @@ export const AuthShell: React.FC<AuthShellProps> = ({
       </div>
 
       {children}
+    </div>
     </div>
   </div>
 );

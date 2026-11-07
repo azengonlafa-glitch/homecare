@@ -14,7 +14,7 @@ import {
 import { cn } from '../../lib/cn';
 
 /** รูปย่อของไฟล์: ถ้าเป็นรูปภาพแสดงภาพจริง นอกนั้นแสดงไอคอน */
-const AttachmentThumb: React.FC<{ attachment: Attachment }> = ({ attachment }) => {
+export const AttachmentThumb: React.FC<{ attachment: Attachment }> = ({ attachment }) => {
   const [src, setSrc] = useState<string | null>(null);
   const isImage = attachment.type.startsWith('image/');
 

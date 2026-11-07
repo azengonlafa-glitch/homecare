@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { NAV_ITEMS } from './navItems';
+import { NAV_ITEMS, NAV_TINT } from './navItems';
 import { cn } from '../../lib/cn';
 import { canManageHome } from '../../lib/settings';
 import { useSettings } from '../../lib/useSettings';
@@ -22,8 +22,8 @@ export const MobileNav: React.FC = () => {
       aria-label="เมนูหลักบนมือถือ"
       className="lg:hidden fixed bottom-0 left-0 right-0 z-30 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pointer-events-none"
     >
-      <ul className="pointer-events-auto mx-auto flex w-full max-w-md items-center gap-0.5 rounded-full bg-white p-1.5 shadow-[0_10px_30px_rgba(15,23,42,0.18)] ring-1 ring-slate-200">
-        {VISIBLE_ITEMS.map(({ to, label, mobileLabel, icon: Icon, end }) => {
+      <ul className="pointer-events-auto mx-auto flex w-full max-w-md items-center gap-0.5 rounded-[1.75rem] bg-white p-1.5 ring-1 ring-purple-200 shadow-[0_14px_34px_-10px_rgba(90,90,208,0.55)]">
+        {VISIBLE_ITEMS.map(({ to, label, mobileLabel, icon: Icon, end, tint }) => {
           const count = badges[to] ?? 0;
           return (
             <li key={to} className="flex flex-1 min-w-0 justify-center">
@@ -33,10 +33,10 @@ export const MobileNav: React.FC = () => {
                 aria-label={mobileLabel ?? label}
                 className={({ isActive }) =>
                   cn(
-                    'relative flex aspect-square w-full max-w-[3.25rem] items-center justify-center rounded-full transition-all duration-200 hover:-translate-y-0.5 active:scale-95',
+                    'nav-item relative flex aspect-square w-full max-w-[3.25rem] items-center justify-center rounded-[1.25rem]',
                     isActive
-                      ? 'anim-glow bg-gradient-to-br from-violet-500 via-purple-600 to-purple-700 text-white'
-                      : 'bg-slate-100 text-slate-700 hover:bg-purple-50 hover:text-purple-800 active:bg-purple-100'
+                      ? 'nav-item-active bg-purple-700 text-white'
+                      : NAV_TINT[tint]
                   )
                 }
               >
@@ -44,7 +44,7 @@ export const MobileNav: React.FC = () => {
                 {count > 0 && (
                   <span
                     aria-label={`${count} รายการใหม่`}
-                    className="anim-pop absolute -top-1 -right-1 inline-flex items-center justify-center min-w-[20px] h-[20px] px-1 rounded-full bg-purple-600 text-white text-[11px] font-extrabold ring-2 ring-white shadow-xs"
+                    className="anim-pop absolute -top-1 -right-1 inline-flex items-center justify-center min-w-[22px] h-[22px] px-1 rounded-full bg-sun text-slate-900 text-xs font-extrabold ring-2 ring-white"
                   >
                     {count > 9 ? '9+' : count}
                   </span>

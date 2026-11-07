@@ -33,10 +33,10 @@ const AlertCard: React.FC<{ alert: MedAlert; onTake: (alert: MedAlert) => void }
   return (
     <div
       className={cn(
-        'rounded-2xl border p-4 sm:p-5 transition-all shadow-xs',
+        'rounded-[1.75rem] border p-4 sm:p-5 transition-colors',
         isDanger
-          ? 'border-rose-200 bg-rose-50/50 hover:bg-rose-50/70'
-          : 'border-amber-200 bg-amber-50/50 hover:bg-amber-50/70'
+          ? 'border-rose-200 bg-rose-50 hover:bg-rose-100'
+          : 'border-amber-200 bg-amber-50 hover:bg-amber-100'
       )}
     >
       <div className="flex items-start gap-3.5">

@@ -2,7 +2,7 @@
  * จุดเชื่อมบางๆ ให้ไฟล์ข้อมูลใน lib/ บอกว่า "ข้อมูลก้อนนี้เปลี่ยนแล้ว ช่วยส่งขึ้นเซิร์ฟเวอร์"
  * (แยกไฟล์เพื่อไม่ให้เกิด import วนกับ engine)
  */
-export type StoreName = 'settings' | 'records' | 'meds' | 'calendar' | 'journal' | 'access' | 'notices' | 'onboarding';
+export type StoreName = 'settings' | 'records' | 'meds' | 'calendar' | 'journal' | 'access' | 'notices' | 'onboarding' | 'folders';
 
 type Handler = (store: StoreName, ids?: string[]) => void;
 

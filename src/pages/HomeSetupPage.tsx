@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { CanvasDecor } from '../components/ui/Decor';
 import { Link, useNavigate } from 'react-router-dom';
 import { Home, KeyRound, UserPlus } from 'lucide-react';
 import { BrandMark } from '../components/layout/BrandMark';
@@ -153,7 +154,8 @@ export const HomeSetupPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-dvh bg-slate-50 text-slate-900">
+    <div className="relative isolate min-h-dvh text-slate-900">
+      <CanvasDecor />
       <header className="h-16 border-b border-slate-200 bg-white">
         <div className="h-full max-w-5xl mx-auto px-4 sm:px-6 flex items-center justify-between gap-3">
           <BrandMark />

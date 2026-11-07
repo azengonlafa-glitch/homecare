@@ -230,7 +230,7 @@ export const RemindersSettingsPage: React.FC = () => {
                     type="button"
                     onClick={() => setSelectedMemberId(m.id)}
                     className={cn(
-                      'rounded-xl border px-3 py-1.5 text-xs sm:text-sm font-extrabold transition-colors cursor-pointer',
+                      'min-h-[44px] rounded-xl border px-3 py-1.5 text-xs sm:text-sm font-extrabold transition-colors cursor-pointer',
                       selectedMember?.id === m.id
                         ? 'border-purple-600 bg-purple-600 text-white shadow-xs'
                         : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-purple-50'
@@ -269,7 +269,7 @@ export const RemindersSettingsPage: React.FC = () => {
                           type="button"
                           onClick={() => updateRouting(selectedMember.id, { medication: opt.v as RecipientPermission })}
                           className={cn(
-                            'rounded-lg border px-2.5 py-1 text-xs font-bold transition-colors cursor-pointer',
+                            'min-h-[44px] rounded-lg border px-3 py-1 text-xs font-bold transition-colors cursor-pointer',
                             currentMemberRouting.medication === opt.v
                               ? 'border-purple-600 bg-purple-50 text-purple-900 ring-1 ring-purple-600'
                               : 'border-slate-200 text-slate-700 hover:bg-slate-50'
@@ -296,7 +296,7 @@ export const RemindersSettingsPage: React.FC = () => {
                           type="button"
                           onClick={() => updateRouting(selectedMember.id, { appointment: opt.v as RecipientPermission })}
                           className={cn(
-                            'rounded-lg border px-2.5 py-1 text-xs font-bold transition-colors cursor-pointer',
+                            'min-h-[44px] rounded-lg border px-3 py-1 text-xs font-bold transition-colors cursor-pointer',
                             currentMemberRouting.appointment === opt.v
                               ? 'border-purple-600 bg-purple-50 text-purple-900 ring-1 ring-purple-600'
                               : 'border-slate-200 text-slate-700 hover:bg-slate-50'
@@ -322,7 +322,7 @@ export const RemindersSettingsPage: React.FC = () => {
                           type="button"
                           onClick={() => updateRouting(selectedMember.id, { family: opt.v as RecipientPermission })}
                           className={cn(
-                            'rounded-lg border px-2.5 py-1 text-xs font-bold transition-colors cursor-pointer',
+                            'min-h-[44px] rounded-lg border px-3 py-1 text-xs font-bold transition-colors cursor-pointer',
                             currentMemberRouting.family === opt.v
                               ? 'border-purple-600 bg-purple-50 text-purple-900 ring-1 ring-purple-600'
                               : 'border-slate-200 text-slate-700 hover:bg-slate-50'
@@ -348,7 +348,7 @@ export const RemindersSettingsPage: React.FC = () => {
                           type="button"
                           onClick={() => updateRouting(selectedMember.id, { system: opt.v as RecipientPermission })}
                           className={cn(
-                            'rounded-lg border px-2.5 py-1 text-xs font-bold transition-colors cursor-pointer',
+                            'min-h-[44px] rounded-lg border px-3 py-1 text-xs font-bold transition-colors cursor-pointer',
                             currentMemberRouting.system === opt.v
                               ? 'border-purple-600 bg-purple-50 text-purple-900 ring-1 ring-purple-600'
                               : 'border-slate-200 text-slate-700 hover:bg-slate-50'
@@ -380,7 +380,7 @@ export const RemindersSettingsPage: React.FC = () => {
                         type="button"
                         onClick={() => updateRouting(selectedMember.id, { escalationDelayMin: mins })}
                         className={cn(
-                          'rounded-xl border px-3 py-1.5 text-xs font-extrabold transition-colors cursor-pointer',
+                          'min-h-[44px] rounded-xl border px-3 py-1.5 text-xs font-extrabold transition-colors cursor-pointer',
                           currentMemberRouting.escalationDelayMin === mins
                             ? 'border-purple-600 bg-purple-600 text-white'
                             : 'border-slate-300 bg-white text-slate-700 hover:bg-purple-50'

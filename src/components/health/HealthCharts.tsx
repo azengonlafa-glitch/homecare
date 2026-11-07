@@ -87,7 +87,7 @@ export const ZoneGauge: React.FC<ZoneGaugeProps> = ({ spec, value }) => {
             >
               {z.tone === 'good' && '✓ '}
               {z.label}
-              <span className="block text-[11px] text-slate-500 font-normal">
+              <span className="block text-xs text-slate-500 font-normal">
                 {z.from === spec.min ? `<${z.to}` : z.to === spec.max ? `≥${z.from}` : `${z.from}–${z.to}`}
               </span>
             </div>

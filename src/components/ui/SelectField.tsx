@@ -216,7 +216,7 @@ export const SelectField: React.FC<SelectFieldProps> = ({
           aria-activedescendant={isOpen && activeIndex >= 0 ? `${id}-opt-${activeIndex}` : undefined}
           className={cn(
             fieldControlClass(!!error),
-            'w-full flex items-center justify-between text-left cursor-pointer transition-all',
+            'w-full flex items-center justify-between text-left cursor-pointer transition',
             isOpen && 'ring-2 ring-purple-600 border-transparent',
             disabled && 'opacity-60 cursor-not-allowed bg-slate-50',
             className

@@ -9,7 +9,7 @@ interface SocialButtonsProps {
 }
 
 const socialButtonClass =
-  'w-18 h-14 sm:w-20 sm:h-15 px-4 flex items-center justify-center bg-white border border-slate-300 rounded-2xl hover:bg-slate-50 active:bg-slate-100 transition-all cursor-pointer shadow-xs hover:border-slate-400';
+  'w-18 h-14 sm:w-20 sm:h-15 px-4 flex items-center justify-center bg-white border border-slate-300 rounded-2xl hover:bg-slate-50 active:bg-slate-100 transition cursor-pointer shadow-xs hover:border-slate-400';
 
 /** ตัวคั่น "or do it via other accounts" และปุ่ม Google / Apple ขนาดใหญ่ขึ้น */
 export const SocialButtons: React.FC<SocialButtonsProps> = ({ labelPrefix, onSelect, providers = ['google', 'apple'] }) => (

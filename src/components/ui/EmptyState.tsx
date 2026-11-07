@@ -1,15 +1,16 @@
 import React from 'react';
 import type { LucideIcon } from 'lucide-react';
 import { Card } from './Card';
+import { Mascot } from './Mascot';
 
 interface EmptyStateProps {
   icon: LucideIcon;
   message: string;
 }
 
-export const EmptyState: React.FC<EmptyStateProps> = ({ icon: Icon, message }) => (
+export const EmptyState: React.FC<EmptyStateProps> = ({ message }) => (
   <Card className="py-12 text-center">
-    <Icon className="w-12 h-12 text-slate-300 mx-auto mb-3" aria-hidden="true" />
+    <Mascot kind="cloud" mood="sleepy" className="mx-auto mb-3 h-24 w-24" />
     <p className="text-slate-600 font-medium">{message}</p>
   </Card>
 );
