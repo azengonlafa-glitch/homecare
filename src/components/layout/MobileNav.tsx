@@ -15,7 +15,7 @@ import { useNavBadges } from '../../lib/navBadges';
 export const MobileNav: React.FC = () => {
   const isOwner = canManageHome(useSettings());
   const badges = useNavBadges();
-  const VISIBLE_ITEMS = NAV_ITEMS.filter((item) => !item.hidden && (isOwner || !item.ownerOnly));
+  const VISIBLE_ITEMS = NAV_ITEMS.filter((item) => !item.hidden && !item.mobileHidden && (isOwner || !item.ownerOnly));
 
   return (
     <nav

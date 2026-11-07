@@ -3,6 +3,7 @@ import { AlertTriangle, BarChart3, BellRing, ClipboardCheck, Pill, Plus } from '
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { PageHeader } from '../components/ui/PageHeader';
+import { ConsultEntryCard } from '../components/consult/ConsultEntryCard';
 import { useToast } from '../components/ui/Toast';
 import { ConfirmDialog } from '../components/settings/ConfirmDialog';
 import { MedFormModal, type MedFormData } from '../components/meds/MedFormModal';
@@ -183,6 +184,7 @@ export const MedsPage: React.FC = () => {
 
   return (
     <div className="mx-auto w-full max-w-5xl space-y-6">
+      <ConsultEntryCard />
       <PageHeader
         eyebrow="ส่วนตัว"
         title="ยาและการดูแล"

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Bell, Clock } from 'lucide-react';
+import { Bell, Clock, ShieldAlert, UserCheck } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 import { Chip, FieldGroup } from '../../components/ui/ChoiceChips';
 import { PageLayout } from '../../components/settings/PageLayout';
@@ -15,6 +15,12 @@ import {
   type LowStockDays,
   type ReminderSettings,
 } from '../../lib/settings';
+import {
+  loadRoutingConfigs,
+  saveRoutingConfigs,
+  type MemberRoutingConfig,
+  type RecipientPermission,
+} from '../../lib/notifications';
 
 /** ปุ่ม +/- ตั้งจำนวนครั้ง (ปุ่มใหญ่ กดง่ายด้วยนิ้วเดียว) */
 const stepperClass =
@@ -30,6 +36,8 @@ const stepperClass =
  */
 export const RemindersSettingsPage: React.FC = () => {
   const [settings, setSettings] = useState(loadSettings);
+  const [routingConfigs, setRoutingConfigs] = useState(() => loadRoutingConfigs(settings.members));
+  const [selectedMemberId, setSelectedMemberId] = useState(() => settings.members[0]?.id ?? '');
   const toast = useToast();
 
   const update = (patch: Partial<ReminderSettings>) => {
@@ -38,8 +46,35 @@ export const RemindersSettingsPage: React.FC = () => {
     toast.show('บันทึกแล้ว');
   };
 
+  const updateRouting = (memberId: string, patch: Partial<MemberRoutingConfig>) => {
+    const current = routingConfigs[memberId] || {
+      memberId,
+      medication: 'own_only',
+      appointment: 'own_only',
+      family: 'important_only',
+      system: 'important_only',
+      escalationDelayMin: 30,
+    };
+    const next = {
+      ...routingConfigs,
+      [memberId]: { ...current, ...patch },
+    };
+    setRoutingConfigs(next);
+    saveRoutingConfigs(next);
+    toast.show('บันทึกการตั้งค่าผู้รับการแจ้งเตือนแล้ว');
+  };
+
   const { reminders } = settings;
   const lowStockOn = reminders.lowStock;
+  const selectedMember = settings.members.find((m) => m.id === selectedMemberId) ?? settings.members[0];
+  const currentMemberRouting = (selectedMember && routingConfigs[selectedMember.id]) || {
+    memberId: selectedMemberId,
+    medication: 'own_only',
+    appointment: 'own_only',
+    family: 'important_only',
+    system: 'important_only',
+    escalationDelayMin: 30,
+  };
 
   return (
     <PageLayout
@@ -170,6 +205,194 @@ export const RemindersSettingsPage: React.FC = () => {
               checked={reminders.escalateToFamily}
               onChange={(checked) => update({ escalateToFamily: checked })}
             />
+          </Card>
+        </div>
+
+        {/* ส่วนที่ 2.3 การตั้งค่าผู้รับการแจ้งเตือน (Notification Recipients & Routing) */}
+        <div className="lg:col-span-12 space-y-4 pt-4 border-t border-slate-200">
+          <Card className="shadow-xs space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div>
+                <h2 className="flex items-center gap-2 text-lg sm:text-xl font-bold text-slate-900">
+                  <UserCheck className="w-5 h-5 text-purple-700" aria-hidden="true" />
+                  <span>2.3 การตั้งค่าผู้รับการแจ้งเตือน (Recipient & Notification Routing)</span>
+                </h2>
+                <p className="text-sm text-slate-600 mt-0.5">
+                  กำหนดบทบาทและเลือกประเภทการแจ้งเตือนที่สมาชิกแต่ละคนจะได้รับในบ้าน
+                </p>
+              </div>
+
+              {/* เลือกสมาชิกเพื่อกำหนดค่า */}
+              <div className="flex flex-wrap items-center gap-1.5">
+                {settings.members.map((m) => (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => setSelectedMemberId(m.id)}
+                    className={cn(
+                      'rounded-xl border px-3 py-1.5 text-xs sm:text-sm font-extrabold transition-colors cursor-pointer',
+                      selectedMember?.id === m.id
+                        ? 'border-purple-600 bg-purple-600 text-white shadow-xs'
+                        : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-purple-50'
+                    )}
+                  >
+                    {m.name} ({m.relation})
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {selectedMember && (
+              <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 sm:p-5 space-y-4">
+                <div className="flex items-center gap-2">
+                  <span className="font-extrabold text-base text-slate-900">
+                    ตั้งค่าให้: {selectedMember.name}
+                  </span>
+                  <span className="text-xs font-bold text-purple-800 bg-purple-100 rounded-full px-2.5 py-0.5">
+                    {selectedMember.role === 'owner' ? 'ผู้ดูแลหลักของบ้าน' : 'สมาชิกในบ้าน'}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* ยาและการดูแล */}
+                  <div className="rounded-xl border border-slate-200 bg-white p-3.5 space-y-2">
+                    <p className="text-sm font-bold text-slate-800">1. การแจ้งเตือนเรื่องยา</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {[
+                        { v: 'all', l: 'ทั้งหมด (ทุกยาในบ้าน)' },
+                        { v: 'important_only', l: 'เฉพาะสำคัญ (ขาดยา/ยาหมด)' },
+                        { v: 'own_only', l: 'เฉพาะยาของตัวเอง' },
+                        { v: 'none', l: 'ไม่รับ' },
+                      ].map((opt) => (
+                        <button
+                          key={opt.v}
+                          type="button"
+                          onClick={() => updateRouting(selectedMember.id, { medication: opt.v as RecipientPermission })}
+                          className={cn(
+                            'rounded-lg border px-2.5 py-1 text-xs font-bold transition-colors cursor-pointer',
+                            currentMemberRouting.medication === opt.v
+                              ? 'border-purple-600 bg-purple-50 text-purple-900 ring-1 ring-purple-600'
+                              : 'border-slate-200 text-slate-700 hover:bg-slate-50'
+                          )}
+                        >
+                          {opt.l}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* นัดหมายแพทย์ */}
+                  <div className="rounded-xl border border-slate-200 bg-white p-3.5 space-y-2">
+                    <p className="text-sm font-bold text-slate-800">2. การแจ้งเตือนนัดหมายแพทย์</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {[
+                        { v: 'all', l: 'ทั้งหมด (ทุกนัดในบ้าน)' },
+                        { v: 'important_only', l: 'เฉพาะสำคัญ (วันนี้/พรุ่งนี้)' },
+                        { v: 'own_only', l: 'เฉพาะนัดของตัวเอง' },
+                        { v: 'none', l: 'ไม่รับ' },
+                      ].map((opt) => (
+                        <button
+                          key={opt.v}
+                          type="button"
+                          onClick={() => updateRouting(selectedMember.id, { appointment: opt.v as RecipientPermission })}
+                          className={cn(
+                            'rounded-lg border px-2.5 py-1 text-xs font-bold transition-colors cursor-pointer',
+                            currentMemberRouting.appointment === opt.v
+                              ? 'border-purple-600 bg-purple-50 text-purple-900 ring-1 ring-purple-600'
+                              : 'border-slate-200 text-slate-700 hover:bg-slate-50'
+                          )}
+                        >
+                          {opt.l}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* เหตุการณ์ในครอบครัว */}
+                  <div className="rounded-xl border border-slate-200 bg-white p-3.5 space-y-2">
+                    <p className="text-sm font-bold text-slate-800">3. การแจ้งเตือนในครอบครัว</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {[
+                        { v: 'all', l: 'ทั้งหมด (ค่าสุขภาพ, อาการ, สมาชิกใหม่)' },
+                        { v: 'important_only', l: 'เฉพาะสำคัญ (สัญญาณชีพผิดปกติ)' },
+                        { v: 'none', l: 'ไม่รับ' },
+                      ].map((opt) => (
+                        <button
+                          key={opt.v}
+                          type="button"
+                          onClick={() => updateRouting(selectedMember.id, { family: opt.v as RecipientPermission })}
+                          className={cn(
+                            'rounded-lg border px-2.5 py-1 text-xs font-bold transition-colors cursor-pointer',
+                            currentMemberRouting.family === opt.v
+                              ? 'border-purple-600 bg-purple-50 text-purple-900 ring-1 ring-purple-600'
+                              : 'border-slate-200 text-slate-700 hover:bg-slate-50'
+                          )}
+                        >
+                          {opt.l}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* ระบบ */}
+                  <div className="rounded-xl border border-slate-200 bg-white p-3.5 space-y-2">
+                    <p className="text-sm font-bold text-slate-800">4. การแจ้งเตือนระบบ</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {[
+                        { v: 'all', l: 'ทั้งหมด (สั่งยา, ซิงก์ข้อมูล)' },
+                        { v: 'important_only', l: 'เฉพาะสำคัญ' },
+                        { v: 'none', l: 'ไม่รับ' },
+                      ].map((opt) => (
+                        <button
+                          key={opt.v}
+                          type="button"
+                          onClick={() => updateRouting(selectedMember.id, { system: opt.v as RecipientPermission })}
+                          className={cn(
+                            'rounded-lg border px-2.5 py-1 text-xs font-bold transition-colors cursor-pointer',
+                            currentMemberRouting.system === opt.v
+                              ? 'border-purple-600 bg-purple-50 text-purple-900 ring-1 ring-purple-600'
+                              : 'border-slate-200 text-slate-700 hover:bg-slate-50'
+                          )}
+                        >
+                          {opt.l}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* ตั้งเวลาหน่วงก่อนแจ้งผู้ดูแล (Escalation Delay) */}
+                <div className="pt-2 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
+                      <ShieldAlert className="w-4 h-4 text-purple-700" />
+                      <span>ตั้งเวลาหน่วงก่อนส่งต่อการแจ้งเตือนหาผู้ดูแล (Escalation Delay)</span>
+                    </p>
+                    <p className="text-xs text-slate-600 mt-0.5">
+                      หากยังไม่ได้รับการยืนยันการรับประทานยา จะรอเวลานี้ก่อนแจ้งเตือนผู้ดูแลหลัก
+                    </p>
+                  </div>
+
+                  <div className="flex flex-wrap gap-1.5 shrink-0">
+                    {[15, 30, 45, 60].map((mins) => (
+                      <button
+                        key={mins}
+                        type="button"
+                        onClick={() => updateRouting(selectedMember.id, { escalationDelayMin: mins })}
+                        className={cn(
+                          'rounded-xl border px-3 py-1.5 text-xs font-extrabold transition-colors cursor-pointer',
+                          currentMemberRouting.escalationDelayMin === mins
+                            ? 'border-purple-600 bg-purple-600 text-white'
+                            : 'border-slate-300 bg-white text-slate-700 hover:bg-purple-50'
+                        )}
+                      >
+                        {mins} นาที
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
           </Card>
         </div>
       </div>

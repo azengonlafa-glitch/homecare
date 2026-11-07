@@ -142,7 +142,7 @@ export const EventCard: React.FC<EventCardProps> = ({
                 <div
                   role="dialog"
                   aria-label="เลือกสีแถบกิจกรรม"
-                  className="anim-pop absolute right-0 top-full z-30 mt-1 flex flex-wrap gap-1.5 p-2 bg-white rounded-2xl border border-slate-200 shadow-xl w-44"
+                  className="anim-pop absolute right-0 top-full z-40 mt-1 flex flex-wrap gap-1.5 p-2 bg-white rounded-2xl border border-slate-200 shadow-xl w-44"
                 >
                   <p className="w-full text-xs font-bold text-slate-500 px-1 mb-0.5">เลือกสีแถบ</p>
                   {EVENT_COLORS.map((c) => {

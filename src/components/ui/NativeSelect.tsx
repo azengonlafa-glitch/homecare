@@ -1,12 +1,7 @@
 import React from 'react';
-import { ChevronDown } from 'lucide-react';
-import { cn } from '../../lib/cn';
-import { Field, describedBy, fieldControlClass } from './Field';
+import { SelectField } from './SelectField';
 
-interface NativeSelectProps extends Omit<
-  React.SelectHTMLAttributes<HTMLSelectElement>,
-  'onChange' | 'value'
-> {
+interface NativeSelectProps {
   id: string;
   label: string;
   labelSuffix?: string;
@@ -16,46 +11,16 @@ interface NativeSelectProps extends Omit<
   options: { value: string | number; label: string }[];
   value: string | number;
   onChange: (value: string) => void;
+  className?: string;
+  disabled?: boolean;
 }
 
 /**
- * Dropdown แบบ <select> ของเบราว์เซอร์ ใช้ในหน้าต่างฟอร์มที่เลื่อนได้
- * (เมนูของ SelectField แบบกำหนดเองจะถูกตัดขอบเมื่ออยู่ในพื้นที่เลื่อน)
+ * ช่องเลือกแบบรายการ (ชื่อเดิมคงไว้เพื่อให้หน้าเดิมเรียกใช้ได้เหมือนเดิม)
+ * ตอนนี้ใช้เมนูแบบเดียวกับ SelectField ทั้งแอป ไม่ใช่ <select> ของเบราว์เซอร์แล้ว
+ * เพราะเมนูของเบราว์เซอร์หน้าตาไม่เหมือนส่วนอื่น และ SelectField วางเมนูผ่าน portal จึงไม่ถูกตัดขอบในหน้าต่างที่เลื่อนได้
  */
-export const NativeSelect: React.FC<NativeSelectProps> = ({
-  id,
-  label,
-  labelSuffix,
-  hint,
-  error,
-  hideLabel,
-  options,
-  value,
-  onChange,
-  className,
-  ...props
-}) => (
-  <Field id={id} label={label} labelSuffix={labelSuffix} hint={hint} error={error} hideLabel={hideLabel}>
-    <div className="relative">
-      <select
-        id={id}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        aria-invalid={error ? true : undefined}
-        aria-describedby={describedBy(id, hint, error)}
-        className={cn(fieldControlClass(!!error), 'appearance-none pr-12 cursor-pointer', className)}
-        {...props}
-      >
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
-      <ChevronDown
-        className="w-5 h-5 text-slate-500 absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none"
-        aria-hidden="true"
-      />
-    </div>
-  </Field>
-);
+export const NativeSelect: React.FC<NativeSelectProps> = ({ options, value, ...rest }) => {
+  const items = options.map((option) => ({ value: String(option.value), label: option.label }));
+  return <SelectField {...rest} options={items} value={String(value)} placeholder={items[0]?.label ?? ''} />;
+};

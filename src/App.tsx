@@ -14,11 +14,29 @@ import { HomeSettingsPage } from './pages/HomeSettingsPage';
 import { HealthProfilePage } from './pages/HealthProfilePage';
 import { MembersPage } from './pages/MembersPage';
 import { MemberDetailPage } from './pages/MemberDetailPage';
+import { NotificationsPage } from './pages/NotificationsPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { PrivacySettingsPage } from './pages/settings/PrivacySettingsPage';
 import { ProfileSettingsPage } from './pages/settings/ProfileSettingsPage';
 import { RemindersSettingsPage } from './pages/settings/RemindersSettingsPage';
 import { FontSizeSettingsPage } from './pages/settings/FontSizeSettingsPage';
+
+import { ConsultShell } from './pages/consult/ConsultShell';
+import { ConsultHomePage } from './pages/consult/ConsultHomePage';
+import { CheckinPage } from './pages/consult/CheckinPage';
+import { ReviewConsentPage } from './pages/consult/ReviewConsentPage';
+import { ConsultRoomPage } from './pages/consult/ConsultRoomPage';
+import { ProviderPublicPage } from './pages/consult/ProviderPublicPage';
+import { ConsultHistoryPage } from './pages/consult/ConsultHistoryPage';
+import { FollowUpPage } from './pages/consult/FollowUpPage';
+import { StaffShell } from './pages/pharmacist/StaffShell';
+import { AdminShell } from './pages/admin/AdminShell';
+import { AdminListPage } from './pages/admin/AdminListPage';
+import { AdminProviderPage } from './pages/admin/AdminProviderPage';
+import { AdminProviderFormPage } from './pages/admin/AdminProviderFormPage';
+import { ConsolePlaceholder, PharmacistConsolePage } from './pages/pharmacist/PharmacistConsolePage';
+import { PharmacistWorkspaceRoute } from './pages/pharmacist/PharmacistWorkspacePage';
+import { StaffDashboardPage } from './pages/pharmacist/StaffDashboardPage';
 
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
 
@@ -44,6 +62,23 @@ export const App: React.FC = () => {
         {/* ต่อจากนั้น: กรอกข้อมูลสุขภาพพื้นฐาน 7 ขั้น (บังคับ) */}
         <Route path="/onboarding" element={<RequireAuth><OnboardingPage /></RequireAuth>} />
 
+        {/* พื้นที่เภสัชกร/คลินิก: แยกจากหน้าผู้ใช้ และไม่ต้องมีบ้าน */}
+        <Route path="/pharmacist" element={<StaffShell />}>
+          <Route path="dashboard" element={<StaffDashboardPage />} />
+          <Route element={<PharmacistConsolePage />}>
+            <Route index element={<ConsolePlaceholder />} />
+            <Route path=":id" element={<PharmacistWorkspaceRoute />} />
+          </Route>
+        </Route>
+
+        {/* แอดมิน: จัดการผู้ให้บริการและบัญชีเจ้าหน้าที่ */}
+        <Route path="/admin" element={<AdminShell />}>
+          <Route index element={<AdminListPage />} />
+          <Route path="providers/new" element={<AdminProviderFormPage />} />
+          <Route path="providers/:id" element={<AdminProviderPage />} />
+          <Route path="providers/:id/edit" element={<AdminProviderFormPage />} />
+        </Route>
+
         {/* หน้าจอหลักของระบบ (ตั้ง default เป็นหน้าล่าสุดที่เข้าชม) */}
         <Route
           path="/"
@@ -61,7 +96,17 @@ export const App: React.FC = () => {
           <Route path="home-settings" element={<HomeSettingsPage />} />
           <Route path="members" element={<MembersPage />} />
           <Route path="members/:id" element={<MemberDetailPage />} />
+          <Route path="notifications" element={<NotificationsPage />} />
           <Route path="health" element={<HealthProfilePage />} />
+          <Route path="consult" element={<ConsultShell />}>
+            <Route index element={<ConsultHomePage />} />
+            <Route path="providers/:id" element={<ProviderPublicPage />} />
+            <Route path="checkin" element={<CheckinPage />} />
+            <Route path="review" element={<ReviewConsentPage />} />
+            <Route path="room/:id" element={<ConsultRoomPage />} />
+            <Route path="history" element={<ConsultHistoryPage />} />
+            <Route path="followup/:id" element={<FollowUpPage />} />
+          </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
 

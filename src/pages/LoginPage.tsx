@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { AuthShell } from '../components/auth/AuthShell';
 import { SocialButtons } from '../components/auth/SocialButtons';
 import { PasswordToggle } from '../components/auth/PasswordToggle';
@@ -13,6 +13,10 @@ import { explainError, sendPasswordReset, signInWithEmail, signInWithProvider } 
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
+  const [params] = useSearchParams();
+  // กลับไปหน้าเดิมหลังเข้าสู่ระบบ อนุญาตเฉพาะหน้าที่กำหนด เพื่อกันการส่งต่อไปเว็บอื่น
+  const next = params.get('next');
+  const nextPath = next && /^\/(pharmacist|admin(\/providers\/(new|[A-Za-z0-9-]+(\/edit)?))?)$/.test(next) ? next : null;
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -22,8 +26,8 @@ export const LoginPage: React.FC = () => {
 
   // เข้าสู่ระบบอยู่แล้ว (เช่น กลับมาจาก Google หรือจากลิงก์ยืนยันอีเมล): ไปต่อได้เลย
   useEffect(() => {
-    if (cloudEnabled && readAuthUser()?.id) navigate(pathAfterLogin(), { replace: true });
-  }, [navigate]);
+    if (cloudEnabled && readAuthUser()?.id) navigate(nextPath ?? pathAfterLogin(), { replace: true });
+  }, [navigate, nextPath]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,7 +42,7 @@ export const LoginPage: React.FC = () => {
     try {
       await signInWithEmail(email, password);
       // โหลดหน้าใหม่เพื่อดึงข้อมูลของบัญชีนี้ลงเครื่อง
-      window.location.assign('/');
+      window.location.assign(nextPath ?? '/');
     } catch (err) {
       setError(explainError(err));
       setBusy(false);
