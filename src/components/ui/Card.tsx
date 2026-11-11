@@ -7,12 +7,12 @@ interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   interactive?: boolean;
 }
 
-/** การ์ดมาตรฐาน: ขนาดใหญ่ขึ้น นุ่มนวล สบายตา */
+/** การ์ดมาตรฐาน: กระดาษครีม ขอบเย็บด้ายประตามสีหมวด การ์ดชั้นนอกสุดของหน้ามีเทปวาชิแปะ (ดู .paper ใน index.css) */
 export const Card: React.FC<CardProps> = ({ interactive, className, ...props }) => (
   <div
     className={cn(
-      'card-reveal bg-white rounded-[2rem] p-6 sm:p-8 shadow-[0_10px_30px_-18px_rgba(69,68,179,0.45)] ring-1 ring-purple-100',
-      interactive && 'hover-lift cursor-pointer hover:ring-purple-300',
+      'paper card-reveal relative rounded-[2rem] p-6 sm:p-8',
+      interactive && 'hover-lift cursor-pointer',
       className
     )}
     {...props}

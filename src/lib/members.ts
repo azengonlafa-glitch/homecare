@@ -75,6 +75,20 @@ export interface VitalReading {
   glucose?: number;
   glucoseTiming?: GlucoseTiming;
   weightKg?: number;
+  /** ชีพจร ครั้ง/นาที */
+  pulseBpm?: number;
+  /** ออกซิเจนในเลือด % */
+  spo2?: number;
+  /** อุณหภูมิร่างกาย °C */
+  tempC?: number;
+  /** น้ำตาลสะสม HbA1c % */
+  hba1c?: number;
+  /** รอบเอว ซม. */
+  waistCm?: number;
+  /** ระดับความปวด 0-10 */
+  painScore?: number;
+  /** ชั่วโมงที่นอนคืนก่อน */
+  sleepHours?: number;
   note?: string;
   byName?: string;
 }

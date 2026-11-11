@@ -13,6 +13,7 @@ import { MedDetailModal } from '../components/meds/MedDetailModal';
 import { MedReport } from '../components/meds/MedReport';
 import { RefillModal } from '../components/meds/RefillModal';
 import { TodaySchedule } from '../components/meds/TodaySchedule';
+import { StreakTreeCard } from '../components/meds/StreakTreeCard';
 import { deleteFiles } from '../lib/fileStore';
 import { newId } from '../lib/journal';
 import { useMedAlerts } from '../lib/medAlerts';
@@ -296,7 +297,10 @@ export const MedsPage: React.FC = () => {
 
           <div id={`meds-panel-${tab}`} role="tabpanel" aria-labelledby={`meds-tab-${tab}`}>
             {tab === 'today' ? (
-              <TodaySchedule meds={state.meds} logs={state.logs} onSet={handleDose} />
+              <div className="space-y-5">
+                <StreakTreeCard meds={state.meds} logs={state.logs} />
+                <TodaySchedule meds={state.meds} logs={state.logs} onSet={handleDose} />
+              </div>
             ) : tab === 'cabinet' ? (
               <MedCabinet
                 meds={state.meds}

@@ -49,6 +49,8 @@ export interface ReminderSettings {
   repeatIntervalMinutes: number;
   /** ตั้งแต่การเตือนครั้งที่ 2 ถ้ายังไม่กินยา ให้แจ้งทุกคนในบ้านด้วย */
   escalateToFamily: boolean;
+  /** เล่นเสียงตอนมีแจ้งเตือนใหม่ขณะเปิดแอปอยู่ */
+  sound: boolean;
 }
 
 /** ข้อมูลส่วนตัวในหน้า "โปรไฟล์ของฉัน" (นอกเหนือจากชื่อเล่น) */
@@ -263,7 +265,7 @@ export function defaultSettings(): AppSettings {
           { id: 'chai', name: 'พี่ชัย', relation: 'พี่ชาย', role: 'member' },
           { id: 'daeng', name: 'ป้าแดง', relation: 'ป้า', role: 'external' },
         ],
-    reminders: { lowStock: true, doseWindow: true, appointment: true, lowStockDays: 7, repeatCount: 3, escalateToFamily: true, repeatIntervalMinutes: 15 },
+    reminders: { lowStock: true, doseWindow: true, appointment: true, lowStockDays: 7, repeatCount: 3, escalateToFamily: true, repeatIntervalMinutes: 15, sound: true },
     fontScale: 'normal',
   };
 }
@@ -298,6 +300,7 @@ export function loadSettings(): AppSettings {
             ? Math.min(REPEAT_COUNT_MAX, Math.max(REPEAT_COUNT_MIN, Math.round(reminders.repeatCount)))
             : 3,
         escalateToFamily: reminders.escalateToFamily !== false,
+        sound: reminders.sound !== false,
         repeatIntervalMinutes:
           typeof reminders.repeatIntervalMinutes === 'number'
             ? Math.min(120, Math.max(1, Math.round(reminders.repeatIntervalMinutes)))

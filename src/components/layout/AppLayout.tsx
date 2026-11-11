@@ -10,13 +10,22 @@ import { cloudEnabled } from '../../cloud/client';
 import { signOutAll } from '../../cloud/engine';
 import { unsubscribeOnSignOut } from '../../consult/push';
 
+/** หมวดของหน้า: กำหนดสีผ้ากิงแฮม สีด้ายเย็บ สีเทป และสีเมนูที่เลือก (ดู [data-section] ใน index.css) */
+const sectionOf = (pathname: string): string => {
+  const first = pathname.split('/')[1] ?? '';
+  const known = ['journal', 'calendar', 'appointments', 'members', 'health', 'folders', 'notifications', 'settings', 'home-settings', 'menu', 'consult', 'meds'];
+  if (first === 'appointments') return 'calendar';
+  if (first === 'home-settings' || first === 'menu') return 'settings';
+  return known.includes(first) ? first : 'meds';
+};
+
 export const AppLayout: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
   // บันทึกหน้าที่เข้าล่าสุด เพื่อใช้เป็นหน้าเริ่มต้น (default)
   useEffect(() => {
-    if (location.pathname && location.pathname !== '/') {
+    if (location.pathname && location.pathname !== '/' && location.pathname !== '/menu') {
       localStorage.setItem('growa_last_visited_path', location.pathname);
     }
   }, [location.pathname]);
@@ -52,7 +61,7 @@ export const AppLayout: React.FC = () => {
 
   return (
     <ToastProvider>
-      <div className="relative isolate min-h-dvh text-slate-900 lg:flex">
+      <div className="relative isolate min-h-dvh text-slate-900 lg:flex" data-section={sectionOf(location.pathname)}>
         <CanvasDecor />
         <a
           href="#main-content"

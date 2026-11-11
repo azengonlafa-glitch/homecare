@@ -1,18 +1,16 @@
 import React from 'react';
 import { TextField } from '../ui/TextField';
-import { SelectField } from '../ui/SelectField';
-import { FieldGroup, SingleChoiceChips } from '../ui/ChoiceChips';
+import { SingleChoiceChips } from '../ui/ChoiceChips';
 import {
   ALCOHOL,
   BLOOD_TYPES,
-  DAYS,
   EXERCISE,
   GENDERS,
-  MONTHS,
-  OCCUPATIONS,
   SMOKING,
 } from '../../data/onboardingOptions';
 import type { StepProps } from './stepTypes';
+
+const thisYearBE = () => new Date().getFullYear() + 543;
 
 /** ขั้นที่ 1: ข้อมูลส่วนตัว */
 export const StepPersonal: React.FC<StepProps> = ({ profile, update, errors, clearError }) => (
@@ -32,48 +30,24 @@ export const StepPersonal: React.FC<StepProps> = ({ profile, update, errors, cle
       error={errors['ob-fullname']}
     />
 
-    <FieldGroup
-      label="ปีเกิด"
-      required
-      hint="ขนาดยาและข้อห้ามใช้ยาขึ้นกับอายุ รู้แค่ปีเกิดก็กรอกได้"
-      error={errors['ob-birth-year']}
-    >
-      <div className="grid grid-cols-3 sm:grid-cols-[0.9fr_1.5fr_1.1fr] gap-2 sm:gap-3 [&>*]:min-w-0 [&>*:nth-child(2)]:col-span-2 sm:[&>*:nth-child(2)]:col-span-1 [&>*:nth-child(3)]:col-span-3 sm:[&>*:nth-child(3)]:col-span-1 [&_button]:px-4 [&_input]:px-4 sm:[&_button]:px-6 sm:[&_input]:px-6">
-        <SelectField
-          id="ob-birth-day"
-          label="วัน"
-          hideLabel
-          placeholder="วัน"
-          options={DAYS}
-          value={profile.birthDay}
-          onChange={(v) => update({ birthDay: v })}
-        />
-        <SelectField
-          id="ob-birth-month"
-          label="เดือน"
-          hideLabel
-          placeholder="เดือน"
-          options={MONTHS}
-          value={profile.birthMonth}
-          onChange={(v) => update({ birthMonth: v })}
-        />
-        <TextField
-          id="ob-birth-year"
-          name="bday-year"
-          label="ปีเกิด (พ.ศ.)"
-          hideLabel
-          inputMode="numeric"
-          maxLength={4}
-          autoComplete="off"
-          placeholder="ปี พ.ศ."
-          value={profile.birthYear}
-          onChange={(e) => {
-            update({ birthYear: e.target.value.replace(/\D/g, '') });
-            clearError('ob-birth-year');
-          }}
-        />
-      </div>
-    </FieldGroup>
+    <TextField
+      id="ob-age"
+      name="age"
+      label="อายุ (ปี)"
+      labelSuffix="(จำเป็น)"
+      hint="ขนาดยาและข้อห้ามใช้ยาขึ้นกับอายุ"
+      inputMode="numeric"
+      maxLength={3}
+      autoComplete="off"
+      placeholder="เช่น 45"
+      value={profile.birthYear ? String(thisYearBE() - Number(profile.birthYear)) : ''}
+      onChange={(e) => {
+        const age = e.target.value.replace(/\D/g, '');
+        update({ birthDay: '', birthMonth: '', birthYear: age === '' ? '' : String(thisYearBE() - Number(age)) });
+        clearError('ob-age');
+      }}
+      error={errors['ob-age']}
+    />
 
     <SingleChoiceChips
       id="ob-gender"
@@ -88,14 +62,15 @@ export const StepPersonal: React.FC<StepProps> = ({ profile, update, errors, cle
       }}
     />
 
-    <SelectField
+    <TextField
       id="ob-occupation"
+      name="occupation"
       label="อาชีพ"
-      hint="อาชีพช่วยให้เภสัชกรแนะนำได้ตรงขึ้น เช่น งานกะกลางคืน งานที่ต้องขับรถ หรือสัมผัสสารเคมี"
-      placeholder="เลือกอาชีพ"
-      options={OCCUPATIONS}
+      hint="พิมพ์อาชีพของคุณ เช่น ครู พยาบาล ขับรถ งานกะกลางคืน จะช่วยให้เภสัชกรแนะนำได้ตรงขึ้น"
+      autoComplete="off"
+      placeholder="เช่น ครู, พนักงานออฟฟิศ, ค้าขาย"
       value={profile.occupation}
-      onChange={(v) => update({ occupation: v })}
+      onChange={(e) => update({ occupation: e.target.value })}
     />
 
     <TextField
@@ -103,6 +78,7 @@ export const StepPersonal: React.FC<StepProps> = ({ profile, update, errors, cle
       name="tel"
       type="tel"
       label="เบอร์โทรศัพท์"
+      labelSuffix="(จำเป็น)"
       hint="ใช้ให้ร้านยาและคนส่งติดต่อได้เมื่อมีปัญหากับคำสั่งซื้อ"
       inputMode="tel"
       autoComplete="tel"

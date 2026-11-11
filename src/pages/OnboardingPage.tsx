@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import { CanvasDecor } from '../components/ui/Decor';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, FastForward } from 'lucide-react';
-import { BrandMark } from '../components/layout/BrandMark';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { StepBody, StepPersonal } from '../components/onboarding/PersonalSteps';
@@ -89,10 +88,9 @@ export const OnboardingPage: React.FC = () => {
   return (
     <div className="relative isolate min-h-dvh text-slate-900">
       <CanvasDecor />
-      <header className="h-16 border-b border-slate-200 bg-white">
-        <div className="h-full max-w-2xl mx-auto px-4 sm:px-6 flex items-center justify-between gap-3">
-          <BrandMark />
-          {ENABLE_DEV_SKIP && (
+      {ENABLE_DEV_SKIP && (
+        <header className="border-b border-slate-200 bg-white">
+          <div className="max-w-2xl mx-auto px-4 sm:px-6 py-2 flex items-center justify-end gap-3">
             <button
               type="button"
               onClick={handleDevSkip}
@@ -102,9 +100,9 @@ export const OnboardingPage: React.FC = () => {
               <span className="sr-only sm:not-sr-only">ข้าม</span>
               <span className="text-xs font-bold bg-slate-200 text-slate-700 rounded px-1.5 py-0.5">DEV</span>
             </button>
-          )}
-        </div>
-      </header>
+          </div>
+        </header>
+      )}
 
       <main className="max-w-2xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
         {/* ความคืบหน้า */}

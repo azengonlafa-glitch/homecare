@@ -10,7 +10,6 @@ import {
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
-  ClipboardList,
   Clock,
   Droplet,
   HeartPulse,
@@ -88,6 +87,10 @@ import { ONBOARDING_CHANGED_EVENT, loadOnboarding, saveOnboarding } from '../lib
 import { REQUEST_MESSAGE_SUGGESTIONS } from '../data/suggestions';
 import { MONTHS } from '../data/onboardingOptions';
 import { TONE_SOFT } from '../components/health/HealthCharts';
+import { Sparkline, TrendBlock } from '../components/health/TrendChart';
+import { MoodDino } from '../components/journal/MoodDino';
+import { ExtraMetricsHistory } from '../components/health/ExtraMetricsHistory';
+import { EXTRA_METRICS, seriesOf, type ExtraMetric } from '../lib/vitalMetrics';
 import { MedFormModal, type MedFormData } from '../components/meds/MedFormModal';
 import { MedDetailModal } from '../components/meds/MedDetailModal';
 import { MedPhoto } from '../components/meds/MedPhoto';
@@ -157,7 +160,7 @@ function memberMedFromForm(id: string, data: MedFormData): MemberMed {
 const roleBadge = 'inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-sm font-bold text-slate-700';
 
 type DashboardTab = 'overview' | 'meds' | 'history';
-type HistoryFilter = 'all' | 'symptoms' | 'bp' | 'glucose' | 'weight' | 'meds' | 'appointments';
+type HistoryFilter = 'all' | 'symptoms' | 'bp' | 'glucose' | 'weight' | 'other' | 'meds' | 'appointments';
 
 const OVERALL_META: Record<
   OverallStatus,
@@ -191,6 +194,24 @@ const OVERALL_META: Record<
     Icon: AlertTriangle,
   },
 };
+
+/** หัวข้อการ์ดแบบกะทัดรัด: ไอคอนในวงกลมสีอ่อน + ชื่อ + ส่วนด้านขวา */
+const PanelHead: React.FC<{
+  icon: React.ComponentType<{ className?: string }>;
+  tint: string;
+  title: string;
+  aside?: React.ReactNode;
+}> = ({ icon: Icon, tint, title, aside }) => (
+  <div className="flex items-center justify-between gap-2">
+    <h2 className="flex items-center gap-2.5 text-base sm:text-lg font-extrabold text-slate-900">
+      <span className={cn('inline-flex h-9 w-9 items-center justify-center rounded-full shrink-0', tint)}>
+        <Icon className="h-5 w-5" aria-hidden="true" />
+      </span>
+      <span>{title}</span>
+    </h2>
+    {aside}
+  </div>
+);
 
 // ---------- หน้าต่างขออนุญาต ----------
 
@@ -240,44 +261,131 @@ const RequestDialog: React.FC<{
 
 // ---------- หน้าต่างบันทึกค่าสุขภาพ (Vital Signs) ----------
 
+const toLocalInput = (d: Date) => {
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+};
+
+const VitalGroup: React.FC<{
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  children: React.ReactNode;
+}> = ({ icon: Icon, title, children }) => (
+  <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-3.5 space-y-3">
+    <p className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+      <Icon className="w-4 h-4 text-purple-700" />
+      <span>{title}</span>
+    </p>
+    {children}
+  </div>
+);
+
 const VitalModal: React.FC<{
   memberName: string;
   onClose: () => void;
   onSave: (reading: VitalReading) => void;
 }> = ({ memberName, onClose, onSave }) => {
+  const [when, setWhen] = useState(() => toLocalInput(new Date()));
   const [sys, setSys] = useState('');
   const [dia, setDia] = useState('');
   const [glucose, setGlucose] = useState('');
   const [timing, setTiming] = useState<GlucoseTiming>('fasting');
   const [weight, setWeight] = useState('');
+  const [extra, setExtra] = useState<Record<string, string>>({});
   const [note, setNote] = useState('');
   const [error, setError] = useState('');
 
+  const setField = (setter: (v: string) => void) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    setter(e.target.value);
+    setError('');
+  };
+  const setExtraField = (field: string, value: string) => {
+    setExtra((prev) => ({ ...prev, [field]: value }));
+    setError('');
+  };
+
   const handleSave = () => {
-    const s = sys.trim() ? Number(sys) : undefined;
-    const d = dia.trim() ? Number(dia) : undefined;
-    const g = glucose.trim() ? Number(glucose) : undefined;
-    const w = weight.trim() ? Number(weight) : undefined;
+    const parse = (v: string) => (v.trim() ? Number(v) : undefined);
+    const s = parse(sys);
+    const d = parse(dia);
+    const g = parse(glucose);
+    const w = parse(weight);
 
     if ((s !== undefined && d === undefined) || (s === undefined && d !== undefined)) {
       setError('กรุณากรอกความดันทั้งตัวบนและตัวล่างให้ครบ');
       return;
     }
-    if (s === undefined && g === undefined && w === undefined) {
-      setError('กรุณากรอกอย่างน้อย 1 รายการ (ความดัน, น้ำตาล หรือ น้ำหนัก)');
+    if (
+      (s !== undefined && (!Number.isFinite(s) || s < 40 || s > 300)) ||
+      (d !== undefined && (!Number.isFinite(d) || d < 20 || d > 200))
+    ) {
+      setError('ค่าความดันดูผิดปกติเกินไป กรุณาตรวจสอบตัวเลขอีกครั้ง');
+      return;
+    }
+    if (g !== undefined && (!Number.isFinite(g) || g < 10 || g > 800)) {
+      setError('ค่าน้ำตาลดูผิดปกติเกินไป กรุณาตรวจสอบตัวเลขอีกครั้ง');
+      return;
+    }
+    if (w !== undefined && (!Number.isFinite(w) || w < 2 || w > 400)) {
+      setError('ค่าน้ำหนักดูผิดปกติเกินไป กรุณาตรวจสอบตัวเลขอีกครั้ง');
+      return;
+    }
+
+    const extras: Partial<VitalReading> = {};
+    for (const m of EXTRA_METRICS) {
+      const raw = extra[m.field];
+      if (raw === undefined || raw.trim() === '') continue;
+      const n = Number(raw);
+      if (!Number.isFinite(n) || n < m.min || n > m.max) {
+        setError(`${m.label}ควรอยู่ระหว่าง ${m.min}–${m.max} ${m.unit} กรุณาตรวจสอบตัวเลข`);
+        return;
+      }
+      (extras as Record<string, number>)[m.field] = n;
+    }
+
+    if (s === undefined && g === undefined && w === undefined && Object.keys(extras).length === 0) {
+      setError('กรุณากรอกอย่างน้อย 1 รายการ');
+      return;
+    }
+
+    const at = new Date(when);
+    if (Number.isNaN(at.getTime())) {
+      setError('กรุณาเลือกวันและเวลาที่วัดให้ถูกต้อง');
+      return;
+    }
+    if (at.getTime() > Date.now() + 5 * 60_000) {
+      setError('วันและเวลาที่วัดต้องไม่เป็นอนาคต');
       return;
     }
 
     onSave({
       id: `vital-${Date.now()}`,
-      at: new Date().toISOString(),
+      at: at.toISOString(),
       systolic: s,
       diastolic: d,
       glucose: g,
       glucoseTiming: g !== undefined ? timing : undefined,
       weightKg: w,
+      ...extras,
       note: note.trim() || undefined,
     });
+  };
+
+  const extraField = (key: string) => {
+    const m = EXTRA_METRICS.find((x) => x.key === key) as ExtraMetric;
+    return (
+      <TextField
+        key={m.key}
+        id={`vital-${m.key}`}
+        type="number"
+        inputMode="decimal"
+        step={m.step}
+        label={`${m.label} (${m.unit})`}
+        placeholder={m.placeholder}
+        value={extra[m.field] ?? ''}
+        onChange={(e) => setExtraField(m.field, e.target.value)}
+      />
+    );
   };
 
   return (
@@ -298,61 +406,44 @@ const VitalModal: React.FC<{
     >
       <div className="py-4 space-y-4">
         <p className="text-sm text-slate-600">
-          กรอกเฉพาะค่าที่วัดได้ในครั้งนี้ ระบบจะบันทึกเวลาปัจจุบันและอัปเดตค่าล่าสุดให้อัตโนมัติ
+          กรอกเฉพาะค่าที่วัดได้ในครั้งนี้ ค่าที่บันทึกจะนำไปแสดงเป็นกราฟพัฒนาการในแท็บประวัติสุขภาพ
         </p>
 
         {error && (
-          <div className="rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-sm font-bold text-rose-800">
+          <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-sm font-bold text-rose-800">
             {error}
           </div>
         )}
 
-        <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-3.5 space-y-3">
-          <p className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
-            <HeartPulse className="w-4 h-4 text-purple-700" />
-            <span>ความดันโลหิต (mmHg)</span>
-          </p>
-          <div className="grid grid-cols-2 gap-3">
-            <TextField
-              id="vital-sys"
-              type="number"
-              label="ตัวบน (Systolic)"
-              placeholder="เช่น 125"
-              value={sys}
-              onChange={(e) => {
-                setSys(e.target.value);
-                setError('');
-              }}
-            />
-            <TextField
-              id="vital-dia"
-              type="number"
-              label="ตัวล่าง (Diastolic)"
-              placeholder="เช่น 80"
-              value={dia}
-              onChange={(e) => {
-                setDia(e.target.value);
-                setError('');
-              }}
-            />
-          </div>
-        </div>
+        <VitalGroup icon={Clock} title="วันและเวลาที่วัด">
+          <TextField
+            id="vital-when"
+            type="datetime-local"
+            label="วัน/เวลา"
+            hint="ย้อนหลังได้ ถ้าลืมบันทึกไว้"
+            max={toLocalInput(new Date())}
+            value={when}
+            onChange={setField(setWhen)}
+          />
+        </VitalGroup>
 
-        <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-3.5 space-y-3">
-          <p className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
-            <Droplet className="w-4 h-4 text-purple-700" />
-            <span>ระดับน้ำตาลในเลือด (มก./ดล.)</span>
-          </p>
+        <VitalGroup icon={HeartPulse} title="ความดันโลหิตและชีพจร">
+          <div className="grid grid-cols-2 gap-3">
+            <TextField id="vital-sys" type="number" inputMode="numeric" label="ตัวบน (mmHg)" placeholder="เช่น 125" value={sys} onChange={setField(setSys)} />
+            <TextField id="vital-dia" type="number" inputMode="numeric" label="ตัวล่าง (mmHg)" placeholder="เช่น 80" value={dia} onChange={setField(setDia)} />
+          </div>
+          {extraField('pulse')}
+        </VitalGroup>
+
+        <VitalGroup icon={Droplet} title="น้ำตาลในเลือด">
           <TextField
             id="vital-glucose"
             type="number"
-            label="ค่าน้ำตาล"
+            inputMode="decimal"
+            label="ค่าน้ำตาล (มก./ดล.)"
             placeholder="เช่น 105"
             value={glucose}
-            onChange={(e) => {
-              setGlucose(e.target.value);
-              setError('');
-            }}
+            onChange={setField(setGlucose)}
           />
           <div>
             <p className="text-xs font-bold text-slate-600 mb-1.5">ช่วงที่ตรวจ</p>
@@ -361,6 +452,7 @@ const VitalModal: React.FC<{
                 <button
                   key={t}
                   type="button"
+                  aria-pressed={timing === t}
                   onClick={() => setTiming(t)}
                   className={cn(
                     'rounded-xl border px-3 py-1.5 text-sm font-bold transition-colors cursor-pointer',
@@ -374,26 +466,46 @@ const VitalModal: React.FC<{
               ))}
             </div>
           </div>
-        </div>
+          {extraField('hba1c')}
+        </VitalGroup>
 
-        <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-3.5 space-y-3">
-          <p className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
-            <Scale className="w-4 h-4 text-purple-700" />
-            <span>น้ำหนักตัว (กิโลกรัม)</span>
-          </p>
-          <TextField
-            id="vital-weight"
-            type="number"
-            step="0.1"
-            label="น้ำหนัก (กก.)"
-            placeholder="เช่น 58.5"
-            value={weight}
-            onChange={(e) => {
-              setWeight(e.target.value);
-              setError('');
-            }}
-          />
-        </div>
+        <VitalGroup icon={Scale} title="ร่างกาย">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <TextField id="vital-weight" type="number" inputMode="decimal" step="0.1" label="น้ำหนัก (กก.)" placeholder="เช่น 58.5" value={weight} onChange={setField(setWeight)} />
+            {extraField('waist')}
+            {extraField('temp')}
+            {extraField('spo2')}
+          </div>
+        </VitalGroup>
+
+        <VitalGroup icon={Activity} title="ความรู้สึกและการนอน">
+          <div>
+            <p className="text-xs font-bold text-slate-600 mb-1.5">ระดับความปวด (0 = ไม่ปวด · 10 = ปวดมากที่สุด)</p>
+            <div className="flex flex-wrap gap-1.5">
+              {Array.from({ length: 11 }, (_, n) => n).map((n) => {
+                const on = extra.painScore === String(n);
+                return (
+                  <button
+                    key={n}
+                    type="button"
+                    aria-pressed={on}
+                    aria-label={`ความปวด ${n}`}
+                    onClick={() => setExtraField('painScore', on ? '' : String(n))}
+                    className={cn(
+                      'h-10 w-10 rounded-xl border text-sm font-extrabold transition-colors cursor-pointer',
+                      on
+                        ? 'border-purple-600 bg-purple-600 text-white'
+                        : 'border-slate-200 bg-white text-slate-700 hover:bg-purple-50'
+                    )}
+                  >
+                    {n}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          {extraField('sleep')}
+        </VitalGroup>
 
         <TextField
           id="vital-note"
@@ -737,6 +849,7 @@ export const MemberDetailPage: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState<DashboardTab>('overview');
   const [historyFilter, setHistoryFilter] = useState<HistoryFilter>('all');
+  const [showAllFollowUps, setShowAllFollowUps] = useState(false);
   const [rangePreset, setRangePreset] = useState<RangePreset>('30d');
   const [customRange, setCustomRange] = useState<{ from: string; to: string }>(() => ({
     from: rangeFor('30d', { from: '', to: '' }).from,
@@ -865,6 +978,11 @@ export const MemberDetailPage: React.FC = () => {
     stockTrusted,
   });
 
+  const visibleFollowUps = showAllFollowUps ? followUps : followUps.slice(0, 3);
+  const pendingDoses = dosesToday.filter((d) => d.state === 'unconfirmed');
+  const doneDoses = summaryToday.taken + summaryToday.skipped;
+  const dosePct = summaryToday.total > 0 ? Math.round((doneDoses / summaryToday.total) * 100) : 0;
+
   const overallStatus = overallOf(followUps);
   const overallMeta = OVERALL_META[overallStatus];
   const todayMood = getMemberTodayMood(member.id, member.name, record);
@@ -886,6 +1004,20 @@ export const MemberDetailPage: React.FC = () => {
     parseKey(activeRange.to)
   );
   const medicalHistoryInRange = record.health.history.filter((h) => inRange(h.at, activeRange));
+  const sysSeries = seriesOf(bpReadings, (r) => r.systolic);
+  const diaSeries = seriesOf(bpReadings, (r) => r.diastolic);
+  const gluSeries = seriesOf(gluReadings, (r) => r.glucose);
+  const weightSeries = seriesOf(weightReadings, (r) => r.weightKg);
+  const extraCount = readingsInRange.filter((r) => EXTRA_METRICS.some((m) => r[m.field] != null)).length;
+  // แนวโน้มย่อบนหน้าภาพรวม ใช้ค่าล่าสุดทั้งหมด ไม่ขึ้นกับช่วงเวลาที่เลือกในแท็บประวัติ
+  const allReadings = record.vitals ?? [];
+  const sparkSys = seriesOf(allReadings, (r) => r.systolic);
+  const sparkGlu = seriesOf(allReadings, (r) => r.glucose);
+  const sparkWeight = seriesOf(allReadings, (r) => r.weightKg);
+  const latestExtras = EXTRA_METRICS.flatMap((m) => {
+    const pts = seriesOf(allReadings, (r) => r[m.field]);
+    return pts.length > 0 ? [{ m, last: pts[pts.length - 1] }] : [];
+  });
 
   // ---------- Actions ----------
 
@@ -961,12 +1093,14 @@ export const MemberDetailPage: React.FC = () => {
       return;
     }
     const nextVitals = [reading, ...(record.vitals ?? [])];
+    // ถ้าเป็นการบันทึกย้อนหลัง ไม่เขียนทับ "ค่าล่าสุด" ที่เก็บไว้
+    const isNewest = (record.vitals ?? []).every((r) => r.at <= reading.at);
     const nextBp =
-      reading.systolic != null && reading.diastolic != null
+      isNewest && reading.systolic != null && reading.diastolic != null
         ? `${reading.systolic}/${reading.diastolic}`
         : record.health.bloodPressure;
-    const nextSugar = reading.glucose != null ? String(reading.glucose) : record.health.bloodSugar;
-    const nextWeight = reading.weightKg != null ? reading.weightKg : record.weightKg;
+    const nextSugar = isNewest && reading.glucose != null ? String(reading.glucose) : record.health.bloodSugar;
+    const nextWeight = isNewest && reading.weightKg != null ? reading.weightKg : record.weightKg;
 
     const updated: MemberRecord = {
       ...record,
@@ -981,7 +1115,7 @@ export const MemberDetailPage: React.FC = () => {
     saveMemberRecord(updated);
     setRecord(updated);
 
-    if (isMe) {
+    if (isMe && isNewest) {
       const ob = loadOnboarding();
       saveOnboarding({
         ...ob,
@@ -1083,7 +1217,7 @@ export const MemberDetailPage: React.FC = () => {
                       todayMood.toneBadge
                     )}
                   >
-                    <todayMood.Icon className="w-4 h-4 shrink-0" aria-hidden="true" />
+                    <MoodDino mood={todayMood.main} className="h-7 w-7 -my-1 shrink-0" />
                     <span>
                       อารมณ์วันนี้: {todayMood.label}
                       {todayMood.detail ? ` (${todayMood.detail})` : ''}
@@ -1170,86 +1304,71 @@ export const MemberDetailPage: React.FC = () => {
           </div>
         </div>
 
-        {/* แถบสรุปข้อมูลร่างกาย + โรคประจำตัว + ประวัติการแพ้ยา (แสดงเมื่อมีสิทธิ์ดูข้อมูล) */}
+        {/* แถบสรุปร่างกายแบบกะทัดรัด + โรคประจำตัว + การแพ้ (แสดงเมื่อมีสิทธิ์ดูข้อมูล) */}
         {viewable && (
-          <div className="pt-3.5 border-t border-slate-100 space-y-3">
-            {/* น้ำหนัก ส่วนสูง และค่า BMI ล่าสุด */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-              <div className="rounded-xl border border-slate-200/80 bg-slate-50/70 px-3.5 py-2.5">
-                <p className="text-xs font-bold text-slate-500">น้ำหนักล่าสุด</p>
-                <p className="mt-0.5 text-base sm:text-lg font-extrabold text-slate-900 tabular-nums">
+          <div className="pt-3.5 border-t border-slate-100 space-y-2.5">
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-sm text-slate-600">
+              <span>
+                น้ำหนัก{' '}
+                <b className="text-base font-extrabold text-slate-900 tabular-nums">
                   {body.weightKg !== null ? `${body.weightKg} กก.` : 'ยังไม่ระบุ'}
-                </p>
-              </div>
-              <div className="rounded-xl border border-slate-200/80 bg-slate-50/70 px-3.5 py-2.5">
-                <p className="text-xs font-bold text-slate-500">ส่วนสูง</p>
-                <p className="mt-0.5 text-base sm:text-lg font-extrabold text-slate-900 tabular-nums">
+                </b>
+              </span>
+              <span>
+                ส่วนสูง{' '}
+                <b className="text-base font-extrabold text-slate-900 tabular-nums">
                   {body.heightCm !== null ? `${body.heightCm} ซม.` : 'ยังไม่ระบุ'}
-                </p>
-              </div>
-              <div className="col-span-2 rounded-xl border border-slate-200/80 bg-slate-50/70 px-3.5 py-2.5 flex items-center justify-between gap-2">
-                <div>
-                  <p className="text-xs font-bold text-slate-500">ดัชนีมวลกาย (BMI ล่าสุด)</p>
-                  <p className="mt-0.5 text-base sm:text-lg font-extrabold text-slate-900 tabular-nums">
-                    {body.bmi !== null ? (
-                      body.bmi
-                    ) : (
-                      <span className="text-sm font-semibold text-slate-500">
-                        ยังไม่มีข้อมูล <span className="text-xs text-slate-400 font-normal hidden sm:inline">(ระบุน้ำหนัก/ส่วนสูง)</span>
-                      </span>
-                    )}
-                  </p>
-                </div>
+                </b>
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                BMI{' '}
+                <b className="text-base font-extrabold text-slate-900 tabular-nums">
+                  {body.bmi !== null ? body.bmi : 'ยังไม่มีข้อมูล'}
+                </b>
                 {body.bmiLabel && body.bmiTone && (
                   <span
                     className={cn(
-                      'inline-flex items-center rounded-lg border px-2.5 py-1 text-xs sm:text-sm font-bold shrink-0',
+                      'inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-bold',
                       TONE_SOFT[body.bmiTone]
                     )}
                   >
                     {body.bmiLabel}
                   </span>
                 )}
-              </div>
+              </span>
             </div>
 
-            {/* โรคประจำตัว & ประวัติการแพ้ยา */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div className="rounded-xl border border-slate-200/80 bg-white px-3.5 py-2.5">
-                <p className="text-xs font-bold text-slate-500 mb-1.5">โรคประจำตัว</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {record.health.conditions.length === 0 ? (
-                    <span className="text-sm text-slate-500">ไม่มีโรคประจำตัวที่ระบุไว้</span>
-                  ) : (
-                    record.health.conditions.map((c) => (
-                      <span
-                        key={c}
-                        className="rounded-full bg-rose-50 border border-rose-200 px-3 py-0.5 text-xs sm:text-sm font-bold text-rose-900"
-                      >
-                        {c}
-                      </span>
-                    ))
-                  )}
-                </div>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="text-xs font-bold text-slate-500">โรคประจำตัว</span>
+                {record.health.conditions.length === 0 ? (
+                  <span className="text-sm text-slate-500">ไม่มี</span>
+                ) : (
+                  record.health.conditions.map((c) => (
+                    <span
+                      key={c}
+                      className="rounded-full bg-rose-50 border border-rose-200 px-2.5 py-0.5 text-xs sm:text-sm font-bold text-rose-900"
+                    >
+                      {c}
+                    </span>
+                  ))
+                )}
               </div>
-
-              <div className="rounded-xl border border-slate-200/80 bg-white px-3.5 py-2.5">
-                <p className="text-xs font-bold text-slate-500 mb-1.5">ประวัติการแพ้ยา / แพ้อาหาร</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {record.health.allergies.length === 0 ? (
-                    <span className="text-sm text-slate-500">ไม่มีประวัติการแพ้ยา/อาหาร</span>
-                  ) : (
-                    record.health.allergies.map((a) => (
-                      <span
-                        key={a}
-                        className="inline-flex items-center gap-1 rounded-full bg-amber-50 border border-amber-300 px-3 py-0.5 text-xs sm:text-sm font-bold text-amber-950"
-                      >
-                        <AlertCircle className="w-3.5 h-3.5 text-amber-700 shrink-0" aria-hidden="true" />
-                        <span>{a}</span>
-                      </span>
-                    ))
-                  )}
-                </div>
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="text-xs font-bold text-slate-500">แพ้ยา/อาหาร</span>
+                {record.health.allergies.length === 0 ? (
+                  <span className="text-sm text-slate-500">ไม่มี</span>
+                ) : (
+                  record.health.allergies.map((a) => (
+                    <span
+                      key={a}
+                      className="inline-flex items-center gap-1 rounded-full bg-amber-50 border border-amber-300 px-2.5 py-0.5 text-xs sm:text-sm font-bold text-amber-950"
+                    >
+                      <AlertCircle className="w-3.5 h-3.5 text-amber-700 shrink-0" aria-hidden="true" />
+                      <span>{a}</span>
+                    </span>
+                  ))
+                )}
               </div>
             </div>
           </div>
@@ -1274,40 +1393,28 @@ export const MemberDetailPage: React.FC = () => {
         </Card>
       ) : (
         <>
-          {/* ==================== สถานะภาพรวมสุขภาพวันนี้ + ปุ่มสลับหน้า ==================== */}
-          <div className={cn('rounded-2xl border p-4 sm:p-5 shadow-xs transition-colors', overallMeta.box)}>
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <div className="flex items-start gap-3">
-                <div className={cn('rounded-xl p-2.5 shrink-0', overallMeta.badge)}>
-                  <overallMeta.Icon className="w-6 h-6" aria-hidden="true" />
-                </div>
-                <div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-xs font-extrabold uppercase tracking-wider opacity-80">
-                      สถานะภาพรวมวันนี้
-                    </span>
-                    <span className={cn('rounded-full px-3 py-0.5 text-sm font-extrabold', overallMeta.badge)}>
-                      {overallMeta.label}
-                    </span>
-                    {followUps.length > 0 && (
-                      <span className="text-sm font-bold">
-                        ({followUps.length} รายการที่ต้องติดตาม)
-                      </span>
-                    )}
-                  </div>
-                  <p className="mt-1 text-sm sm:text-base font-semibold">{overallMeta.desc}</p>
-                  <p className="mt-1 text-xs opacity-80 flex items-center gap-1">
-                    <Info className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
-                    <span>สถานะนี้เป็นเพียงตัวช่วยจัดลำดับความสำคัญในการดูแล ไม่ใช่การวินิจฉัยโรค</span>
-                  </p>
-                </div>
-              </div>
-              {followUps.length > 0 && activeTab !== 'overview' && (
-                <Button size="sm" variant="neutral" onClick={() => setActiveTab('overview')}>
-                  ดูรายการที่ต้องติดตาม ({followUps.length})
-                </Button>
-              )}
+          {/* ==================== สถานะภาพรวมวันนี้ (แถบสั้น) ==================== */}
+          <div
+            className={cn(
+              'rounded-2xl border px-4 py-3 shadow-xs flex items-center gap-3 transition-colors',
+              overallMeta.box
+            )}
+          >
+            <div className={cn('rounded-xl p-2 shrink-0', overallMeta.badge)}>
+              <overallMeta.Icon className="w-5 h-5" aria-hidden="true" />
             </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm sm:text-base font-extrabold leading-snug">
+                วันนี้: {overallMeta.label}
+                {followUps.length > 0 && ` · ${followUps.length} รายการที่ต้องติดตาม`}
+              </p>
+              <p className="text-xs sm:text-sm opacity-90">{overallMeta.desc}</p>
+            </div>
+            {followUps.length > 0 && activeTab !== 'overview' && (
+              <Button size="sm" variant="neutral" className="shrink-0" onClick={() => setActiveTab('overview')}>
+                ดูรายการ
+              </Button>
+            )}
           </div>
 
           {/* ปุ่มสลับหมวดหมู่ของ Dashboard (แบ่งเป็น 3 ปุ่มหลักเพื่อไม่ให้หน้ายาวเกินไป) */}
@@ -1384,179 +1491,267 @@ export const MemberDetailPage: React.FC = () => {
             </button>
           </div>
 
-          {/* ==================== TAB 1: ภาพรวมสุขภาพวันนี้ & กิจกรรมที่ต้องติดตาม ==================== */}
+          {/* ==================== TAB 1: ภาพรวมวันนี้ (เรียงตามลำดับความสำคัญ: ต้องทำ → ยา → ค่าสุขภาพ → นัด) ==================== */}
           {activeTab === 'overview' && (
-            <div className="space-y-5">
-              {/* 1.2 ส่วนภาพรวมสุขภาพวันนี้ (Today's Health Overview) */}
-              <Card className="shadow-xs space-y-4">
-                <div className="flex items-center justify-between gap-2">
-                  <SectionTitle icon={ClipboardList}>ภาพรวมสุขภาพวันนี้ (Today's Health Overview)</SectionTitle>
-                  <span className="text-xs sm:text-sm font-bold text-slate-500">
-                    {thaiDate(todayKey())}
-                  </span>
-                </div>
+            <div className="space-y-4 sm:space-y-5">
+              <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 sm:gap-5 items-start">
+                {/* ---------- คอลัมน์หลัก: สิ่งที่ต้องทำ ---------- */}
+                <div className="lg:col-span-3 space-y-4 sm:space-y-5">
+                  {/* 1) ต้องดูแลตอนนี้ */}
+                  <Card className="p-4 sm:p-5 shadow-xs space-y-3">
+                    <PanelHead
+                      icon={followUps.length === 0 ? CheckCircle2 : AlertCircle}
+                      tint={followUps.length === 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}
+                      title="ต้องดูแลตอนนี้"
+                      aside={
+                        followUps.length > 0 ? (
+                          <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-sm font-extrabold text-amber-900">
+                            {followUps.length} รายการ
+                          </span>
+                        ) : null
+                      }
+                    />
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
-                  {/* 1) Medication: จำนวนยาที่ต้องรับประทานวันนี้ */}
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab('meds')}
-                    className="text-left rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-purple-50/40 p-4 hover:border-purple-300 hover:shadow-xs transition cursor-pointer group"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-extrabold uppercase tracking-wide text-purple-800">
-                        1. ยาที่ต้องรับประทานวันนี้
-                      </span>
-                      <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-purple-700" />
-                    </div>
-                    <p className="mt-2 text-2xl font-extrabold text-slate-900">
-                      {fullMeds.length} รายการ · {summaryToday.total} มื้อ
-                    </p>
-                    <p className="mt-1 text-sm text-slate-600">
-                      {summaryToday.total === 0
-                        ? 'ไม่มีมื้อยาที่มีกำหนดรับประทานวันนี้'
-                        : `มื้อถัดไปหรือกดเพื่อดูตารางยาของ ${member.name}`}
-                    </p>
-                  </button>
-
-                  {/* 2) Medication Status: รับประทานแล้ว / ยังไม่ยืนยัน / ข้าม */}
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab('meds')}
-                    className="text-left rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-emerald-50/30 p-4 hover:border-purple-300 hover:shadow-xs transition cursor-pointer group"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-extrabold uppercase tracking-wide text-emerald-800">
-                        2. สถานะการรับประทานยาวันนี้
-                      </span>
-                      <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-purple-700" />
-                    </div>
-                    <div className="mt-2 flex flex-wrap gap-1.5">
-                      <span className="inline-flex items-center gap-1 rounded-lg bg-emerald-100/90 px-2.5 py-1 text-xs sm:text-sm font-extrabold text-emerald-900">
-                        รับประทานแล้ว {summaryToday.taken}
-                      </span>
-                      <span className="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-2.5 py-1 text-xs sm:text-sm font-extrabold text-slate-800">
-                        ยังไม่ยืนยัน {summaryToday.unconfirmed}
-                      </span>
-                      <span className="inline-flex items-center gap-1 rounded-lg bg-amber-100/90 px-2.5 py-1 text-xs sm:text-sm font-extrabold text-amber-900">
-                        ข้าม {summaryToday.skipped}
-                      </span>
-                      {summaryToday.missed > 0 && (
-                        <span className="inline-flex items-center gap-1 rounded-lg bg-rose-100 px-2.5 py-1 text-xs sm:text-sm font-extrabold text-rose-900">
-                          ไม่ได้กิน {summaryToday.missed}
-                        </span>
-                      )}
-                    </div>
-                    <p className="mt-2 text-xs font-semibold text-slate-600">
-                      {summaryToday.late > 0
-                        ? `มี ${summaryToday.late} มื้อที่เลยเวลาแล้วยังไม่ยืนยัน`
-                        : 'กดเพื่อยืนยันการรับประทานยา'}
-                    </p>
-                  </button>
-
-                  {/* 3) Health Journal: บันทึกอาการล่าสุด */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveTab('history');
-                      setHistoryFilter('symptoms');
-                    }}
-                    className="text-left rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-pink-50/30 p-4 hover:border-purple-300 hover:shadow-xs transition cursor-pointer group"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-extrabold uppercase tracking-wide text-pink-800">
-                        3. บันทึกอาการล่าสุด
-                      </span>
-                      <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-purple-700" />
-                    </div>
-                    {latestPost ? (
-                      <>
-                        <p className="mt-1.5 text-base font-extrabold text-slate-900 line-clamp-1">
-                          {latestPost.symptoms.length > 0
-                            ? `อาการ: ${latestPost.symptoms.join(', ')}`
-                            : latestPost.moodMain
-                              ? `อารมณ์: ${moodMeta(latestPost.moodMain)?.label ?? ''}`
-                              : latestPost.title || 'บันทึกอาการ'}
-                        </p>
-                        <p className="mt-0.5 text-sm text-slate-600 line-clamp-1">
-                          {latestPost.content || (latestPost.moodDetails.length > 0 ? latestPost.moodDetails.join(', ') : 'ไม่มีรายละเอียดเพิ่มเติม')}
-                        </p>
-                        <p className="mt-1 text-xs font-semibold text-slate-500">
-                          บันทึกเมื่อ {relativeDateTime(latestPost.createdAt)}
-                        </p>
-                      </>
+                    {followUps.length === 0 ? (
+                      <p className="rounded-xl bg-emerald-50 px-3.5 py-3 text-sm sm:text-base font-bold text-emerald-900">
+                        ทุกอย่างเรียบร้อยดี ไม่มีรายการค้างที่ต้องติดตาม
+                      </p>
                     ) : (
                       <>
-                        <p className="mt-2 text-base font-bold text-slate-700">ยังไม่มีบันทึกอาการ</p>
-                        <p className="mt-1 text-xs text-slate-500">ไปที่หน้าบันทึกอาการเพื่อโพสต์อัปเดต</p>
+                        <ul className="space-y-2">
+                          {visibleFollowUps.map((item: FollowItem) => {
+                            const isUrgent = item.level === 'urgent';
+                            return (
+                              <li
+                                key={item.id}
+                                className={cn(
+                                  'flex items-center gap-3 rounded-xl border p-3',
+                                  isUrgent
+                                    ? 'border-rose-300 bg-rose-50/70 text-rose-950'
+                                    : 'border-amber-200 bg-amber-50/60 text-amber-950'
+                                )}
+                              >
+                                {isUrgent ? (
+                                  <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0" aria-hidden="true" />
+                                ) : (
+                                  <AlertCircle className="w-5 h-5 text-amber-600 shrink-0" aria-hidden="true" />
+                                )}
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-sm sm:text-base font-extrabold break-words leading-snug">
+                                    {isUrgent && (
+                                      <span className="mr-1.5 rounded-md bg-rose-600 px-1.5 py-0.5 text-xs font-extrabold text-white align-middle">
+                                        เร่งด่วน
+                                      </span>
+                                    )}
+                                    {item.title}
+                                  </p>
+                                  <p className="mt-0.5 text-xs sm:text-sm opacity-90 break-words">{item.detail}</p>
+                                </div>
+                                <Button
+                                  size="sm"
+                                  variant="neutral"
+                                  className="shrink-0"
+                                  onClick={() => jumpToFollowTarget(item.target)}
+                                >
+                                  <span>ตรวจสอบ</span>
+                                  <ChevronRight className="w-4 h-4" aria-hidden="true" />
+                                </Button>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                        {followUps.length > 3 && (
+                          <button
+                            type="button"
+                            onClick={() => setShowAllFollowUps((v) => !v)}
+                            className="w-full rounded-xl py-2 text-sm font-extrabold text-purple-800 hover:bg-purple-50 cursor-pointer"
+                          >
+                            {showAllFollowUps ? 'แสดงน้อยลง' : `ดูทั้งหมด (${followUps.length})`}
+                          </button>
+                        )}
                       </>
                     )}
-                  </button>
+                  </Card>
 
-                  {/* 4) Vital Signs: ค่าความดัน น้ำตาล น้ำหนักล่าสุด */}
-                  <div className="sm:col-span-2 rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-sky-50/30 p-4">
-                    <div className="flex items-center justify-between gap-2 mb-2.5">
-                      <span className="text-xs font-extrabold uppercase tracking-wide text-sky-900">
-                        4. สัญญาณชีพและค่าสุขภาพล่าสุด (Vital Signs)
-                      </span>
-                      <div className="flex items-center gap-2">
-                        {editable && (
+                  {/* 2) ยาวันนี้ */}
+                  <Card className="p-4 sm:p-5 shadow-xs space-y-3.5">
+                    <PanelHead
+                      icon={Pill}
+                      tint="bg-purple-100 text-purple-700"
+                      title="ยาวันนี้"
+                      aside={
+                        <button
+                          type="button"
+                          onClick={() => setActiveTab('meds')}
+                          className="text-sm font-extrabold text-purple-800 hover:underline cursor-pointer"
+                        >
+                          ดูตารางยา ›
+                        </button>
+                      }
+                    />
+
+                    {summaryToday.total === 0 ? (
+                      <p className="rounded-xl bg-slate-50 px-3.5 py-3 text-sm sm:text-base text-slate-600">
+                        วันนี้ไม่มีมื้อยาที่ต้องรับประทาน
+                      </p>
+                    ) : (
+                      <>
+                        <div>
+                          <div className="flex items-baseline justify-between gap-2">
+                            <p className="text-base sm:text-lg font-extrabold text-slate-900 tabular-nums">
+                              จัดการแล้ว {doneDoses} จาก {summaryToday.total} มื้อ
+                            </p>
+                            <p className="text-xs sm:text-sm font-semibold text-slate-500">{fullMeds.length} รายการยา</p>
+                          </div>
+                          <div
+                            className="mt-2 h-2.5 w-full overflow-hidden rounded-full bg-purple-100"
+                            role="progressbar"
+                            aria-valuemin={0}
+                            aria-valuemax={summaryToday.total}
+                            aria-valuenow={doneDoses}
+                            aria-label="ความคืบหน้าการกินยาวันนี้"
+                          >
+                            <div
+                              className="h-full rounded-full bg-emerald-500 transition-all"
+                              style={{ width: `${dosePct}%` }}
+                            />
+                          </div>
+                          {(summaryToday.skipped > 0 || summaryToday.missed > 0) && (
+                            <p className="mt-1.5 text-xs sm:text-sm font-semibold text-slate-600">
+                              {summaryToday.skipped > 0 && `ข้าม ${summaryToday.skipped} มื้อ`}
+                              {summaryToday.skipped > 0 && summaryToday.missed > 0 && ' · '}
+                              {summaryToday.missed > 0 && `ไม่ได้กิน ${summaryToday.missed} มื้อ`}
+                            </p>
+                          )}
+                        </div>
+
+                        {pendingDoses.length === 0 ? (
+                          <p className="flex items-center gap-2 rounded-xl bg-emerald-50 px-3.5 py-3 text-sm sm:text-base font-bold text-emerald-900">
+                            <CheckCircle2 className="w-5 h-5 shrink-0 text-emerald-600" aria-hidden="true" />
+                            ยืนยันครบทุกมื้อแล้ว
+                          </p>
+                        ) : (
+                          <ul className="space-y-2">
+                            {pendingDoses.slice(0, 4).map((d) => (
+                              <li
+                                key={d.key}
+                                className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-3"
+                              >
+                                <div className="shrink-0 text-center leading-tight w-14">
+                                  <p className="text-base font-extrabold text-slate-900 tabular-nums">{d.time}</p>
+                                  <p className="text-xs font-semibold text-slate-500">{PERIOD_LABEL[d.period]}</p>
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => setSelectedMedId(d.med.id)}
+                                    className="text-left text-sm sm:text-base font-extrabold text-slate-900 hover:text-purple-800 hover:underline cursor-pointer break-words"
+                                  >
+                                    {d.med.name}
+                                  </button>
+                                  <p className="text-xs sm:text-sm text-slate-600">
+                                    ครั้งละ {instructionText(d.med)}
+                                    {d.late && (
+                                      <span className="ml-1.5 font-extrabold text-rose-700">· เลยเวลาแล้ว</span>
+                                    )}
+                                  </p>
+                                </div>
+                                {editable && (
+                                  <Button
+                                    size="sm"
+                                    className="shrink-0"
+                                    onClick={() => handleToggleTodayDose(d.med, d.period, 'taken')}
+                                  >
+                                    <Check className="w-4 h-4" aria-hidden="true" />
+                                    <span>กินแล้ว</span>
+                                  </Button>
+                                )}
+                              </li>
+                            ))}
+                            {pendingDoses.length > 4 && (
+                              <li>
+                                <button
+                                  type="button"
+                                  onClick={() => setActiveTab('meds')}
+                                  className="w-full rounded-xl py-2 text-sm font-extrabold text-purple-800 hover:bg-purple-50 cursor-pointer"
+                                >
+                                  ดูอีก {pendingDoses.length - 4} มื้อ
+                                </button>
+                              </li>
+                            )}
+                          </ul>
+                        )}
+                      </>
+                    )}
+                  </Card>
+                </div>
+
+                {/* ---------- คอลัมน์รอง: ข้อมูลอ้างอิง ---------- */}
+                <div className="lg:col-span-2 space-y-4 sm:space-y-5">
+                  {/* 3) ค่าสุขภาพล่าสุด */}
+                  <Card className="p-4 sm:p-5 shadow-xs space-y-1">
+                    <PanelHead
+                      icon={HeartPulse}
+                      tint="bg-sky-100 text-sky-700"
+                      title="ค่าสุขภาพล่าสุด"
+                      aside={
+                        editable ? (
                           <button
                             type="button"
                             onClick={() => setDialog('vital')}
-                            className="text-xs font-extrabold text-purple-700 hover:text-purple-900 underline cursor-pointer"
+                            className="inline-flex items-center gap-1 text-sm font-extrabold text-purple-800 hover:underline cursor-pointer"
                           >
-                            + บันทึกค่าใหม่
+                            <Plus className="w-4 h-4" aria-hidden="true" />
+                            บันทึก
                           </button>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setActiveTab('history');
-                            setHistoryFilter('bp');
-                          }}
-                          className="text-xs font-bold text-slate-500 hover:text-slate-800 cursor-pointer"
-                        >
-                          ดูประวัติ ›
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                      {/* ความดัน */}
-                      <div className="rounded-xl border border-slate-200/80 bg-white p-3">
-                        <div className="flex items-center justify-between gap-1">
-                          <span className="text-xs font-bold text-slate-500">ความดันโลหิต</span>
+                        ) : null
+                      }
+                    />
+                    <ul className="divide-y divide-slate-100">
+                      <li className="flex items-center justify-between gap-3 py-2.5">
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-slate-500">ความดันโลหิต</p>
+                          <p className="text-lg font-extrabold text-slate-900 tabular-nums">
+                            {vitals.bp ? `${vitals.bp.sys}/${vitals.bp.dia}` : <span className="text-slate-400">—</span>}
+                            {vitals.bp && <span className="ml-1 text-xs font-bold text-slate-500">mmHg</span>}
+                          </p>
+                        </div>
+                        <Sparkline points={sparkSys} color="#5051C3" label="แนวโน้มความดันตัวบน" />
+                        <div className="text-right shrink-0">
                           {bpClass && <ClassifiedChip value={bpClass} />}
+                          <p className="mt-0.5 text-xs text-slate-500">
+                            {vitals.bp?.at ? relativeDateTime(vitals.bp.at) : 'ยังไม่เคยบันทึก'}
+                          </p>
                         </div>
-                        <p className="mt-1 text-lg font-extrabold text-slate-900 tabular-nums">
-                          {vitals.bp ? `${vitals.bp.sys}/${vitals.bp.dia} mmHg` : 'ไม่มีข้อมูล'}
-                        </p>
-                        <p className="text-xs text-slate-500 mt-0.5">
-                          {vitals.bp?.at ? relativeDateTime(vitals.bp.at) : 'ค่าพื้นฐาน'}
-                        </p>
-                      </div>
-
-                      {/* น้ำตาล */}
-                      <div className="rounded-xl border border-slate-200/80 bg-white p-3">
-                        <div className="flex items-center justify-between gap-1">
-                          <span className="text-xs font-bold text-slate-500">ระดับน้ำตาล</span>
+                      </li>
+                      <li className="flex items-center justify-between gap-3 py-2.5">
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-slate-500">ระดับน้ำตาล</p>
+                          <p className="text-lg font-extrabold text-slate-900 tabular-nums">
+                            {vitals.glucose ? vitals.glucose.value : <span className="text-slate-400">—</span>}
+                            {vitals.glucose && <span className="ml-1 text-xs font-bold text-slate-500">มก./ดล.</span>}
+                          </p>
+                        </div>
+                        <Sparkline points={sparkGlu} color="#E8913A" label="แนวโน้มน้ำตาล" />
+                        <div className="text-right shrink-0">
                           {gluClass && <ClassifiedChip value={gluClass} />}
+                          <p className="mt-0.5 text-xs text-slate-500">
+                            {vitals.glucose
+                              ? `${GLUCOSE_TIMING_LABEL[vitals.glucose.timing]}${vitals.glucose.at ? ` · ${relativeDateTime(vitals.glucose.at)}` : ''}`
+                              : 'ยังไม่เคยบันทึก'}
+                          </p>
                         </div>
-                        <p className="mt-1 text-lg font-extrabold text-slate-900 tabular-nums">
-                          {vitals.glucose ? `${vitals.glucose.value} มก./ดล.` : 'ไม่มีข้อมูล'}
-                        </p>
-                        <p className="text-xs text-slate-500 mt-0.5">
-                          {vitals.glucose
-                            ? `${GLUCOSE_TIMING_LABEL[vitals.glucose.timing]}${vitals.glucose.at ? ` · ${relativeDateTime(vitals.glucose.at)}` : ''}`
-                            : 'ยังไม่เคยบันทึก'}
-                        </p>
-                      </div>
-
-                      {/* น้ำหนัก */}
-                      <div className="rounded-xl border border-slate-200/80 bg-white p-3">
-                        <div className="flex items-center justify-between gap-1">
-                          <span className="text-xs font-bold text-slate-500">น้ำหนักล่าสุด</span>
+                      </li>
+                      <li className="flex items-center justify-between gap-3 py-2.5">
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-slate-500">น้ำหนัก</p>
+                          <p className="text-lg font-extrabold text-slate-900 tabular-nums">
+                            {vitals.weight ? vitals.weight.kg : <span className="text-slate-400">—</span>}
+                            {vitals.weight && <span className="ml-1 text-xs font-bold text-slate-500">กก.</span>}
+                          </p>
+                        </div>
+                        <Sparkline points={sparkWeight} color="#1FA38A" label="แนวโน้มน้ำหนัก" />
+                        <div className="text-right shrink-0">
                           {body.bmiLabel && body.bmiTone && (
                             <span
                               className={cn(
@@ -1567,133 +1762,120 @@ export const MemberDetailPage: React.FC = () => {
                               BMI {body.bmi}
                             </span>
                           )}
+                          <p className="mt-0.5 text-xs text-slate-500">
+                            {vitals.weight?.at ? relativeDateTime(vitals.weight.at) : 'ยังไม่เคยบันทึก'}
+                          </p>
                         </div>
-                        <p className="mt-1 text-lg font-extrabold text-slate-900 tabular-nums">
-                          {vitals.weight ? `${vitals.weight.kg} กก.` : 'ไม่มีข้อมูล'}
-                        </p>
-                        <p className="text-xs text-slate-500 mt-0.5">
-                          {vitals.weight?.at ? relativeDateTime(vitals.weight.at) : 'ค่าพื้นฐาน'}
-                        </p>
+                      </li>
+                    </ul>
+                    {latestExtras.length > 0 && (
+                      <div className="border-t border-slate-100 pt-3">
+                        <p className="mb-1.5 text-xs font-bold text-slate-500">ค่าอื่น ๆ ล่าสุด</p>
+                        <ul className="flex flex-wrap gap-1.5">
+                          {latestExtras.map(({ m, last }) => (
+                            <li
+                              key={m.key}
+                              className="rounded-lg bg-slate-50 px-2.5 py-1 text-xs sm:text-sm text-slate-600"
+                            >
+                              {m.label.replace(/ \(.*\)$/, '')}{' '}
+                              <b className="font-extrabold text-slate-900 tabular-nums">
+                                {last.v.toFixed(m.decimals)} {m.unit}
+                              </b>
+                            </li>
+                          ))}
+                        </ul>
                       </div>
-                    </div>
-                  </div>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveTab('history');
+                        setHistoryFilter('bp');
+                      }}
+                      className="w-full rounded-xl py-2 text-sm font-extrabold text-purple-800 hover:bg-purple-50 cursor-pointer"
+                    >
+                      ดูกราฟและประวัติย้อนหลัง ›
+                    </button>
+                  </Card>
 
-                  {/* 5) Appointments: นัดหมายครั้งถัดไป */}
+                  {/* 4) นัดหมายถัดไป */}
                   <button
                     type="button"
                     onClick={() => {
                       setActiveTab('history');
                       setHistoryFilter('appointments');
                     }}
-                    className="text-left rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-amber-50/40 p-4 hover:border-purple-300 hover:shadow-xs transition cursor-pointer group"
+                    className="block w-full text-left rounded-[1.5rem] bg-white p-4 sm:p-5 shadow-xs ring-1 ring-purple-100 hover:ring-purple-300 transition cursor-pointer"
                   >
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-extrabold uppercase tracking-wide text-amber-900">
-                        5. นัดหมายแพทย์ครั้งถัดไป
-                      </span>
-                      <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-purple-700" />
-                    </div>
+                    <PanelHead
+                      icon={Calendar}
+                      tint="bg-amber-100 text-amber-700"
+                      title="นัดหมายถัดไป"
+                      aside={<ChevronRight className="w-5 h-5 text-slate-400" aria-hidden="true" />}
+                    />
                     {nextAppt ? (
-                      <>
-                        <p className="mt-1.5 text-base font-extrabold text-slate-900 line-clamp-1">
-                          {nextAppt.event.title}
-                        </p>
+                      <div className="mt-2.5">
+                        <p className="text-base font-extrabold text-slate-900 break-words">{nextAppt.event.title}</p>
                         <p className="mt-0.5 text-sm font-bold text-purple-800">
+                          {(() => {
+                            const d = daysUntilKey(nextAppt.day);
+                            return d === 0 ? 'วันนี้' : d === 1 ? 'พรุ่งนี้' : `อีก ${d} วัน`;
+                          })()}
+                          {' · '}
                           {thaiDate(nextAppt.day)}
                           {nextAppt.event.allDay ? ' (ทั้งวัน)' : ` · ${nextAppt.event.startTime} น.`}
                         </p>
-                        <p className="mt-1 text-xs font-semibold text-slate-600">
-                          {(() => {
-                            const d = daysUntilKey(nextAppt.day);
-                            if (d === 0) return 'วันนี้!';
-                            if (d === 1) return 'พรุ่งนี้';
-                            return `อีก ${d} วัน`;
-                          })()}
-                          {nextAppt.event.location ? ` · ${nextAppt.event.location}` : ''}
-                        </p>
-                      </>
+                        {nextAppt.event.location && (
+                          <p className="mt-0.5 text-xs sm:text-sm text-slate-600">{nextAppt.event.location.name}</p>
+                        )}
+                      </div>
                     ) : (
-                      <>
-                        <p className="mt-2 text-base font-bold text-slate-700">ยังไม่มีนัดหมายเร็วๆ นี้</p>
-                        <p className="mt-1 text-xs text-slate-500">เพิ่มนัดพบแพทย์ได้ในหน้าปฏิทินครอบครัว</p>
-                      </>
+                      <p className="mt-2.5 text-sm text-slate-600">ยังไม่มีนัดหมายเร็วๆ นี้</p>
+                    )}
+                  </button>
+
+                  {/* 5) บันทึกอาการล่าสุด */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveTab('history');
+                      setHistoryFilter('symptoms');
+                    }}
+                    className="block w-full text-left rounded-[1.5rem] bg-white p-4 sm:p-5 shadow-xs ring-1 ring-purple-100 hover:ring-purple-300 transition cursor-pointer"
+                  >
+                    <PanelHead
+                      icon={BookHeart}
+                      tint="bg-pink-100 text-pink-700"
+                      title="บันทึกอาการล่าสุด"
+                      aside={<ChevronRight className="w-5 h-5 text-slate-400" aria-hidden="true" />}
+                    />
+                    {latestPost ? (
+                      <div className="mt-2.5">
+                        <p className="text-base font-extrabold text-slate-900 line-clamp-2 break-words">
+                          {latestPost.symptoms.length > 0
+                            ? latestPost.symptoms.join(', ')
+                            : latestPost.moodMain
+                              ? `อารมณ์: ${moodMeta(latestPost.moodMain)?.label ?? ''}`
+                              : latestPost.title || 'บันทึกอาการ'}
+                        </p>
+                        {latestPost.content && (
+                          <p className="mt-0.5 text-sm text-slate-600 line-clamp-2 break-words">{latestPost.content}</p>
+                        )}
+                        <p className="mt-1 text-xs font-semibold text-slate-500">
+                          {relativeDateTime(latestPost.createdAt)}
+                        </p>
+                      </div>
+                    ) : (
+                      <p className="mt-2.5 text-sm text-slate-600">ยังไม่มีบันทึกอาการ</p>
                     )}
                   </button>
                 </div>
-              </Card>
+              </div>
 
-              {/* 1.5 ส่วนกิจกรรมที่ต้องติดตาม (Things to Follow Up) */}
-              <Card className="shadow-xs space-y-4">
-                <div className="flex items-center justify-between gap-2">
-                  <SectionTitle icon={AlertCircle}>
-                    กิจกรรมที่ต้องติดตาม (Things to Follow Up)
-                  </SectionTitle>
-                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-extrabold text-slate-700">
-                    {followUps.length} รายการ
-                  </span>
-                </div>
-
-                {followUps.length === 0 ? (
-                  <div className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-5 text-center">
-                    <CheckCircle2 className="mx-auto h-10 w-10 text-emerald-600" aria-hidden="true" />
-                    <p className="mt-2 text-base font-extrabold text-emerald-950">
-                      ทุกอย่างเรียบร้อยดี ไม่มีรายการค้างที่ต้องติดตามในขณะนี้
-                    </p>
-                    <p className="mt-0.5 text-sm text-emerald-800">
-                      มื้อยาที่ถึงเวลาได้รับการยืนยันครบ และไม่มีสัญญาณชีพหรืออาการผิดปกติใหม่
-                    </p>
-                  </div>
-                ) : (
-                  <ul className="space-y-2.5">
-                    {followUps.map((item: FollowItem) => {
-                      const isUrgent = item.level === 'urgent';
-                      return (
-                        <li
-                          key={item.id}
-                          className={cn(
-                            'flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border p-4',
-                            isUrgent
-                              ? 'border-rose-300 bg-rose-50/70 text-rose-950'
-                              : 'border-amber-200 bg-amber-50/60 text-amber-950'
-                          )}
-                        >
-                          <div className="flex items-start gap-3 min-w-0">
-                            {isUrgent ? (
-                              <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" aria-hidden="true" />
-                            ) : (
-                              <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" aria-hidden="true" />
-                            )}
-                            <div className="min-w-0">
-                              <div className="flex flex-wrap items-center gap-2">
-                                <span
-                                  className={cn(
-                                    'rounded-md px-2 py-0.5 text-xs font-extrabold',
-                                    isUrgent ? 'bg-rose-600 text-white' : 'bg-amber-500 text-white'
-                                  )}
-                                >
-                                  {isUrgent ? 'ควรตรวจสอบเร่งด่วน' : 'ต้องติดตาม'}
-                                </span>
-                                <p className="text-base font-extrabold break-words">{item.title}</p>
-                              </div>
-                              <p className="mt-1 text-sm opacity-90 break-words">{item.detail}</p>
-                            </div>
-                          </div>
-
-                          <Button
-                            size="sm"
-                            variant="neutral"
-                            className="shrink-0 self-end sm:self-center"
-                            onClick={() => jumpToFollowTarget(item.target)}
-                          >
-                            <span>ตรวจสอบ</span>
-                            <ChevronRight className="w-4 h-4" />
-                          </Button>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
-              </Card>
+              <p className="flex items-start gap-1.5 px-1 text-xs text-slate-500">
+                <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" aria-hidden="true" />
+                <span>สถานะนี้เป็นเพียงตัวช่วยจัดลำดับความสำคัญในการดูแล ไม่ใช่การวินิจฉัยโรค</span>
+              </p>
             </div>
           )}
 
@@ -1724,14 +1906,14 @@ export const MemberDetailPage: React.FC = () => {
                     {dosesToday.map((d) => (
                       <li
                         key={d.key}
-                        className="py-3.5 first:pt-0 last:pb-0 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                        className="py-3.5 first:pt-0 last:pb-0 flex flex-col md:flex-row md:items-center justify-between gap-3"
                       >
-                        <div className="flex items-start gap-3 min-w-0">
+                        <div className="flex items-start gap-3 min-w-0 flex-1">
                           <span className="inline-flex items-center gap-1 rounded-xl border border-purple-200 bg-purple-50 px-3 py-1.5 text-sm font-extrabold text-purple-900 shrink-0">
                             <Clock className="w-4 h-4 text-purple-700" />
                             {PERIOD_LABEL[d.period]} {d.time} น.
                           </span>
-                          <div className="min-w-0">
+                          <div className="min-w-0 flex-1">
                             <button
                               type="button"
                               onClick={() => setSelectedMedId(d.med.id)}
@@ -1745,10 +1927,10 @@ export const MemberDetailPage: React.FC = () => {
                           </div>
                         </div>
 
-                        <div className="flex flex-wrap items-center gap-2 self-end sm:self-center">
+                        <div className="flex flex-wrap items-center justify-between md:justify-end gap-2 shrink-0 w-full md:w-auto pt-2.5 md:pt-0 border-t border-slate-100 md:border-t-0">
                           <DoseStateChip state={d.state} />
                           {editable && (
-                            <div className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-slate-50 p-1">
+                            <div className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-slate-50 p-1 shrink-0">
                               <button
                                 type="button"
                                 title="ยืนยันว่ารับประทานแล้ว"
@@ -1960,6 +2142,7 @@ export const MemberDetailPage: React.FC = () => {
                       { id: 'bp', label: `ความดันโลหิต (${bpReadings.length})` },
                       { id: 'glucose', label: `ระดับน้ำตาล (${gluReadings.length})` },
                       { id: 'weight', label: `น้ำหนัก (${weightReadings.length})` },
+                      { id: 'other', label: `ค่าอื่น ๆ (${extraCount})` },
                       { id: 'meds', label: `การรับประทานยา (${doseReport.days.length} วัน)` },
                       { id: 'appointments', label: `นัดหมาย/การรักษา (${apptsInRange.length + medicalHistoryInRange.length})` },
                     ] as { id: HistoryFilter; label: string }[]
@@ -2003,6 +2186,7 @@ export const MemberDetailPage: React.FC = () => {
                                     tone.badge
                                   )}
                                 >
+                                  {p.moodMain && <MoodDino mood={p.moodMain} className="h-6 w-6 -my-1 shrink-0" />}
                                   {meta.label}
                                   {p.moodDetails.length > 0 ? `: ${p.moodDetails.join(', ')}` : ''}
                                 </span>
@@ -2044,6 +2228,15 @@ export const MemberDetailPage: React.FC = () => {
                   {bpReadings.length === 0 ? (
                     <EmptyNote>ไม่มีประวัติการวัดความดันโลหิตในช่วงเวลานี้</EmptyNote>
                   ) : (
+                    <>
+                    <TrendBlock
+                      label="ความดันโลหิต"
+                      unit="mmHg"
+                      series={[
+                        { label: 'ตัวบน', color: '#5051C3', points: sysSeries },
+                        { label: 'ตัวล่าง', color: '#E5557A', points: diaSeries },
+                      ]}
+                    />
                     <ul className="divide-y divide-slate-100">
                       {bpReadings.map((r) => {
                         const c = classifyBp(r.systolic as number, r.diastolic as number);
@@ -2063,6 +2256,7 @@ export const MemberDetailPage: React.FC = () => {
                         );
                       })}
                     </ul>
+                    </>
                   )}
                 </Card>
               )}
@@ -2081,6 +2275,12 @@ export const MemberDetailPage: React.FC = () => {
                   {gluReadings.length === 0 ? (
                     <EmptyNote>ไม่มีประวัติการตรวจระดับน้ำตาลในช่วงเวลานี้</EmptyNote>
                   ) : (
+                    <>
+                    <TrendBlock
+                      label="ระดับน้ำตาล"
+                      unit="มก./ดล."
+                      series={[{ label: 'น้ำตาล', color: '#E8913A', points: gluSeries }]}
+                    />
                     <ul className="divide-y divide-slate-100">
                       {gluReadings.map((r) => {
                         const c = classifyGlucose(r.glucose as number, r.glucoseTiming, diabetic);
@@ -2103,6 +2303,7 @@ export const MemberDetailPage: React.FC = () => {
                         );
                       })}
                     </ul>
+                    </>
                   )}
                 </Card>
               )}
@@ -2121,6 +2322,13 @@ export const MemberDetailPage: React.FC = () => {
                   {weightReadings.length === 0 ? (
                     <EmptyNote>ไม่มีประวัติการชั่งน้ำหนักในช่วงเวลานี้</EmptyNote>
                   ) : (
+                    <>
+                    <TrendBlock
+                      label="น้ำหนัก"
+                      unit="กก."
+                      decimals={1}
+                      series={[{ label: 'น้ำหนัก', color: '#1FA38A', points: weightSeries }]}
+                    />
                     <ul className="divide-y divide-slate-100">
                       {weightReadings.map((r) => (
                         <li key={r.id} className="py-3 first:pt-0 last:pb-0 flex items-center justify-between gap-3">
@@ -2134,8 +2342,14 @@ export const MemberDetailPage: React.FC = () => {
                         </li>
                       ))}
                     </ul>
+                    </>
                   )}
                 </Card>
+              )}
+
+              {/* 4.5) ค่าสุขภาพอื่น ๆ พร้อมกราฟ */}
+              {(historyFilter === 'all' || historyFilter === 'other') && (
+                <ExtraMetricsHistory readings={readingsInRange} editable={editable} onAdd={() => setDialog('vital')} />
               )}
 
               {/* 5) ประวัติการรับประทานยา */}

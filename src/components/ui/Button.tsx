@@ -11,9 +11,9 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const VARIANTS: Record<Variant, string> = {
-  primary: 'btn-chunky bg-purple-700 hover:bg-purple-800 text-white [--edge:#343582]',
-  soft: 'btn-chunky bg-peach hover:bg-[#FFDCBC] text-slate-900 [--edge:#F2C29A]',
-  neutral: 'btn-chunky bg-white hover:bg-slate-50 text-slate-900 [--edge:#CBCBE3] ring-1 ring-inset ring-slate-200',
+  primary: 'btn-chunky bg-gradient-to-b from-[#1E9A4E] to-[#15703A] hover:from-[#1A8C46] hover:to-[#115C30] text-white [--edge:#0E4A27]',
+  soft: 'btn-chunky bg-sun hover:bg-[#FFC83D] text-slate-900 [--edge:#D9A21F]',
+  neutral: 'btn-chunky bg-white hover:bg-slate-50 text-slate-900 [--edge:#BFD1BC] ring-1 ring-inset ring-slate-200',
 };
 
 const SIZES: Record<Size, string> = {

@@ -21,6 +21,7 @@ import {
   type NotificationCategory,
 } from '../../lib/notifications';
 import { cn } from '../../lib/cn';
+import { playNotifySound } from '../../lib/sound';
 import { relativeDateTime } from '../member/memberUi';
 
 const supportsNotification = typeof window !== 'undefined' && 'Notification' in window;
@@ -63,6 +64,13 @@ export const NotificationBell: React.FC = () => {
   };
 
   const totalUnread = unreadCount + incoming.length + dueFollowUps.length;
+
+  // มีแจ้งเตือนใหม่เพิ่มเข้ามาขณะเปิดแอป (ไม่เล่นตอนเปิดหน้าครั้งแรก) ให้มีเสียงเตือน
+  const prevUnread = useRef<number | null>(null);
+  useEffect(() => {
+    if (prevUnread.current !== null && totalUnread > prevUnread.current) playNotifySound();
+    prevUnread.current = totalUnread;
+  }, [totalUnread]);
 
   return (
     <div ref={rootRef} className="static lg:relative">

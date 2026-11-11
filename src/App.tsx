@@ -5,6 +5,7 @@ import { MedsPage } from './pages/MedsPage';
 import { AppointmentsPage } from './pages/AppointmentsPage';
 import { CalendarPage } from './pages/CalendarPage';
 import { JournalPage } from './pages/JournalPage';
+import { MenuPage } from './pages/MenuPage';
 import { LoginPage } from './pages/LoginPage';
 import { SignUpPage } from './pages/SignUpPage';
 import { HomeSetupPage } from './pages/HomeSetupPage';
@@ -92,6 +93,7 @@ export const App: React.FC = () => {
         >
           <Route index element={<DefaultRouteRedirect />} />
           <Route path="journal" element={<JournalPage />} />
+          <Route path="menu" element={<MenuPage />} />
           <Route path="calendar" element={<CalendarPage />} />
           <Route path="appointments" element={<AppointmentsPage />} />
           <Route path="meds" element={<MedsPage />} />

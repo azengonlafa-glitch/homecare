@@ -1,11 +1,17 @@
 import { requireClient } from '../cloud/client';
-import { CONSULT_MODE } from './backend';
+import { cloudEnabled } from '../cloud/client';
 
 /**
  * สมัครรับแจ้งเตือนนัดติดตามจากเซิร์ฟเวอร์ (Web Push) ใช้ได้แม้ปิดแอป
  * ข้อความแจ้งเตือนไม่มีข้อมูลสุขภาพ เพราะอาจขึ้นบนหน้าจอล็อก
  */
-const PUBLIC_KEY = ((import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undefined) ?? '').trim();
+/**
+ * กุญแจสาธารณะ (VAPID public key) ฝังในโค้ดได้ เพราะเบราว์เซอร์ทุกเครื่องต้องเห็นอยู่แล้ว ไม่ใช่ความลับ
+ * จึงไม่ต้องตั้งตัวแปรบน Vercel ส่วนกุญแจส่วนตัวอยู่ใน Edge Function secret เท่านั้น ห้ามใส่ที่นี่
+ * ถ้าเปลี่ยนคู่กุญแจ ให้แก้ค่านี้หรือตั้ง VITE_VAPID_PUBLIC_KEY ทับ
+ */
+const DEFAULT_PUBLIC_KEY = 'BAGKElp2iQkzolqVCeY4UPWelJZ2sG9WREAwcsdGRhY8JR97z0e3lIlhU5pUWGwgMNPOAJjRia30t_COKcE8Ixc';
+const PUBLIC_KEY = ((import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undefined) ?? DEFAULT_PUBLIC_KEY).trim();
 
 export type PushState = 'unavailable' | 'needs-install' | 'blocked' | 'off' | 'on';
 
@@ -23,7 +29,8 @@ async function currentSubscription(): Promise<PushSubscription | null> {
 }
 
 export async function getPushState(): Promise<PushState> {
-  if (CONSULT_MODE !== 'live' || !PUBLIC_KEY) return 'unavailable';
+  // เปิดได้ทันทีที่เชื่อม Supabase ไม่ต้องรอเปิดระบบปรึกษาจริง เพราะแจ้งเตือนกินยาใช้ตารางสมัครรับแจ้งเตือนเดียวกัน
+  if (!cloudEnabled || !PUBLIC_KEY) return 'unavailable';
   if (!hasPushApi()) return isIosBrowserTab() ? 'needs-install' : 'unavailable';
   if (Notification.permission === 'denied') return 'blocked';
   return (await currentSubscription()) ? 'on' : 'off';
@@ -73,6 +80,6 @@ export async function disablePush(): Promise<PushState> {
 
 /** เรียกก่อนออกจากระบบ ห้ามทำให้การออกจากระบบค้างหรือพัง */
 export async function unsubscribeOnSignOut(): Promise<void> {
-  if (CONSULT_MODE !== 'live' || !hasPushApi()) return;
+  if (!cloudEnabled || !hasPushApi()) return;
   await Promise.race([disablePush().catch(() => undefined), new Promise((resolve) => window.setTimeout(resolve, 3000))]);
 }

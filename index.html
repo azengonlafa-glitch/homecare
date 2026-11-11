@@ -13,7 +13,7 @@
     <!-- ฟอนต์ภาษาไทยที่อ่านง่ายสำหรับผู้สูงอายุ -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=Anuphan:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=Anuphan:wght@400;500;600&family=Fredoka:wght@500;600&display=swap" rel="stylesheet">
     
     <link rel="icon" type="image/svg+xml" href="/icon.svg" />
     <link rel="apple-touch-icon" href="/icon.svg" />
@@ -23,12 +23,64 @@
   <body class="bg-canvas text-slate-900 font-sans text-base antialiased selection:bg-purple-100 selection:text-purple-900 min-h-screen">
     <div id="root">
       <!-- แสดงระหว่างรอแอปเริ่มทำงาน (React จะแทนที่ทันที) จะได้ไม่เห็นเป็นหน้าจอขาวเปล่า -->
-      <div id="boot-splash" style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px;text-align:center;color:#343582;background:#EEEEFD">
-        <div style="width:64px;height:64px;border-radius:50%;background:#FFD25E;animation:boot-pulse 1.2s ease-in-out infinite"></div>
-        <p style="margin:0;font-size:20px;font-weight:600">กำลังเปิด Growa Homecare...</p>
-        <p id="boot-slow" style="margin:0;font-size:16px;display:none">เชื่อมต่อช้ากว่าปกติ รอสักครู่ หรือลองโหลดหน้าใหม่</p>
+      <div id="boot-splash" style="position:relative;min-height:100vh;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px;text-align:center;color:#fff;background:#5051C3;overflow:hidden">
+        <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+          <filter id="bs-mb1" x="-5%" y="-10%" width="110%" height="120%"><feGaussianBlur stdDeviation="2.5 0"/></filter>
+          <filter id="bs-mb2" x="-5%" y="-10%" width="110%" height="120%"><feGaussianBlur stdDeviation="8 1"/></filter>
+          <filter id="bs-mb3" x="-5%" y="-10%" width="110%" height="120%"><feGaussianBlur stdDeviation="20 2"/></filter>
+        </svg>
+        <div class="bs-scene" aria-hidden="true">
+          <div class="bs-layer bs-far"></div>
+          <div class="bs-layer bs-mid"></div>
+          <div class="bs-word">growa</div>
+          <div class="bs-layer bs-near"></div>
+          <i class="bs-streak" style="top:30%;width:22vw;animation-duration:1.1s;animation-delay:-0.2s"></i><i class="bs-streak" style="top:44%;width:30vw;animation-duration:0.9s;animation-delay:-0.6s"></i><i class="bs-streak" style="top:52%;width:18vw;animation-duration:1.3s;animation-delay:-0.1s"></i><i class="bs-streak" style="top:63%;width:26vw;animation-duration:1.0s;animation-delay:-0.8s"></i><i class="bs-streak" style="top:72%;width:20vw;animation-duration:1.2s;animation-delay:-0.4s"></i><i class="bs-streak" style="top:38%;width:16vw;animation-duration:1.4s;animation-delay:-1.0s"></i>
+        </div>
+        <div class="bs-rider" aria-hidden="true">
+          <span class="bs-puffs"><i style="--x:-9;--y:-3;--s:2.4;animation-delay:0.0s"></i><i style="--x:-15;--y:-7;--s:2.8;animation-delay:0.25s"></i><i style="--x:-21;--y:-2;--s:3.0;animation-delay:0.5s"></i><i style="--x:-26;--y:-9;--s:3.2;animation-delay:0.75s"></i><i style="--x:-32;--y:-4.5;--s:3.4;animation-delay:1.0s"></i><i style="--x:-12;--y:-11;--s:2.6;animation-delay:1.25s"></i><i style="--x:-38;--y:-8;--s:3.6;animation-delay:1.5s"></i><i style="--x:-19;--y:-13;--s:2.9;animation-delay:1.75s"></i><i style="--x:-44;--y:-3;--s:3.8;animation-delay:2.0s"></i><i style="--x:-30;--y:-13;--s:3.3;animation-delay:2.25s"></i></span>
+          <img class="bs-dino" src="/images/loader/dino-scooter.png" alt="" width="326" height="480" />
+        </div>
+        <div class="bs-label">
+          <p style="margin:0;font-size:22px;font-weight:700;color:#2E2E50;text-shadow:0 1px 0 rgba(255,255,255,.7)">กำลังเปิด Growa Homecare...</p>
+          <p id="boot-slow" style="margin:8px 0 0;font-size:16px;font-weight:600;color:#2E2E50;display:none">เชื่อมต่อช้ากว่าปกติ รอสักครู่ หรือลองโหลดหน้าใหม่</p>
+        </div>
       </div>
-      <style>@keyframes boot-pulse{0%,100%{transform:scale(.85)}50%{transform:scale(1.1)}}@media (prefers-reduced-motion:reduce){#boot-splash div{animation:none!important}}</style>
+      <style>
+        /* ฉากสวนธรรมชาติ: ท้องฟ้า + เนินเขา + ต้นไม้ + พุ่มไม้ เลื่อนผ่านเร็วช้าต่างกันและเบลอตามแนวที่รถวิ่ง (ยิ่งใกล้ยิ่งเร็วและเบลอ) */
+        .bs-scene{position:absolute;inset:0;z-index:0;overflow:hidden;background:radial-gradient(60% 50% at 80% 6%,#FFF7CF 0,rgba(255,247,207,0) 70%),linear-gradient(#7CC8F2 0,#BFE9F5 48%,#E6F6D2 80%)}
+        .bs-layer{position:absolute;left:0;background-repeat:repeat-x;width:calc(100% + var(--tw))}
+        .bs-far{--tw:224vh;bottom:8vh;height:56vh;background-image:url("data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%201600%20400%22%3E%3Cpath%20d=%22M0%20250Q400%20110%20800%20240T1600%20250V400H0Z%22%20fill=%22%23CDEBB8%22/%3E%3Cpath%20d=%22M0%20310Q500%20200%20900%20300T1600%20310V400H0Z%22%20fill=%22%23B4E09E%22/%3E%3C/svg%3E");background-size:var(--tw) 100%;filter:url(#bs-mb1)}
+        .bs-mid{--tw:128.8vh;bottom:6vh;height:46vh;background-image:url("data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%201400%20500%22%3E%3Crect%20x=%220%22%20y=%22425%22%20width=%221400%22%20height=%2275%22%20fill=%22%2393CE7C%22/%3E%3Crect%20x=%22121%22%20y=%22350%22%20width=%2218%22%20height=%2296%22%20rx=%228%22%20fill=%22%239A7B58%22/%3E%3Ccircle%20cx=%22130%22%20cy=%22336.0%22%20r=%2270%22%20fill=%22%237CC47F%22/%3E%3Ccircle%20cx=%2281.0%22%20cy=%22367.5%22%20r=%2250.4%22%20fill=%22%236DB873%22/%3E%3Ccircle%20cx=%22179.0%22%20cy=%22367.5%22%20r=%2250.4%22%20fill=%22%236DB873%22/%3E%3Crect%20x=%22421%22%20y=%22320%22%20width=%2218%22%20height=%22126%22%20rx=%228%22%20fill=%22%239A7B58%22/%3E%3Ccircle%20cx=%22430%22%20cy=%22301.0%22%20r=%2295%22%20fill=%22%2366B86C%22/%3E%3Ccircle%20cx=%22363.5%22%20cy=%22343.75%22%20r=%2268.39999999999999%22%20fill=%22%2358AA60%22/%3E%3Ccircle%20cx=%22496.5%22%20cy=%22343.75%22%20r=%2268.39999999999999%22%20fill=%22%2358AA60%22/%3E%3Crect%20x=%22731%22%20y=%22360%22%20width=%2218%22%20height=%2286%22%20rx=%228%22%20fill=%22%239A7B58%22/%3E%3Ccircle%20cx=%22740%22%20cy=%22348.0%22%20r=%2260%22%20fill=%22%238BCF86%22/%3E%3Ccircle%20cx=%22698.0%22%20cy=%22375.0%22%20r=%2243.199999999999996%22%20fill=%22%237BC27A%22/%3E%3Ccircle%20cx=%22782.0%22%20cy=%22375.0%22%20r=%2243.199999999999996%22%20fill=%22%237BC27A%22/%3E%3Crect%20x=%221001%22%20y=%22330%22%20width=%2218%22%20height=%22116%22%20rx=%228%22%20fill=%22%239A7B58%22/%3E%3Ccircle%20cx=%221010%22%20cy=%22312.4%22%20r=%2288%22%20fill=%22%236FC174%22/%3E%3Ccircle%20cx=%22948.4%22%20cy=%22352.0%22%20r=%2263.36%22%20fill=%22%2360B368%22/%3E%3Ccircle%20cx=%221071.6%22%20cy=%22352.0%22%20r=%2263.36%22%20fill=%22%2360B368%22/%3E%3Crect%20x=%221281%22%20y=%22355%22%20width=%2218%22%20height=%2291%22%20rx=%228%22%20fill=%22%239A7B58%22/%3E%3Ccircle%20cx=%221290%22%20cy=%22342.6%22%20r=%2262%22%20fill=%22%237CC47F%22/%3E%3Ccircle%20cx=%221246.6%22%20cy=%22370.5%22%20r=%2244.64%22%20fill=%22%236DB873%22/%3E%3Ccircle%20cx=%221333.4%22%20cy=%22370.5%22%20r=%2244.64%22%20fill=%22%236DB873%22/%3E%3Ccircle%20cx=%22270%22%20cy=%22435%22%20r=%2238%22%20fill=%22%235DAE63%22/%3E%3Ccircle%20cx=%22300%22%20cy=%22445%22%20r=%2230%22%20fill=%22%236DBB70%22/%3E%3Ccircle%20cx=%22880%22%20cy=%22438%22%20r=%2242%22%20fill=%22%235DAE63%22/%3E%3Ccircle%20cx=%22915%22%20cy=%22448%22%20r=%2230%22%20fill=%22%236DBB70%22/%3E%3C/svg%3E");background-size:var(--tw) 100%;filter:url(#bs-mb2)}
+        .bs-near{--tw:100vh;bottom:-2vh;height:30vh;background-image:url("data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%201000%20300%22%3E%3Crect%20x=%220%22%20y=%22195%22%20width=%221000%22%20height=%22105%22%20fill=%22%2358AE5A%22/%3E%3Ccircle%20cx=%22110%22%20cy=%22205%22%20r=%2262%22%20fill=%22%234B9E4F%22/%3E%3Ccircle%20cx=%22170%22%20cy=%22225%22%20r=%2246%22%20fill=%22%235CB45F%22/%3E%3Ccircle%20cx=%22470%22%20cy=%22210%22%20r=%2274%22%20fill=%22%234B9E4F%22/%3E%3Ccircle%20cx=%22545%22%20cy=%22230%22%20r=%2250%22%20fill=%22%235CB45F%22/%3E%3Ccircle%20cx=%22820%22%20cy=%22206%22%20r=%2258%22%20fill=%22%234B9E4F%22/%3E%3Ccircle%20cx=%22880%22%20cy=%22228%22%20r=%2242%22%20fill=%22%235CB45F%22/%3E%3Ccircle%20cx=%2295%22%20cy=%22170%22%20r=%229%22%20fill=%22%23F58FA5%22/%3E%3Ccircle%20cx=%2295%22%20cy=%22170%22%20r=%223.5%22%20fill=%22%23FFF3B0%22/%3E%3Ccircle%20cx=%22140%22%20cy=%22185%22%20r=%229%22%20fill=%22%23FFD25E%22/%3E%3Ccircle%20cx=%22140%22%20cy=%22185%22%20r=%223.5%22%20fill=%22%23FFF3B0%22/%3E%3Ccircle%20cx=%22455%22%20cy=%22160%22%20r=%229%22%20fill=%22%23FFFFFF%22/%3E%3Ccircle%20cx=%22455%22%20cy=%22160%22%20r=%223.5%22%20fill=%22%23FFF3B0%22/%3E%3Ccircle%20cx=%22510%22%20cy=%22175%22%20r=%229%22%20fill=%22%23F58FA5%22/%3E%3Ccircle%20cx=%22510%22%20cy=%22175%22%20r=%223.5%22%20fill=%22%23FFF3B0%22/%3E%3Ccircle%20cx=%22560%22%20cy=%22195%22%20r=%229%22%20fill=%22%23FFD25E%22/%3E%3Ccircle%20cx=%22560%22%20cy=%22195%22%20r=%223.5%22%20fill=%22%23FFF3B0%22/%3E%3Ccircle%20cx=%22800%22%20cy=%22170%22%20r=%229%22%20fill=%22%23FFFFFF%22/%3E%3Ccircle%20cx=%22800%22%20cy=%22170%22%20r=%223.5%22%20fill=%22%23FFF3B0%22/%3E%3Ccircle%20cx=%22850%22%20cy=%22190%22%20r=%229%22%20fill=%22%23F58FA5%22/%3E%3Ccircle%20cx=%22850%22%20cy=%22190%22%20r=%223.5%22%20fill=%22%23FFF3B0%22/%3E%3Cpath%20d=%22M30%20215L38%20177L46%20215Z%22%20fill=%22%233F8F46%22/%3E%3Cpath%20d=%22M100%20215L108%20167L116%20215Z%22%20fill=%22%233F8F46%22/%3E%3Cpath%20d=%22M170%20215L178%20157L186%20215Z%22%20fill=%22%233F8F46%22/%3E%3Cpath%20d=%22M240%20215L248%20177L256%20215Z%22%20fill=%22%233F8F46%22/%3E%3Cpath%20d=%22M310%20215L318%20167L326%20215Z%22%20fill=%22%233F8F46%22/%3E%3Cpath%20d=%22M380%20215L388%20157L396%20215Z%22%20fill=%22%233F8F46%22/%3E%3Cpath%20d=%22M450%20215L458%20177L466%20215Z%22%20fill=%22%233F8F46%22/%3E%3Cpath%20d=%22M520%20215L528%20167L536%20215Z%22%20fill=%22%233F8F46%22/%3E%3Cpath%20d=%22M590%20215L598%20157L606%20215Z%22%20fill=%22%233F8F46%22/%3E%3Cpath%20d=%22M660%20215L668%20177L676%20215Z%22%20fill=%22%233F8F46%22/%3E%3Cpath%20d=%22M730%20215L738%20167L746%20215Z%22%20fill=%22%233F8F46%22/%3E%3Cpath%20d=%22M800%20215L808%20157L816%20215Z%22%20fill=%22%233F8F46%22/%3E%3Cpath%20d=%22M870%20215L878%20177L886%20215Z%22%20fill=%22%233F8F46%22/%3E%3Cpath%20d=%22M940%20215L948%20167L956%20215Z%22%20fill=%22%233F8F46%22/%3E%3C/svg%3E");background-size:var(--tw) 100%;filter:url(#bs-mb3)}
+        /* คำว่า growa ตัวใหญ่ลอยอยู่บนท้องฟ้าเหมือนก้อนเมฆ */
+        .bs-word{position:absolute;left:0;right:0;top:9vh;font:600 clamp(6rem,min(34vw,46vh),30rem)/1 'Fredoka','Quicksand',ui-rounded,system-ui,sans-serif;letter-spacing:-.03em;color:rgba(255,255,255,.62);user-select:none;pointer-events:none}
+        .bs-streak{display:none;position:absolute;left:100%;height:3px;border-radius:3px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.8))}
+        .bs-label{position:absolute;top:max(28px,6vh);left:0;right:0;z-index:3;padding:0 24px}
+        /* ไดโนเสาร์ตัวใหญ่ เห็นครึ่งตัว (ล้อหลุดขอบล่าง) 1em = ความสูงตัว / 38 */
+        .bs-rider{--H:clamp(420px,min(108vh,150vw),1100px);position:absolute;z-index:2;left:calc(50% + min(4vw,80px));bottom:calc(var(--H) * -0.2);height:var(--H);aspect-ratio:326/480;transform:translateX(-50%);font-size:calc(var(--H) / 38)}
+        .bs-dino{position:relative;z-index:1;width:100%;height:100%;object-fit:contain;transform-origin:50% 90%;user-select:none}
+        .bs-puffs{position:absolute;left:6%;top:70%;width:0;height:0;z-index:0}
+        .bs-puffs i{position:absolute;left:0;top:0;width:2.8em;height:2.8em;margin:-1.4em 0 0 -1.4em;border-radius:50%;background:radial-gradient(circle at 35% 32%,#fff 0,#f4f3fd 55%,#dcdaf2 100%);box-shadow:0 .2em .7em rgba(35,35,79,.25);opacity:0}
+        .bs-puffs i:nth-child(1){transform:translate(-2.2em,0) scale(1.1);opacity:.95}
+        .bs-puffs i:nth-child(2){transform:translate(-6em,-1.4em) scale(1.8);opacity:.85}
+        .bs-puffs i:nth-child(3){transform:translate(-11em,-3em) scale(2.5);opacity:.7}
+        .bs-puffs i:nth-child(4){transform:translate(-17em,-4.8em) scale(3.1);opacity:.5}
+        .bs-puffs i:nth-child(n+5){display:none}
+        @media (prefers-reduced-motion:no-preference){
+          .bs-layer{animation:bs-scroll var(--dur) linear infinite}
+          .bs-far{--dur:70s}
+          .bs-mid{--dur:14s}
+          .bs-near{--dur:3.2s}
+          .bs-streak{display:block;animation:bs-streak 1.2s linear infinite}
+          .bs-dino{animation:bs-bob .6s ease-in-out infinite}
+          .bs-puffs i{transform:none;opacity:0;animation:bs-puff 2.6s ease-out infinite}
+          .bs-puffs i:nth-child(n+5){display:block}
+        }
+        @keyframes bs-scroll{from{transform:translateX(0)}to{transform:translateX(calc(var(--tw) * -1))}}
+        @keyframes bs-streak{from{transform:translateX(0)}to{transform:translateX(-170vw)}}
+        @keyframes bs-bob{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-.5%) rotate(-.8deg)}}
+        @keyframes bs-puff{0%{transform:translate(0,0) scale(.3);opacity:0}12%{opacity:.95}100%{transform:translate(calc(var(--x) * 1em),calc(var(--y) * 1em)) scale(var(--s));opacity:0}}
+      </style>
     </div>
     <script>
       // ทำงานก่อนไฟล์ของแอป: ถ้าแอปโหลดหรือเริ่มทำงานไม่สำเร็จ จะเห็นข้อความบนจอแทนหน้าขาว (ใช้ส่งภาพมาแจ้งได้)
@@ -45,7 +97,7 @@
           detail.textContent = message;
           var button = document.createElement('button');
           button.textContent = 'โหลดหน้าใหม่';
-          button.style.cssText = 'min-height:48px;padding:0 24px;border:0;border-radius:24px;background:#5051C3;color:#fff;font-size:18px;font-weight:600;cursor:pointer';
+          button.style.cssText = 'min-height:48px;padding:0 24px;border:0;border-radius:24px;background:#FFE7D0;color:#343582;font-size:18px;font-weight:700;cursor:pointer';
           button.onclick = function () { window.location.reload(); };
           splash.appendChild(title);
           splash.appendChild(detail);

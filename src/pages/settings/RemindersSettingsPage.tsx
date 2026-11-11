@@ -6,6 +6,8 @@ import { PageLayout } from '../../components/settings/PageLayout';
 import { SwitchRow } from '../../components/settings/SwitchRow';
 import { useToast } from '../../components/ui/Toast';
 import { cn } from '../../lib/cn';
+import { playNotifySound } from '../../lib/sound';
+import { PushCard } from '../../components/consult/PushCard';
 import {
   LOW_STOCK_DAY_OPTIONS,
   REPEAT_COUNT_MAX,
@@ -194,6 +196,21 @@ export const RemindersSettingsPage: React.FC = () => {
               {reminders.repeatCount > 1 && ' · ครั้งที่ 2 เป็นต้นไปจะแจ้งคนในบ้านด้วยถ้าเปิดไว้'}
               {reminders.repeatCount === 1 && ' · ตั้ง 1 ครั้ง จะไม่มีการเตือนซ้ำ'}
             </p>
+          </Card>
+
+          <PushCard />
+
+          <Card className="shadow-xs">
+            <SwitchRow
+              className="px-0 py-1"
+              label="เสียงแจ้งเตือน"
+              description="เล่นเสียง ติ๊งนอง เมื่อมีแจ้งเตือนใหม่ขณะเปิดแอปอยู่ (ตอนปิดแอป เสียงจะเป็นไปตามที่ตั้งในมือถือ)"
+              checked={reminders.sound}
+              onChange={(checked) => {
+                update({ sound: checked });
+                if (checked) playNotifySound();
+              }}
+            />
           </Card>
 
           {/* แจ้งคนในบ้านเมื่อยังไม่กินยาถึงครั้งที่ 2 */}
