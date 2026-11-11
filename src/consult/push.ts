@@ -1,5 +1,5 @@
 import { requireClient } from '../cloud/client';
-import { CONSULT_MODE } from './backend';
+import { cloudEnabled } from '../cloud/client';
 
 /**
  * สมัครรับแจ้งเตือนนัดติดตามจากเซิร์ฟเวอร์ (Web Push) ใช้ได้แม้ปิดแอป
@@ -23,7 +23,8 @@ async function currentSubscription(): Promise<PushSubscription | null> {
 }
 
 export async function getPushState(): Promise<PushState> {
-  if (CONSULT_MODE !== 'live' || !PUBLIC_KEY) return 'unavailable';
+  // เปิดได้ทันทีที่เชื่อม Supabase ไม่ต้องรอเปิดระบบปรึกษาจริง เพราะแจ้งเตือนกินยาใช้ตารางสมัครรับแจ้งเตือนเดียวกัน
+  if (!cloudEnabled || !PUBLIC_KEY) return 'unavailable';
   if (!hasPushApi()) return isIosBrowserTab() ? 'needs-install' : 'unavailable';
   if (Notification.permission === 'denied') return 'blocked';
   return (await currentSubscription()) ? 'on' : 'off';
@@ -73,6 +74,6 @@ export async function disablePush(): Promise<PushState> {
 
 /** เรียกก่อนออกจากระบบ ห้ามทำให้การออกจากระบบค้างหรือพัง */
 export async function unsubscribeOnSignOut(): Promise<void> {
-  if (CONSULT_MODE !== 'live' || !hasPushApi()) return;
+  if (!cloudEnabled || !hasPushApi()) return;
   await Promise.race([disablePush().catch(() => undefined), new Promise((resolve) => window.setTimeout(resolve, 3000))]);
 }
