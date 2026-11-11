@@ -52,7 +52,7 @@ const FormBody: React.FC<Omit<FolderFormModalProps, 'open'>> = ({ state, folder,
     >
       <form id="folder-form" noValidate onSubmit={submit} className="space-y-5 py-5">
         <div className="flex justify-center" aria-hidden="true">
-          <FolderIcon color={color} count={folder?.docs.length ?? 0} className="h-24 w-28" still />
+          <FolderIcon color={color} count={folder?.docs.length ?? 0} className="h-28 w-32" still />
         </div>
         <TextField
           id="folder-name"

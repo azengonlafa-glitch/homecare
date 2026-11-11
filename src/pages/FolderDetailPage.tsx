@@ -123,9 +123,8 @@ export const FolderDetailPage: React.FC = () => {
       </Link>
 
       <header className="hero-in relative overflow-hidden rounded-[2.25rem] p-5 sm:p-8" style={{ background: color.front }}>
-        <span aria-hidden="true" className="blob-morph pointer-events-none absolute -right-14 -top-20 h-60 w-60 bg-white/50" />
         <div className="relative flex items-center gap-4">
-          <FolderIcon color={folder.color} count={folder.docs.length} className="h-24 w-28 shrink-0 sm:h-32 sm:w-36" />
+          <FolderIcon color={folder.color} count={folder.docs.length} className="h-28 w-32 shrink-0 sm:h-36 sm:w-40" />
           <div className="min-w-0 flex-1">
             <h1 className="break-words text-3xl font-semibold text-slate-900 sm:text-4xl">{folder.name}</h1>
             <p className="mt-1 text-base font-medium text-slate-800 sm:text-lg">

@@ -17,7 +17,7 @@ import {
   vitalsOf,
   type Tone,
 } from '../../lib/healthAnalysis';
-import { RadarChart, ScoreRing, TONE_BG, TONE_SOFT, ZoneGauge } from './HealthCharts';
+import { RadarChart, ScoreRing, TONE_BG, TONE_SOFT, ZoneCard } from './HealthCharts';
 import { cn } from '../../lib/cn';
 
 const TONE_ICON: Record<Tone, React.ReactNode> = {
@@ -114,16 +114,14 @@ export const HealthAnalysis: React.FC<{ profile: OnboardingProfile; onEdit: () =
         </ul>
       </Card>
 
-      {/* ตำแหน่งบนแถบเกณฑ์ */}
+      {/* ค่าของคุณ: การ์ดละค่า อ่านง่าย */}
       <Card>
-        <SectionTitle hint="ช่วงสีเขียว (✓) คือค่าของคนสุขภาพดี ป้าย “คุณ” คือตำแหน่งของคุณ">
-          ค่าของคุณอยู่ตรงไหน
-        </SectionTitle>
-        <div className="space-y-8">
-          <ZoneGauge spec={BMI_GAUGE} value={bmi} />
-          <ZoneGauge spec={SYSTOLIC_GAUGE} value={systolic} />
-          <ZoneGauge spec={DIASTOLIC_GAUGE} value={diastolic} />
-          <ZoneGauge spec={GLUCOSE_GAUGE} value={glucose} />
+        <SectionTitle hint="ดูป้ายสถานะของแต่ละค่า จุดดำบนแถบคือตำแหน่งของคุณ">ค่าของคุณอยู่ตรงไหน</SectionTitle>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <ZoneCard spec={BMI_GAUGE} value={bmi} onAdd={onEdit} />
+          <ZoneCard spec={GLUCOSE_GAUGE} value={glucose} onAdd={onEdit} />
+          <ZoneCard spec={SYSTOLIC_GAUGE} value={systolic} onAdd={onEdit} />
+          <ZoneCard spec={DIASTOLIC_GAUGE} value={diastolic} onAdd={onEdit} />
         </div>
       </Card>
 

@@ -1,8 +1,8 @@
 import React from 'react';
 import { AlertTriangle, FlaskConical, RotateCcw } from 'lucide-react';
-import { Mascot } from '../ui/Mascot';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
+import { DinoLoader } from '../ui/DinoLoader';
 import { CONSULT_MODE } from '../../consult/backend';
 import { STATUS_LABEL } from '../../consult/options';
 import type { SessionStatus } from '../../consult/types';
@@ -19,11 +19,8 @@ export const ModeBanner: React.FC = () =>
     </div>
   ) : null;
 
-export const LoadingCard: React.FC<{ label?: string }> = ({ label = 'กำลังโหลด...' }) => (
-  <Card role="status" className="flex items-center justify-center gap-3 py-12 text-slate-600">
-    <Mascot kind="ball" className="h-12 w-12 mascot-hop" still />
-    <span className="font-semibold">{label}</span>
-  </Card>
+export const LoadingCard: React.FC<{ label?: string }> = ({ label = 'กำลังโหลด' }) => (
+  <DinoLoader label={label.replace(/\.{2,}$|…$/, '')} />
 );
 
 export const ErrorCard: React.FC<{ message: string; onRetry?: () => void }> = ({ message, onRetry }) => (

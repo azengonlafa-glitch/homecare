@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronDown, ChevronLeft, ChevronRight, Flag, Plus, Search, X } from 'lucide-react';
-import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { PageHeader } from '../components/ui/PageHeader';
 import { ConfirmDialog } from '../components/settings/ConfirmDialog';
@@ -59,8 +58,12 @@ const buildMonthGrid = (month: Date): DayCell[][] => {
   );
 };
 
-const navButtonClass =
-  'inline-flex items-center justify-center min-h-[48px] min-w-[48px] rounded-full bg-purple-50 text-purple-900 hover:bg-purple-100 active:bg-purple-200 border border-purple-200 transition-colors cursor-pointer';
+/** ปุ่มบนแถบหัวเดือน (พื้นครีมบนแถบสีม่วง) */
+const deskNavClass =
+  'inline-flex items-center justify-center min-h-[44px] min-w-[44px] rounded-full bg-[#FFE7D0] text-purple-900 hover:bg-white active:bg-[#FFD9B5] shadow-[0_2px_0_rgba(0,0,0,0.18)] transition-all duration-150 motion-safe:hover:-translate-y-0.5 motion-safe:hover:shadow-[0_5px_0_rgba(0,0,0,0.18)] motion-safe:active:translate-y-0.5 motion-safe:active:shadow-none cursor-pointer';
+
+/** จำนวนห่วงเกลียวที่สันปฏิทิน (จอแคบซ่อนห่วงสลับตัว) */
+const RING_SLOTS = Array.from({ length: 14 }, (_, i) => i);
 
 type FormState = { mode: 'new' } | { mode: 'edit'; id: string } | null;
 
@@ -156,6 +159,8 @@ export const CalendarPage: React.FC = () => {
   };
 
   const monthLabel = month.toLocaleDateString('th-TH', { month: 'long', year: 'numeric' });
+  const monthName = month.toLocaleDateString('th-TH', { month: 'long' });
+  const yearLabel = month.toLocaleDateString('th-TH', { year: 'numeric' });
   const isCurrentMonth = dateKey(month) === dateKey(startOfMonth(today));
 
   const commit = (next: CalendarEvent[]) => {
@@ -265,7 +270,7 @@ export const CalendarPage: React.FC = () => {
       <td
         key={key}
         aria-current={isToday ? 'date' : undefined}
-        className="h-[4.5rem] sm:h-28 align-top p-0 border-t border-l border-slate-100 first:border-l-0"
+        className="h-[4.5rem] sm:h-28 align-top p-0 border-t border-l border-[#E9E0CC] first:border-l-0"
       >
         <button
           type="button"
@@ -273,15 +278,25 @@ export const CalendarPage: React.FC = () => {
           aria-pressed={isSelected}
           onClick={() => selectDay(date, inMonth)}
           className={cn(
-            'block w-full h-full text-left p-1.5 sm:p-2 cursor-pointer transition-colors overflow-hidden',
-            isSelected ? 'bg-purple-50 ring-2 ring-inset ring-purple-600' : 'hover:bg-slate-50'
+            'group relative block w-full h-full text-left p-1.5 sm:p-2 cursor-pointer overflow-hidden',
+            'transition-[transform,box-shadow,background-color] duration-200 ease-out',
+            'motion-safe:hover:scale-[1.06] motion-safe:hover:-translate-y-0.5 hover:z-10 hover:rounded-xl',
+            'hover:shadow-[0_10px_18px_-8px_rgba(63,64,160,0.45)] motion-safe:active:scale-[0.98]',
+            isSelected ? 'bg-sun-soft ring-2 ring-inset ring-purple-600' : 'hover:bg-white'
           )}
         >
           <time
             dateTime={key}
             className={cn(
-              'inline-flex items-center justify-center min-w-8 h-8 px-1 rounded-full text-sm sm:text-base font-semibold',
-              isToday ? 'bg-purple-700 text-white' : inMonth ? 'text-slate-800' : 'text-slate-400 font-medium'
+              'inline-flex items-center justify-center min-w-8 h-8 px-1 rounded-full text-base sm:text-lg font-bold tabular-nums',
+              'transition-transform duration-200 motion-safe:group-hover:scale-110 motion-safe:group-hover:-rotate-6',
+              isToday
+                ? 'bg-purple-700 text-white ring-2 ring-purple-200 shadow-sm'
+                : !inMonth
+                  ? 'text-slate-400 font-medium'
+                  : date.getDay() === 0
+                    ? 'text-red-600'
+                    : 'text-slate-800'
             )}
           >
             {date.getDate()}
@@ -298,7 +313,7 @@ export const CalendarPage: React.FC = () => {
                   <span
                     key={`${occ.event.id}-${occ.dayIndex}`}
                     className={cn(
-                      'flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs font-semibold truncate',
+                      'flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs font-semibold truncate transition-transform duration-200 motion-safe:group-hover:translate-x-1',
                       occ.event.important ? 'bg-red-100 text-red-900' : `${getEventColorMeta(occ.event.color, occ.event.important).chipBg} ${getEventColorMeta(occ.event.color, occ.event.important).chipText}`
                     )}
                   >
@@ -320,7 +335,7 @@ export const CalendarPage: React.FC = () => {
                   <span
                     key={`${occ.event.id}-${occ.dayIndex}`}
                     className={cn(
-                      'w-2 h-2 rounded-full',
+                      'w-2 h-2 rounded-full transition-transform duration-200 motion-safe:group-hover:scale-150',
                       getEventColorMeta(occ.event.color, occ.event.important).dotBg
                     )}
                   />
@@ -349,45 +364,9 @@ export const CalendarPage: React.FC = () => {
       />
 
       <div className="space-y-6 min-[1100px]:space-y-0 min-[1100px]:grid min-[1100px]:grid-cols-[minmax(0,1fr)_21rem] xl:grid-cols-[minmax(0,1fr)_24rem] min-[1100px]:gap-6 min-[1100px]:items-start">
-        <Card className="p-4 sm:p-6 min-w-0">
-          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-            <h2 className="text-2xl sm:text-3xl font-bold text-slate-900" aria-live="polite">
-              {monthLabel}
-            </h2>
-
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => goTo(-1)}
-                aria-label="เดือนก่อนหน้า"
-                className={navButtonClass}
-              >
-                <ChevronLeft className="w-6 h-6" aria-hidden="true" />
-              </button>
-              <button
-                type="button"
-                onClick={goToday}
-                disabled={isCurrentMonth && isSameDay(selected, today)}
-                className={cn(
-                  navButtonClass,
-                  'px-5 text-base font-bold disabled:opacity-50 disabled:cursor-default'
-                )}
-              >
-                วันนี้
-              </button>
-              <button
-                type="button"
-                onClick={() => goTo(1)}
-                aria-label="เดือนถัดไป"
-                className={navButtonClass}
-              >
-                <ChevronRight className="w-6 h-6" aria-hidden="true" />
-              </button>
-            </div>
-          </div>
-
+        <div className="min-w-0 space-y-4">
           {/* ค้นหา + ตัวกรอง */}
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
             <div className="relative flex-1 min-w-0">
               <Search
                 className="w-5 h-5 text-slate-500 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none"
@@ -418,7 +397,7 @@ export const CalendarPage: React.FC = () => {
                 aria-label="กรองกิจกรรม"
                 value={filter}
                 onChange={(e) => setFilter(e.target.value as EventFilter)}
-                className="appearance-none w-full sm:w-auto min-h-[48px] pl-5 pr-11 rounded-full bg-purple-50 border border-purple-100 text-base font-bold text-purple-900 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-600"
+                className="appearance-none w-full sm:w-auto min-h-[48px] pl-5 pr-11 rounded-full bg-white border border-purple-200 text-base font-bold text-purple-900 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-600"
               >
                 {FILTER_OPTIONS.map((o) => (
                   <option key={o.value} value={o.value}>
@@ -434,7 +413,7 @@ export const CalendarPage: React.FC = () => {
           </div>
 
           {searching && (
-            <div className="mb-4 rounded-2xl border border-slate-200 bg-slate-50 p-3">
+            <div className="rounded-2xl border border-slate-200 bg-white p-3">
               <p role="status" className="px-2 pb-2 text-base font-semibold text-slate-700">
                 {results.length > 0 ? `พบ ${results.length} กิจกรรม` : 'ไม่พบกิจกรรมที่ค้นหา'}
               </p>
@@ -445,7 +424,7 @@ export const CalendarPage: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => jumpTo(ev)}
-                        className="flex w-full items-center gap-3 min-h-[48px] px-3 py-2 rounded-xl text-left hover:bg-white cursor-pointer"
+                        className="flex w-full items-center gap-3 min-h-[48px] px-3 py-2 rounded-xl text-left hover:bg-slate-50 cursor-pointer"
                       >
                         {ev.important ? (
                           <Flag className="w-4 h-4 shrink-0 text-red-600 fill-red-600" aria-label="สำคัญ" />
@@ -466,30 +445,114 @@ export const CalendarPage: React.FC = () => {
             </div>
           )}
 
-          <div className="rounded-2xl border border-slate-200 overflow-hidden">
-            <table className="w-full table-fixed border-collapse" aria-label={`ปฏิทินเดือน${monthLabel}`}>
-              <thead>
-                <tr className="bg-purple-50">
-                  {WEEKDAYS.map((day) => (
-                    <th
-                      key={day.full}
-                      scope="col"
-                      abbr={day.full}
-                      className="py-3 text-sm sm:text-base font-bold text-slate-800 border-b border-slate-200"
-                    >
-                      {day.short}
-                    </th>
+          {/* ===== ปฏิทินตั้งโต๊ะ: แผ่นกระดาษซ้อน + สันห่วงเกลียว + ฐานตั้ง ===== */}
+          <section aria-label={`ปฏิทินตั้งโต๊ะ เดือน${monthLabel}`} className="group/desk relative pt-4">
+            {/* แผ่นที่ถูกฉีกซ้อนอยู่ด้านหลัง */}
+            <div
+              aria-hidden="true"
+              className="absolute inset-x-5 top-6 bottom-[-0.45rem] rounded-3xl bg-[#EFE8DA] ring-1 ring-black/5 origin-bottom transition-transform duration-500 ease-out motion-safe:group-hover/desk:rotate-[1.4deg] motion-safe:group-hover/desk:translate-x-1"
+            />
+            <div
+              aria-hidden="true"
+              className="absolute inset-x-2.5 top-5 bottom-[-0.2rem] rounded-3xl bg-[#F7F1E5] ring-1 ring-black/5 origin-bottom transition-transform duration-500 ease-out motion-safe:group-hover/desk:-rotate-[1deg] motion-safe:group-hover/desk:-translate-x-0.5"
+            />
+
+            {/* แผ่นปัจจุบัน */}
+            <div className="relative rounded-3xl bg-[#FFFDF8] shadow-[0_22px_34px_-18px_rgba(63,64,160,0.55)] ring-1 ring-purple-300/60 overflow-hidden">
+              {/* แถบหัวเดือน */}
+              <div className="relative bg-purple-700 px-4 sm:px-7 pt-10 pb-4 sm:pb-5">
+                {/* รูเจาะสำหรับห่วง */}
+                <div aria-hidden="true" className="absolute inset-x-0 top-3 flex justify-evenly px-5">
+                  {RING_SLOTS.map((i) => (
+                    <span
+                      key={i}
+                      className={cn(
+                        'h-4 w-4 rounded-full bg-purple-950/70 shadow-inner',
+                        i % 2 === 1 && 'hidden sm:block'
+                      )}
+                    />
                   ))}
-                </tr>
-              </thead>
-              <tbody>
-                {weeks.map((week) => (
-                  <tr key={dateKey(week[0].date)}>{week.map(renderCell)}</tr>
+                </div>
+
+                <div className="flex items-end justify-between gap-3">
+                  <h2 className="min-w-0 leading-none text-[#FFE7D0]" aria-live="polite">
+                    <span className="block text-3xl sm:text-5xl font-extrabold tracking-tight">{monthName}</span>
+                    <span className="mt-1.5 block text-lg sm:text-2xl font-bold text-sun">{yearLabel}</span>
+                  </h2>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => goTo(-1)}
+                      aria-label="เดือนก่อนหน้า"
+                      className={deskNavClass}
+                    >
+                      <ChevronLeft className="w-6 h-6" aria-hidden="true" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={goToday}
+                      disabled={isCurrentMonth && isSameDay(selected, today)}
+                      className={cn(deskNavClass, 'px-4 text-base font-bold disabled:opacity-60 disabled:cursor-default')}
+                    >
+                      วันนี้
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => goTo(1)}
+                      aria-label="เดือนถัดไป"
+                      className={deskNavClass}
+                    >
+                      <ChevronRight className="w-6 h-6" aria-hidden="true" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* ห่วงเกลียวโลหะคร่อมขอบบน */}
+              <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 z-10 flex justify-evenly px-5">
+                {RING_SLOTS.map((i) => (
+                  <span
+                    key={i}
+                    className={cn(
+                      'pointer-events-auto block h-9 w-2.5 -translate-y-1 origin-top rounded-full bg-gradient-to-r from-slate-300 via-white to-slate-400 ring-1 ring-slate-500/50 shadow-[0_3px_4px_rgba(0,0,0,0.3)] transition-transform duration-300 ease-out motion-safe:hover:rotate-[18deg] motion-safe:hover:translate-y-0',
+                      i % 2 === 1 && 'hidden sm:block'
+                    )}
+                  />
                 ))}
-              </tbody>
-            </table>
-          </div>
-        </Card>
+              </div>
+
+              {/* ตารางวัน */}
+              <table className="w-full table-fixed border-collapse" aria-label={`ปฏิทินเดือน${monthLabel}`}>
+                <thead>
+                  <tr className="bg-[#F6EFE0]">
+                    {WEEKDAYS.map((day, i) => (
+                      <th
+                        key={day.full}
+                        scope="col"
+                        abbr={day.full}
+                        className={cn(
+                          'py-2.5 text-sm sm:text-base font-extrabold border-b-2 border-[#E4D9C2]',
+                          i === 0 ? 'text-red-600' : 'text-slate-800'
+                        )}
+                      >
+                        {day.short}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {weeks.map((week) => (
+                    <tr key={dateKey(week[0].date)}>{week.map(renderCell)}</tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* ฐานตั้งโต๊ะ */}
+            <div aria-hidden="true" className="relative mx-auto -mt-1 h-3.5 w-[92%] rounded-b-2xl bg-gradient-to-b from-[#E0B987] to-[#C99A62] shadow-[0_10px_14px_-6px_rgba(80,60,30,0.45)]" />
+          </section>
+        </div>
 
         <DayPanel
           date={selected}

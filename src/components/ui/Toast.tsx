@@ -26,23 +26,37 @@ export const TOAST_DURATION_MS = 3000;
 const ToastContext = createContext<ToastApi | null>(null);
 
 const ToastItem: React.FC<{ toast: ToastState }> = ({ toast }) => {
-
+  const error = toast.tone === 'error';
   return (
     <div
       className={cn(
-        'anim-drop-in flex items-center gap-3 rounded-[1.5rem] px-5 py-3.5 text-white shadow-xl shadow-purple-950/30',
-        toast.tone === 'error' ? 'bg-red-700' : 'bg-purple-950'
+        'anim-drop-in relative overflow-hidden rounded-[1.5rem] bg-white py-3.5 pl-4 pr-5 shadow-[0_14px_34px_-14px_rgba(42,34,29,0.5)] ring-1',
+        error ? 'ring-red-200' : 'ring-purple-100'
       )}
     >
-      {toast.tone === 'error' ? (
-        <AlertCircle className="w-7 h-7 shrink-0 text-red-100" aria-hidden="true" />
-      ) : (
-        <span className="relative shrink-0">
-          <Mascot kind="sun" still className="h-10 w-10" />
-          <CheckCircle2 className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-purple-950 text-emerald-400" aria-hidden="true" />
-        </span>
-      )}
-      <p className="text-base font-bold leading-snug break-words min-w-0">{toast.message}</p>
+      <div className="flex items-center gap-3">
+        {error ? (
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-red-50">
+            <AlertCircle className="h-6 w-6 text-red-600" aria-hidden="true" />
+          </span>
+        ) : (
+          <span className="relative shrink-0">
+            <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[#FFF4E8]">
+              <Mascot kind="sun" still className="h-9 w-9" />
+            </span>
+            <CheckCircle2 className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-white text-emerald-500" aria-hidden="true" />
+          </span>
+        )}
+        <p className={cn('min-w-0 break-words text-base font-bold leading-snug', error ? 'text-red-800' : 'text-purple-900')}>
+          {toast.message}
+        </p>
+      </div>
+      {/* แถบเวลาไล่หมดตามที่ Toast ค้างอยู่ */}
+      <span
+        aria-hidden="true"
+        className={cn('toast-timer absolute inset-x-0 bottom-0 h-1 origin-left', error ? 'bg-red-300' : 'bg-purple-300')}
+        style={{ animationDuration: `${TOAST_DURATION_MS}ms` }}
+      />
     </div>
   );
 };

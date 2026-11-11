@@ -137,11 +137,9 @@ const PickerDialog: React.FC<DialogProps> = ({
                 <div className="flex items-center gap-1.5 font-bold text-purple-900 text-xs sm:text-sm">
                   <Info className="w-4 h-4 text-purple-600 shrink-0" aria-hidden="true" />
                   <span>{item}</span>
-                  <span className="text-xs font-medium text-purple-700 bg-purple-100/90 px-2 py-0.5 rounded-full border border-purple-200">
-                    ข้อมูลทางการแพทย์
-                  </span>
                 </div>
                 <p className="text-slate-700 text-xs sm:text-sm leading-relaxed">{desc}</p>
+                <p className="pt-1 text-xs font-medium text-slate-500">ข้อมูลทางการแพทย์เบื้องต้น</p>
               </div>
               <button
                 type="button"
@@ -150,7 +148,7 @@ const PickerDialog: React.FC<DialogProps> = ({
                   e.stopPropagation();
                   setActiveInfo(null);
                 }}
-                className="px-2 py-1 rounded-lg text-xs font-semibold text-purple-700 hover:bg-purple-200/70 transition-colors shrink-0 cursor-pointer"
+                className="px-2 py-1 rounded-lg text-xs font-semibold text-purple-700 hover:bg-purple-200/70 transition-colors shrink-0 whitespace-nowrap cursor-pointer"
                 aria-label="ปิดคำอธิบาย"
               >
                 ปิด
@@ -320,7 +318,7 @@ const PickerDialog: React.FC<DialogProps> = ({
                 <Info className="w-3.5 h-3.5 text-purple-400 shrink-0" aria-hidden="true" />
                 <span>{hovered.item}</span>
               </div>
-              <span className="text-xs font-medium text-purple-200 bg-purple-950/80 px-2 py-0.5 rounded-full border border-purple-700/50">
+              <span className="shrink-0 whitespace-nowrap text-xs font-medium text-purple-200 bg-purple-950/80 px-2 py-0.5 rounded-full border border-purple-700/50">
                 ข้อมูลทางการแพทย์
               </span>
             </div>

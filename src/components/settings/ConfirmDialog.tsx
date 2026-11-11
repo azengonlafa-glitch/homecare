@@ -19,7 +19,7 @@ const confirmClass = (tone: 'danger' | 'primary') =>
     'btn-chunky w-full inline-flex items-center justify-center min-h-[54px] px-4 rounded-[1.5rem] text-base sm:text-lg font-bold leading-tight text-center text-white cursor-pointer',
     tone === 'danger'
       ? 'bg-red-600 hover:bg-red-700 [--edge:#7F1D1D]'
-      : 'bg-purple-700 hover:bg-purple-800 [--edge:#343582]'
+      : 'bg-purple-700 hover:bg-purple-800 [--edge:#0E4A27]'
   );
 
 /**

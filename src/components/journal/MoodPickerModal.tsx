@@ -1,18 +1,16 @@
 import React, { useState } from 'react';
-import { Frown, Meh, Smile } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { Chip } from '../ui/ChoiceChips';
 import { MOODS, MOOD_TONE, moodMeta, type MoodKey } from '../../data/journalOptions';
 import { cn } from '../../lib/cn';
-import { Mascot, type MascotKind, type MascotMood } from '../ui/Mascot';
+import { MoodDino } from './MoodDino';
 
-const MOOD_ICON: Record<MoodKey, LucideIcon> = { great: Smile, complicated: Meh, down: Frown };
-const MOOD_FACE: Record<MoodKey, { kind: MascotKind; mood: MascotMood; tile: string }> = {
-  great: { kind: 'sun', mood: 'happy', tile: 'bg-sun-soft' },
-  complicated: { kind: 'cloud', mood: 'calm', tile: 'bg-purple-100' },
-  down: { kind: 'tri', mood: 'sad', tile: 'bg-mint-soft' },
+/** ดีเขียว · กลางๆเหลือง · ไม่ดีแดง (สีพื้นอ่อน + ขอบสีเข้มเมื่อเลือก) */
+const MOOD_TILE: Record<MoodKey, { tile: string; active: string }> = {
+  great: { tile: 'bg-emerald-100', active: 'border-emerald-600' },
+  complicated: { tile: 'bg-amber-100', active: 'border-amber-500' },
+  down: { tile: 'bg-red-100', active: 'border-red-600' },
 };
 
 interface MoodPickerModalProps {
@@ -72,7 +70,6 @@ const MoodDialog: React.FC<Omit<MoodPickerModalProps, 'open'>> = ({
       <div className="py-6 space-y-7">
         <div role="group" aria-label="กลุ่มอารมณ์" className="grid grid-cols-3 gap-3">
           {MOODS.map((mood) => {
-            const face = MOOD_FACE[mood.key];
             const active = selectedMain === mood.key;
             return (
               <button
@@ -82,11 +79,17 @@ const MoodDialog: React.FC<Omit<MoodPickerModalProps, 'open'>> = ({
                 onClick={() => chooseMain(mood.key)}
                 className={cn(
                   'hover-lift flex flex-col items-center gap-2 rounded-[1.75rem] border-2 p-3 sm:p-4 text-center cursor-pointer',
-                  face.tile,
-                  active ? 'border-purple-700' : 'border-transparent'
+                  MOOD_TILE[mood.key].tile,
+                  active ? MOOD_TILE[mood.key].active : 'border-transparent'
                 )}
               >
-                <Mascot kind={face.kind} mood={face.mood} still={!active} className="h-16 w-16 sm:h-20 sm:w-20" />
+                <MoodDino
+                  mood={mood.key}
+                  className={cn(
+                    'h-16 w-16 sm:h-24 sm:w-24 transition-transform',
+                    active && 'scale-110 -translate-y-0.5'
+                  )}
+                />
                 <span className="text-base sm:text-lg font-bold text-slate-900 leading-tight min-[360px]:whitespace-nowrap">
                   {mood.label}
                 </span>
@@ -125,7 +128,6 @@ export const MoodPickerModal: React.FC<MoodPickerModalProps> = ({ open, ...rest 
 /** ป้ายแสดงอารมณ์ที่เลือก (ใช้ทั้งในฟอร์มโพสต์และการ์ดโพสต์) */
 export const MoodBadge: React.FC<{ main: MoodKey; details: string[] }> = ({ main, details }) => {
   const meta = moodMeta(main);
-  const Icon = MOOD_ICON[main];
   if (!meta) return null;
   return (
     <span
@@ -134,7 +136,7 @@ export const MoodBadge: React.FC<{ main: MoodKey; details: string[] }> = ({ main
         MOOD_TONE[main].badge
       )}
     >
-      <Icon className="w-5 h-5 shrink-0" aria-hidden="true" />
+      <MoodDino mood={main} className="h-8 w-8 -my-1 shrink-0" />
       <span>
         {meta.label}
         {details.length > 0 && <span className="font-normal"> · {details.join(', ')}</span>}

@@ -44,7 +44,7 @@ export default defineConfig({
     __BUILD_DATE__: JSON.stringify(new Date().toISOString()),
   },
   server: {
-    host: true, // รองรับการเปิดดูจากมือถือในเครือข่ายเดียวกัน (LAN)
+    host: '127.0.0.1', // ใช้งานบนเครื่อง localhost ได้อย่างเสถียร
     port: 5173,
     // ถ้าพอร์ตนี้ถูกใช้อยู่ (เช่นเปิด dev server ค้างไว้อีกตัว) ให้ล้มเหลวทันที แทนที่จะย้ายไปพอร์ตอื่นเงียบ ๆ จนเปิดผิดตัว
     strictPort: true,

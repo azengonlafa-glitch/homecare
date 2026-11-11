@@ -87,10 +87,10 @@ export const FoldersPage: React.FC = () => {
                 <Link
                   to={`/folders/${folder.id}`}
                   aria-label={`โฟลเดอร์ ${folder.name} ${folder.docs.length} เอกสาร`}
-                  className="group relative flex h-full min-h-[200px] flex-col items-center rounded-[2rem] bg-white p-4 text-center shadow-[0_10px_30px_-18px_rgba(69,68,179,0.45)] ring-1 ring-purple-100 hover:ring-2"
+                  className="group relative flex h-full min-h-[200px] flex-col items-center rounded-[2rem] bg-white p-4 text-center shadow-[0_12px_28px_-20px_rgba(42,34,29,0.55)] ring-1 ring-[#EADBCC] hover:ring-2"
                   style={{ ['--tw-ring-color' as string]: colorOf(folder.color).ring }}
                 >
-                  <FolderIcon color={folder.color} count={folder.docs.length} className="h-28 w-32 sm:h-32 sm:w-36" />
+                  <FolderIcon color={folder.color} count={folder.docs.length} className="h-32 w-36 sm:h-36 sm:w-40" />
                   <span className="mt-2 block w-full break-words text-lg font-semibold leading-snug text-slate-900">{folder.name}</span>
                   {folder.about && <span className="mt-1 inline-block max-w-full truncate rounded-full bg-slate-100 px-3 py-0.5 text-sm font-semibold text-slate-700">{folder.about}</span>}
                   <span className="mt-auto pt-2 text-sm font-medium text-slate-600">
@@ -99,18 +99,6 @@ export const FoldersPage: React.FC = () => {
                 </Link>
               </li>
             ))}
-            {!full && (
-              <li>
-                <button
-                  type="button"
-                  onClick={() => setCreating(true)}
-                  className="flex h-full min-h-[200px] w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-[2rem] border-2 border-dashed border-purple-300 bg-purple-50/60 p-4 text-purple-900 hover:bg-purple-100"
-                >
-                  <FolderPlus className="h-10 w-10" aria-hidden="true" />
-                  <span className="text-lg font-semibold">สร้างโฟลเดอร์ใหม่</span>
-                </button>
-              </li>
-            )}
           </ul>
         </>
       )}

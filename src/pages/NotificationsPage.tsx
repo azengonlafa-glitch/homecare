@@ -37,19 +37,11 @@ const CATEGORY_ICONS: Record<NotificationCategory, React.ComponentType<{ classNa
   system: Bell,
 };
 
-const PRIORITY_STYLES: Record<NotificationPriority, { border: string; bg: string }> = {
-  urgent: {
-    border: 'border-rose-300 hover:border-rose-400',
-    bg: 'bg-rose-50/20',
-  },
-  important: {
-    border: 'border-amber-300 hover:border-amber-400',
-    bg: 'bg-amber-50/20',
-  },
-  routine: {
-    border: 'border-slate-200 hover:border-purple-300',
-    bg: 'bg-white',
-  },
+/** การ์ดพื้นขาวทึบ ขอบบางชั้นเดียว ความด่วนบอกด้วยแถบสีด้านซ้าย (และป้าย "ด่วน" เป็นข้อความ) */
+const PRIORITY_STYLES: Record<NotificationPriority, { border: string; bar: string }> = {
+  urgent: { border: 'border-rose-200', bar: 'bg-rose-500' },
+  important: { border: 'border-amber-200', bar: 'bg-amber-400' },
+  routine: { border: 'border-slate-200', bar: 'bg-transparent' },
 };
 
 type FilterCategory = 'all' | NotificationCategory;
@@ -382,18 +374,20 @@ export const NotificationsPage: React.FC = () => {
                 key={item.id}
                 onClick={() => handleOpenDetail(item)}
                 className={cn(
-                  'group relative rounded-2xl border-2 p-5 sm:p-6 transition cursor-pointer bg-white',
-                  'hover:shadow-md hover:border-purple-400',
+                  'group relative overflow-hidden rounded-2xl border p-5 pl-6 sm:p-6 sm:pl-7 cursor-pointer transition-shadow',
+                  'shadow-sm hover:shadow-md hover:border-purple-300',
                   pStyle.border,
-                  !item.isRead && 'bg-purple-50/25 ring-2 ring-purple-100',
-                  isResolved && 'opacity-75 bg-slate-50/60'
+                  isResolved ? 'bg-slate-50' : 'bg-white'
                 )}
               >
-                {/* จุดบ่งชี้ยังไม่อ่าน ขนาดใหญ่ชัดเจน */}
+                {/* แถบสีความด่วนด้านซ้าย */}
+                <span aria-hidden="true" className={cn('absolute inset-y-0 left-0 w-1.5', isResolved ? 'bg-slate-300' : pStyle.bar)} />
+
+                {/* จุดบ่งชี้ยังไม่อ่าน */}
                 {!item.isRead && (
                   <span
                     title="ยังไม่ได้อ่าน"
-                    className="absolute top-5 right-5 h-3 w-3 rounded-full bg-purple-600 ring-4 ring-purple-100"
+                    className="absolute top-5 right-5 h-2.5 w-2.5 rounded-full bg-purple-600"
                   />
                 )}
 
@@ -424,11 +418,11 @@ export const NotificationsPage: React.FC = () => {
                           </span>
                         )}
                         {item.memberName && (
-                          <span className="font-bold text-slate-900 text-sm sm:text-base">
-                            {item.memberName}
-                          </span>
+                          <>
+                            <span className="font-bold text-slate-900 text-sm sm:text-base">{item.memberName}</span>
+                            <span aria-hidden="true">•</span>
+                          </>
                         )}
-                        <span>•</span>
                         <span className="text-sm text-slate-400">
                           {relativeDateTime(item.createdAt)}
                         </span>
@@ -444,7 +438,13 @@ export const NotificationsPage: React.FC = () => {
                       </div>
 
                       {/* หัวข้อขนาดใหญ่ อ่านง่าย ชัดเจน */}
-                      <h2 className="text-base sm:text-lg lg:text-xl font-black text-slate-900 group-hover:text-purple-900 transition-colors leading-snug">
+                      <h2
+                        className={cn(
+                          'text-base sm:text-lg lg:text-xl text-slate-900 group-hover:text-purple-900 transition-colors leading-snug',
+                          item.isRead ? 'font-bold' : 'font-black',
+                          isResolved && 'text-slate-500'
+                        )}
+                      >
                         {title}
                       </h2>
 

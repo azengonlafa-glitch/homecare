@@ -6,25 +6,14 @@ import { BrandMark } from '../components/layout/BrandMark';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { TextField } from '../components/ui/TextField';
-import { SelectField, type SelectOption } from '../components/ui/SelectField';
 import { HomeCreatedPanel } from '../components/home/HomeCreatedPanel';
 import { loadHomeData, saveHomeData } from '../lib/storage';
 import { saveHomeSetup } from '../lib/homeSetup';
 import { loadSettings, saveSettings } from '../lib/settings';
 import { cloudEnabled } from '../cloud/client';
-import { RELATION_SUGGESTIONS } from '../data/suggestions';
 import { createHome, explainError, joinHome } from '../cloud/engine';
 
-const TIME_ZONES: SelectOption[] = [
-  { value: 'Asia/Bangkok', label: 'ประเทศไทย (UTC+7)' },
-  { value: 'Asia/Singapore', label: 'สิงคโปร์ / มาเลเซีย (UTC+8)' },
-  { value: 'Asia/Tokyo', label: 'ญี่ปุ่น / เกาหลี (UTC+9)' },
-  { value: 'Australia/Sydney', label: 'ออสเตรเลีย ซิดนีย์ (UTC+10/+11)' },
-  { value: 'Europe/London', label: 'สหราชอาณาจักร (UTC+0/+1)' },
-  { value: 'Europe/Berlin', label: 'ยุโรปกลาง (UTC+1/+2)' },
-  { value: 'America/New_York', label: 'สหรัฐฯ ฝั่งตะวันออก (UTC-5/-4)' },
-  { value: 'America/Los_Angeles', label: 'สหรัฐฯ ฝั่งตะวันตก (UTC-8/-7)' },
-];
+const DEFAULT_TIMEZONE = 'Asia/Bangkok';
 
 /** จัดรูปแบบรหัสเชิญเป็น "0000 0000" และรับเฉพาะตัวเลข */
 const formatInviteCode = (raw: string) =>
@@ -58,8 +47,6 @@ export const HomeSetupPage: React.FC = () => {
   // ฟอร์มเข้าร่วมบ้าน
   const [inviteCode, setInviteCode] = useState('');
   const [joinError, setJoinError] = useState('');
-  const [joinRelation, setJoinRelation] = useState('');
-  const [createRelation, setCreateRelation] = useState('');
   const [busy, setBusy] = useState(false);
   const [createError, setCreateError] = useState('');
 
@@ -67,7 +54,6 @@ export const HomeSetupPage: React.FC = () => {
   const [homeName, setHomeName] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
-  const [timeZone, setTimeZone] = useState('Asia/Bangkok');
   const [errors, setErrors] = useState<Record<string, string>>({});
   // มีค่าเมื่อสร้างบ้านสำเร็จ: ใช้สลับไปแสดงรหัสเชิญและช่องทางแชร์
   const [created, setCreated] = useState<{ homeName: string; code: string } | null>(null);
@@ -87,7 +73,7 @@ export const HomeSetupPage: React.FC = () => {
     if (cloudEnabled) {
       setBusy(true);
       try {
-        await joinHome(digits, joinRelation.trim());
+        await joinHome(digits, '');
         navigate('/onboarding');
       } catch (err) {
         setJoinError(explainError(err));
@@ -118,13 +104,13 @@ export const HomeSetupPage: React.FC = () => {
       setBusy(true);
       setCreateError('');
       try {
-        await createHome(homeName.trim(), createRelation.trim());
+        await createHome(homeName.trim(), '');
         const settings = loadSettings();
         saveSettings({
           ...settings,
           home: {
             ...settings.home,
-            timeZone,
+            timeZone: DEFAULT_TIMEZONE,
             recipient: { firstName: firstName.trim(), lastName: lastName.trim() },
           },
         });
@@ -145,7 +131,7 @@ export const HomeSetupPage: React.FC = () => {
       homeName: homeName.trim(),
       recipientFirstName: firstName.trim(),
       recipientLastName: lastName.trim(),
-      timeZone,
+      timeZone: DEFAULT_TIMEZONE,
     });
     // ใช้ชื่อบ้านที่ตั้งใหม่แทนชื่อตัวอย่างบนหน้าหลัก
     saveHomeData({ ...loadHomeData(), homeName: homeName.trim() });
@@ -220,18 +206,6 @@ export const HomeSetupPage: React.FC = () => {
                     error={joinError}
                     className="text-lg tracking-[0.2em] font-semibold"
                   />
-                  {cloudEnabled && (
-                    <TextField
-                      id="join-relation"
-                      suggestions={RELATION_SUGGESTIONS}
-                      name="join-relation"
-                      label="คุณเป็นอะไรกับเจ้าของบ้าน (ไม่บังคับ)"
-                      autoComplete="off"
-                      placeholder="เช่น ลูกสาว พี่ชาย พยาบาล"
-                      value={joinRelation}
-                      onChange={(e) => setJoinRelation(e.target.value)}
-                    />
-                  )}
                   <Button type="submit" fullWidth disabled={busy}>
                     {busy ? 'กำลังเข้าร่วม…' : 'เข้าร่วมบ้าน'}
                   </Button>
@@ -297,28 +271,6 @@ export const HomeSetupPage: React.FC = () => {
                     />
                   </div>
 
-                  <SelectField
-                    id="time-zone"
-                    name="time-zone"
-                    label="เขตเวลาของผู้ที่เราดูแล"
-                    placeholder="ผู้ที่เราดูแลอยู่ในเขตเวลาไหน?"
-                    options={TIME_ZONES}
-                    value={timeZone}
-                    onChange={setTimeZone}
-                  />
-
-                  {cloudEnabled && (
-                    <TextField
-                      id="create-relation"
-                      suggestions={RELATION_SUGGESTIONS}
-                      name="create-relation"
-                      label="คุณเป็นอะไรกับผู้ที่เราดูแล (ไม่บังคับ)"
-                      autoComplete="off"
-                      placeholder="เช่น ลูกสาว ภรรยา หรือ ตัวฉันเอง"
-                      value={createRelation}
-                      onChange={(e) => setCreateRelation(e.target.value)}
-                    />
-                  )}
                   {createError && (
                     <p role="alert" className="text-base font-semibold text-red-700">
                       {createError}

@@ -165,14 +165,13 @@ export function validateStep(step: number, p: OnboardingProfile): Record<string,
 
   if (step === 0) {
     if (!p.fullName.trim()) errors['ob-fullname'] = 'กรุณากรอกชื่อ-นามสกุล';
-    // ปีเกิดจำเป็น: ขนาดยาและข้อห้ามใช้ยาขึ้นกับอายุ
-    const year = Number(p.birthYear);
-    const thisYearBE = new Date().getFullYear() + 543;
-    if (!/^\d{4}$/.test(p.birthYear) || year > thisYearBE || year < thisYearBE - 120) {
-      errors['ob-birth-year'] = 'กรุณากรอกปีเกิด (พ.ศ.) 4 หลัก เช่น 2535';
-    }
+    // อายุจำเป็น: ขนาดยาและข้อห้ามใช้ยาขึ้นกับอายุ (เก็บเป็นปีเกิด พ.ศ. คำนวณจากอายุ)
+    const age = new Date().getFullYear() + 543 - Number(p.birthYear);
+    if (!p.birthYear || age < 0 || age > 120) errors['ob-age'] = 'กรุณากรอกอายุเป็นตัวเลข 0–120 ปี';
     if (!p.gender) errors['ob-gender'] = 'กรุณาเลือกเพศ';
-    if (p.phone && !phonePattern.test(digits(p.phone))) {
+    if (!p.phone.trim()) {
+      errors['ob-phone'] = 'กรุณากรอกเบอร์โทรศัพท์';
+    } else if (!phonePattern.test(digits(p.phone))) {
       errors['ob-phone'] = 'กรอกเบอร์โทร 9–10 หลัก ขึ้นต้นด้วย 0';
     }
   }

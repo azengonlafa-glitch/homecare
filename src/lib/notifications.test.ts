@@ -58,6 +58,7 @@ const mockSettings: AppSettings = {
     repeatCount: 2,
     repeatIntervalMinutes: 10,
     escalateToFamily: true,
+    sound: true,
   },
 };
 
