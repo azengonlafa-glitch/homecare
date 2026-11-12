@@ -203,21 +203,6 @@ export const MembersPage: React.FC = () => {
         })}
       </ul>
 
-      <Card className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-w-0">
-          <p className="text-base sm:text-lg font-bold text-slate-900">ความเป็นส่วนตัวของฉัน</p>
-          <p className="mt-0.5 text-base text-slate-600">
-            เลือกได้ว่าใครดูข้อมูลของฉันได้ และใครแก้ไขได้บ้าง
-          </p>
-        </div>
-        <Link
-          to="/settings/privacy"
-          className="inline-flex min-h-[48px] shrink-0 items-center justify-center rounded-xl border border-purple-200 bg-purple-50 px-5 text-base font-bold text-purple-900 hover:bg-purple-100"
-        >
-          ตั้งค่าความเป็นส่วนตัว
-        </Link>
-      </Card>
-
       <MoodPickerModal
         open={moodPickerOpen}
         onClose={() => setMoodPickerOpen(false)}

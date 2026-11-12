@@ -9,6 +9,7 @@ import { SETTINGS_CHANGED_EVENT, loadSettings } from '../../lib/settings';
 import { cloudEnabled } from '../../cloud/client';
 import { signOutAll } from '../../cloud/engine';
 import { unsubscribeOnSignOut } from '../../consult/push';
+import { PrivacyIntroModal } from '../settings/PrivacyIntroModal';
 
 /** หมวดของหน้า: กำหนดสีผ้ากิงแฮม สีด้ายเย็บ สีเทป และสีเมนูที่เลือก (ดู [data-section] ใน index.css) */
 const sectionOf = (pathname: string): string => {
@@ -87,6 +88,9 @@ export const AppLayout: React.FC = () => {
 
         {/* เมนูล่าง (มือถือ) */}
         <MobileNav />
+
+        {/* เข้าบ้านครั้งแรก: อธิบายความเป็นส่วนตัว (ขึ้นครั้งเดียว) */}
+        <PrivacyIntroModal />
       </div>
     </ToastProvider>
   );

@@ -5,6 +5,7 @@ import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { PageHeader } from '../components/ui/PageHeader';
 import { ConsultEntryCard } from '../components/consult/ConsultEntryCard';
+import { PushPromptModal } from '../components/consult/PushPromptModal';
 import { useToast } from '../components/ui/Toast';
 import { ConfirmDialog } from '../components/settings/ConfirmDialog';
 import { MedFormModal, type MedFormData } from '../components/meds/MedFormModal';
@@ -330,6 +331,9 @@ export const MedsPage: React.FC = () => {
           <Plus className="w-8 h-8" aria-hidden="true" />
         </button>
       )}
+
+      {/* ผู้ใช้ใหม่เข้าหน้ายาครั้งแรก: ชวนเปิดแจ้งเตือนกินยา (ขึ้นครั้งเดียว ขึ้นเฉพาะเมื่อเปิดใช้ได้จริง) */}
+      <PushPromptModal />
 
       <MedFormModal
         open={form !== null}
