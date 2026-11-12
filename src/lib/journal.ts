@@ -1,6 +1,7 @@
 import { queueSync } from '../cloud/queue';
 import type { Attachment } from './onboarding';
 import type { MoodKey } from '../data/journalOptions';
+import type { VitalValues } from './dailyRecord';
 
 const JOURNAL_KEY = 'growa_journal_v1';
 
@@ -25,6 +26,8 @@ export interface JournalPost {
   moodDetails: string[];
   /** รูปประกอบ 1 รูป (ตัวไฟล์เก็บใน IndexedDB) */
   photo: Attachment | null;
+  /** ค่าสุขภาพที่วัดพร้อมบันทึกนี้ (ไม่มี = ไม่ได้วัด) ถูกคัดลอกไปเป็นประวัติสุขภาพของสมาชิกด้วย */
+  vitals?: VitalValues | null;
   createdAt: string;
   editedAt: string | null;
   /** รหัสผู้ใช้ที่กดถูกใจ */

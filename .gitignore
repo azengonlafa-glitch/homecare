@@ -36,3 +36,8 @@ skills-lock.json
 
 # Supabase CLI local state
 supabase/.temp/
+
+# เครื่องมือ/ต้นฉบับภาพของเครื่องคอมนี้ ไม่ใช่ส่วนของแอป
+.agents/
+.mcp.json
+asset/

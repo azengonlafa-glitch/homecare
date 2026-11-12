@@ -3,6 +3,7 @@ import { FilePlus2, Loader2, Upload, X } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { TextField } from '../ui/TextField';
+import { DateField } from '../ui/DatePicker';
 import { TextAreaField } from '../ui/TextAreaField';
 import { useToast } from '../ui/Toast';
 import { DOC_KINDS, MAX_NOTE, MAX_TITLE, validateDoc, type DocInput, type DocKind, type FolderDoc } from '../../lib/folders';
@@ -188,7 +189,7 @@ const FormBody: React.FC<Omit<DocumentFormModalProps, 'open'>> = ({ doc, onClose
           </div>
         </fieldset>
 
-        <TextField id="doc-date" type="date" label="วันที่ของเอกสาร" labelSuffix="(ไม่บังคับ)" max={today()} value={docDate} error={errors.docDate} onChange={(e) => setDocDate(e.target.value)} />
+        <DateField id="doc-date" label="วันที่ของเอกสาร" labelSuffix="(ไม่บังคับ)" max={today()} value={docDate} error={errors.docDate} onChange={setDocDate} />
         <TextAreaField id="doc-note" label="โน้ตช่วยจำ" labelSuffix="(ไม่บังคับ)" rows={2} maxLength={MAX_NOTE} placeholder="เช่น น้ำตาลหลังอดอาหาร ตรวจที่โรงพยาบาลใกล้บ้าน" value={note} error={errors.note} onChange={(e) => setNote(e.target.value)} />
       </form>
     </Modal>

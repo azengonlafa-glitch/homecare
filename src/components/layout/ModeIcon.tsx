@@ -20,17 +20,17 @@ export type ArtKey =
 
 /** พื้นการ์ด + สีชื่อโหมดของแต่ละไอคอน (ตระกูลสีเดียวกับตัวไอคอน) */
 export const ART_STYLE: Record<ArtKey, { tile: string; label: string }> = {
-  journal: { tile: 'bg-[#FFEBC9]', label: 'text-[#DC5A28]' },
-  calendar: { tile: 'bg-[#DDF3FF]', label: 'text-[#2272D9]' },
-  members: { tile: 'bg-[#FFE0F6]', label: 'text-[#C23AA8]' },
-  house: { tile: 'bg-[#E4FACB]', label: 'text-[#3A9440]' },
-  meds: { tile: 'bg-[#FFDCCB]', label: 'text-[#DB4F26]' },
-  bell: { tile: 'bg-[#FFF1C7]', label: 'text-[#C98010]' },
-  folder: { tile: 'bg-[#D8F7EA]', label: 'text-[#1C9E82]' },
-  health: { tile: 'bg-[#FFD6DD]', label: 'text-[#DE3C5E]' },
-  consult: { tile: 'bg-[#DCE8FF]', label: 'text-[#2F62D6]' },
-  settings: { tile: 'bg-[#E6DFFF]', label: 'text-[#7A58E0]' },
-  menu: { tile: 'bg-[#E6DFFF]', label: 'text-[#7A58E0]' },
+  journal: { tile: 'bg-[#FFEBC9]', label: 'text-[#AD471F]' },
+  calendar: { tile: 'bg-[#DDF3FF]', label: 'text-[#1E67C5]' },
+  members: { tile: 'bg-[#FFE0F6]', label: 'text-[#AA3393]' },
+  house: { tile: 'bg-[#E4FACB]', label: 'text-[#2F7934]' },
+  meds: { tile: 'bg-[#FFDCCB]', label: 'text-[#AD3E1E]' },
+  bell: { tile: 'bg-[#FFF1C7]', label: 'text-[#98610C]' },
+  folder: { tile: 'bg-[#D8F7EA]', label: 'text-[#157862]' },
+  health: { tile: 'bg-[#FFD6DD]', label: 'text-[#AF2F4A]' },
+  consult: { tile: 'bg-[#DCE8FF]', label: 'text-[#2D5FCF]' },
+  settings: { tile: 'bg-[#E6DFFF]', label: 'text-[#6B4DC5]' },
+  menu: { tile: 'bg-[#E6DFFF]', label: 'text-[#6B4DC5]' },
 };
 
 const ART: Record<ArtKey, React.ReactNode> = {

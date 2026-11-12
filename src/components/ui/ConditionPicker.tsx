@@ -89,6 +89,7 @@ export const ConditionPicker: React.FC<ConditionPickerProps> = ({
           }}
           placeholder={searchPlaceholder}
           autoComplete="off"
+          aria-label="ค้นหาโรคหรือภาวะสุขภาพ"
           className="min-h-[52px] w-full rounded-full border border-slate-300 bg-white pl-12 pr-4 text-base text-slate-900 placeholder:text-slate-500 focus:border-purple-700 focus:outline-none disabled:opacity-50"
         />
       </div>

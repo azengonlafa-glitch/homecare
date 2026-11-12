@@ -5,6 +5,9 @@ import { TextAreaField } from '../ui/TextAreaField';
 import { Button } from '../ui/Button';
 import { FieldGroup } from '../ui/ChoiceChips';
 import { ConsentDocumentModal } from './ConsentDocumentModal';
+import { CheckboxField } from '../ui/CheckboxField';
+import { CURRENT_MEMBER_ID } from '../../lib/settings';
+import { loadMemberRecord, saveMemberRecord } from '../../lib/members';
 import { CONSENT_VERSION } from '../../data/consentDocument';
 import { RELATION_SUGGESTIONS } from '../../data/suggestions';
 import type { StepProps } from './stepTypes';
@@ -129,10 +132,10 @@ export const StepContact: React.FC<StepProps> = ({ profile, update, errors, clea
 };
 
 const SUMMARY_POINTS = [
-  'เราขอเก็บและใช้ข้อมูลสุขภาพที่คุณกรอกเพื่อช่วยดูแลเรื่องยาและความปลอดภัยในการใช้ยา',
-  'เราขออนุญาตแสดงข้อมูลให้สมาชิกบ้านที่คุณเชิญ ตามสิทธิ์ที่คุณกำหนด',
-  'เมื่อคุณกดเริ่มปรึกษา เราจะส่งข้อมูลสุขภาพและอาการล่าสุดทั้งหมดให้เภสัชกรหรือคลินิกที่คุณเลือก แต่ไม่ส่งเบอร์โทร ที่อยู่ และผู้ติดต่อฉุกเฉิน',
-  'คุณถอนความยินยอม แก้ไข หรือขอลบข้อมูลได้ทุกเมื่อ',
+  'เราขอเก็บและใช้ข้อมูลสุขภาพที่คุณกรอกเพื่อช่วยดูแลเรื่องยาและบันทึกอาการ (ข้อ 4 ก) จำเป็นต่อการใช้แอป',
+  'การแสดงข้อมูลให้สมาชิกบ้านที่คุณเชิญเป็นทางเลือก เลือกด้านล่างได้ ไม่เลือกก็ใช้แอปได้',
+  'การปรึกษาเภสัชกรหรือคลินิกขอความยินยอมแยกทุกครั้ง ก่อนส่ง คุณจะเห็นข้อมูลทั้งหมดที่ส่ง และไม่ส่งเบอร์โทร ที่อยู่ และผู้ติดต่อฉุกเฉิน',
+  'คุณดาวน์โหลดสำเนาข้อมูล ถอนความยินยอม หรือลบบัญชีได้เองที่ ตั้งค่า › ข้อมูลและความยินยอมของฉัน',
 ];
 
 const formatThaiDateTime = (iso: string) =>
@@ -142,7 +145,14 @@ const formatThaiDateTime = (iso: string) =>
 export const StepConsent: React.FC<StepProps> = ({ profile, update, errors, clearError }) => {
   const [open, setOpen] = useState(false);
 
+  const applyShareChoice = (share: boolean) => {
+    const record = loadMemberRecord(CURRENT_MEMBER_ID);
+    saveMemberRecord({ ...record, sharing: { ...record.sharing, shareData: share } });
+  };
+
   const accept = () => {
+    // ข้อ 4 ข) เป็นตัวเลือก: ค่าที่เลือกไว้กำหนดว่าจะแสดงข้อมูลให้คนในบ้านหรือไม่ (ไม่เลือก = ไม่แสดง)
+    applyShareChoice(profile.consentShareHome);
     update({ consent: true, consentAt: new Date().toISOString(), consentVersion: CONSENT_VERSION });
     clearError('ob-consent');
     setOpen(false);
@@ -183,6 +193,25 @@ export const StepConsent: React.FC<StepProps> = ({ profile, update, errors, clea
             <span>{profile.consent ? 'เปิดอ่านเอกสารอีกครั้ง' : 'เปิดอ่านเอกสาร'}</span>
           </Button>
         </div>
+      </div>
+
+      <div className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
+        <p className="text-base font-bold text-slate-900">ตัวเลือก (ไม่บังคับ)</p>
+        <div className="mt-3">
+          <CheckboxField
+            id="ob-consent-share-home"
+            checked={profile.consentShareHome}
+            onChange={(checked) => {
+              update({ consentShareHome: checked });
+              if (profile.consent) applyShareChoice(checked);
+            }}
+          >
+            ให้สมาชิกบ้านที่ฉันเชิญดูข้อมูลสุขภาพของฉัน (ข้อ 4 ข)
+          </CheckboxField>
+        </div>
+        <p className="mt-2 text-sm text-slate-700">
+          ไม่เลือกก็ใช้แอปได้ เปลี่ยนใจได้ทุกเมื่อที่ ตั้งค่า › ความเป็นส่วนตัว
+        </p>
       </div>
 
       {profile.consent && profile.consentAt ? (

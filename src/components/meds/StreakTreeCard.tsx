@@ -44,13 +44,13 @@ const StreakDialog: React.FC<{
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4"
+      className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4"
       role="dialog"
       aria-modal="true"
       aria-label={label}
       onClick={onClose}
     >
-      <div className="w-full max-w-sm rounded-[2rem] bg-white p-6 text-center shadow-2xl" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-sheet modal-paper relative w-full max-w-sm rounded-[2rem] p-6 text-center" onClick={(e) => e.stopPropagation()}>
         <div className="mx-auto h-64 w-64 overflow-hidden rounded-[2rem]" style={{ background: artBg }}>
           {art}
         </div>
@@ -60,7 +60,7 @@ const StreakDialog: React.FC<{
           type="button"
           autoFocus
           onClick={onClose}
-          className="mt-5 w-full rounded-full bg-purple-700 px-6 py-3 text-base font-extrabold text-white"
+          className="btn-chunky mt-5 w-full min-h-[54px] rounded-[1.5rem] bg-purple-700 px-6 py-3 text-lg font-extrabold text-white hover:bg-purple-800 [--edge:#0E4A27] cursor-pointer"
         >
           {button}
         </button>

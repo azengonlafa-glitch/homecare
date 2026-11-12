@@ -25,7 +25,7 @@ const med = (patch: Partial<Medication>): Medication =>
   ({
     id: 'm1', name: 'ยาสมมติ A', form: 'tablet', perDose: 1, unit: 'เม็ด', meal: 'after', periods: ['morning'], times: {}, weekdays: [],
     startDate: '2020-01-01', durationDays: null, active: true, stoppedAt: null, remaining: 10, lowStockDays: 3, lastRefillDate: '2020-01-01',
-    refillsRemaining: null, condition: '', reason: '', drugRef: '', pillPhoto: null, labelPhoto: null, note: '', refillRequestedAt: null, createdAt: '2020-01-01',
+    refillsRemaining: null, condition: '', reason: '', drugRef: '', pillPhoto: null, labelPhoto: null, note: '', createdAt: '2020-01-01',
     ...patch,
   }) as Medication;
 

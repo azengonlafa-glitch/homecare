@@ -30,7 +30,7 @@ export function SegmentedControl<T extends string>({
   return (
     <fieldset className="min-w-0">
       <legend className="sr-only">{legend}</legend>
-      <div className="grid grid-cols-2 gap-1 rounded-2xl border border-slate-200 bg-slate-100 p-1">
+      <div className="seg-track grid grid-cols-2 gap-1 rounded-2xl p-1">
         {options.map((option) => {
           const selected = option.value === value;
           return (
@@ -39,7 +39,7 @@ export function SegmentedControl<T extends string>({
               className={cn(
                 'flex min-h-[48px] cursor-pointer flex-row items-center justify-center gap-1.5 rounded-xl px-3 text-center text-base font-bold transition-colors whitespace-nowrap',
                 'focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-purple-600',
-                selected ? 'bg-purple-700 text-white' : 'text-slate-700 hover:bg-white'
+                selected ? 'seg-on text-white' : 'text-slate-700 hover:bg-white'
               )}
             >
               <input

@@ -1,17 +1,18 @@
 import { celebrate } from '../lib/celebrate';
 import React, { useMemo, useState } from 'react';
+import { Dino } from '../components/ui/Dino';
 import { AlertTriangle, BarChart3, BellRing, ClipboardCheck, Pill, Plus } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { PageHeader } from '../components/ui/PageHeader';
 import { ConsultEntryCard } from '../components/consult/ConsultEntryCard';
+import { PushPromptModal } from '../components/consult/PushPromptModal';
 import { useToast } from '../components/ui/Toast';
 import { ConfirmDialog } from '../components/settings/ConfirmDialog';
 import { MedFormModal, type MedFormData } from '../components/meds/MedFormModal';
 import { MedCabinet } from '../components/meds/MedCabinet';
 import { MedDetailModal } from '../components/meds/MedDetailModal';
 import { MedReport } from '../components/meds/MedReport';
-import { RefillModal } from '../components/meds/RefillModal';
 import { TodaySchedule } from '../components/meds/TodaySchedule';
 import { StreakTreeCard } from '../components/meds/StreakTreeCard';
 import { deleteFiles } from '../lib/fileStore';
@@ -19,7 +20,8 @@ import { newId } from '../lib/journal';
 import { useMedAlerts } from '../lib/medAlerts';
 import { CURRENT_MEMBER_ID, getCurrentMember, loadSettings } from '../lib/settings';
 import {
-  DOSE_STATUS_LABEL,
+  doseStatusLabel,
+  doseWords,
   applyDoseStatus,
   daysLeft,
   formatQty,
@@ -53,7 +55,6 @@ export const MedsPage: React.FC = () => {
   >(null);
   const [detailId, setDetailId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<Medication | null>(null);
-  const [refilling, setRefilling] = useState<Medication | null>(null);
 
   const settings = useMemo(loadSettings, []);
   const me = getCurrentMember(settings);
@@ -110,7 +111,6 @@ export const MedsPage: React.FC = () => {
               ...data,
               id: newId(),
               stoppedAt: data.active ? null : todayKey(),
-              refillRequestedAt: null,
               createdAt: new Date().toISOString(),
             },
           ],
@@ -147,23 +147,16 @@ export const MedsPage: React.FC = () => {
     if (status === 'taken') celebrate();
     if (status === 'taken' && updated) {
       const left = daysLeft(updated);
+      const w = doseWords(med.form);
       const stock = `เหลือ ${formatQty(updated.remaining)} ${updated.unit}${left !== null ? ` (พออีก ${left} วัน)` : ''}`;
       if (stockLevel(updated) !== 'good' && stockLevel(med) === 'good') {
-        toast.show(`บันทึกกินแล้ว · ${med.name} ใกล้หมด ${stock} ลองกด “ขอเติมยา”`);
+        toast.show(`บันทึก${w.done} · ${med.name} ใกล้หมด ${stock}`);
       } else {
-        toast.show(`บันทึกกินแล้ว · ${stock}`);
+        toast.show(`บันทึก${w.done} · ${stock}`);
       }
       return;
     }
-    toast.show(status ? `บันทึก “${DOSE_STATUS_LABEL[status]}” แล้ว` : 'ล้างบันทึกแล้ว');
-  };
-
-  const markRequested = (med: Medication) => {
-    commit({
-      ...state,
-      meds: state.meds.map((m) => (m.id === med.id ? { ...m, refillRequestedAt: new Date().toISOString() } : m)),
-    });
-    toast.show('บันทึกว่าขอเติมยาแล้ว');
+    toast.show(status ? `บันทึก “${doseStatusLabel(status, med.form)}” แล้ว` : 'ล้างบันทึกแล้ว');
   };
 
   const openEdit = (med: Medication) => {
@@ -176,18 +169,12 @@ export const MedsPage: React.FC = () => {
     setForm({ mode: 'new', fromId: med.id });
   };
 
-  const openRefill = (med: Medication) => {
-    setDetailId(null);
-    setRefilling(med);
-  };
-
   const hasMeds = state.meds.length > 0;
   const missedAlerts = alerts.filter((a) => a.kind === 'missed');
   const stockAlerts = alerts.filter((a) => a.kind !== 'missed');
 
   return (
     <div className="mx-auto w-full max-w-5xl space-y-6">
-      <ConsultEntryCard />
       <PageHeader
         eyebrow="ส่วนตัว"
         title="ยาและการดูแล"
@@ -204,7 +191,7 @@ export const MedsPage: React.FC = () => {
 
       {!hasMeds ? (
         <Card className="py-14 px-6 text-center">
-          <Pill className="w-14 h-14 text-purple-300 mx-auto mb-4" aria-hidden="true" />
+          <Dino pose="wink" bob className="mx-auto mb-4 h-28 w-32" />
           <p className="text-xl font-bold text-slate-900">ยังไม่มีรายการยาหรือการดูแล</p>
           <p className="mt-2 text-base text-slate-600">
             เพิ่มยา ยาฉีดเบาหวาน หรือสิ่งดูแล หรือถ่ายรูปซองยาให้ช่วยกรอก เพื่อสร้างตารางและแจ้งเตือนเมื่อใกล้หมด
@@ -226,7 +213,7 @@ export const MedsPage: React.FC = () => {
           {alerts.length > 0 && (
             <div className="space-y-2" aria-live="polite">
               {missedAlerts.length > 0 && (
-                <div className="flex flex-col sm:flex-row sm:items-center gap-3 rounded-2xl border border-red-200 bg-red-50 p-4">
+                <div className="fit-row justify-between rounded-2xl border border-red-200 bg-red-50 p-4">
                   <BellRing className="w-6 h-6 shrink-0 text-red-600" aria-hidden="true" />
                   <div className="min-w-0 flex-1">
                     <p className="text-base font-bold text-red-900">ยังไม่ได้บันทึก {missedAlerts.length} มื้อที่เลยเวลาแล้ว</p>
@@ -242,12 +229,11 @@ export const MedsPage: React.FC = () => {
                 </div>
               )}
               {stockAlerts.map((a) => {
-                const med = state.meds.find((m) => m.id === a.medId);
                 return (
                   <div
                     key={a.key}
                     className={cn(
-                      'flex flex-col sm:flex-row sm:items-center gap-3 rounded-2xl border p-4',
+                      'fit-row justify-between rounded-2xl border p-4',
                       a.tone === 'danger' ? 'border-red-200 bg-red-50' : 'border-amber-200 bg-amber-50'
                     )}
                   >
@@ -259,11 +245,6 @@ export const MedsPage: React.FC = () => {
                       <p className="text-base font-bold text-slate-900 break-words">{a.title}</p>
                       <p className="text-sm text-slate-700">{a.body}</p>
                     </div>
-                    {med && (
-                      <Button size="sm" onClick={() => setRefilling(med)} className="shrink-0">
-                        ขอเติมยานี้
-                      </Button>
-                    )}
                   </div>
                 );
               })}
@@ -298,15 +279,15 @@ export const MedsPage: React.FC = () => {
           <div id={`meds-panel-${tab}`} role="tabpanel" aria-labelledby={`meds-tab-${tab}`}>
             {tab === 'today' ? (
               <div className="space-y-5">
-                <StreakTreeCard meds={state.meds} logs={state.logs} />
+                {/* งานหลักของหน้า (ยาที่ต้องกินวันนี้) มาก่อน การ์ดต้นไม้เป็นรางวัลตามหลัง ไม่ดันตารางลงล่างจอ */}
                 <TodaySchedule meds={state.meds} logs={state.logs} onSet={handleDose} />
+                <StreakTreeCard meds={state.meds} logs={state.logs} />
               </div>
             ) : tab === 'cabinet' ? (
               <MedCabinet
                 meds={state.meds}
                 onOpen={(m) => setDetailId(m.id)}
                 onEdit={openEdit}
-                onRefill={openRefill}
               />
             ) : (
               <MedReport meds={state.meds} logs={state.logs} onOpen={(m) => setDetailId(m.id)} />
@@ -315,8 +296,8 @@ export const MedsPage: React.FC = () => {
         </>
       )}
 
-
-
+      {/* ทางเข้าปรึกษาเภสัชกร: ไว้ท้ายหน้า (เดิมอยู่บนสุด ดันงานหลักลงล่าง) */}
+      <ConsultEntryCard />
 
       {/* ปุ่มเพิ่มยาเข้าตู้ยา แยกจากปุ่ม "เพิ่มยา / การดูแล" ด้านบนให้ไม่สับสน */}
       {hasMeds && tab === 'cabinet' && form === null && (
@@ -325,11 +306,14 @@ export const MedsPage: React.FC = () => {
           onClick={() => setForm({ mode: 'inventory' })}
           aria-label="เพิ่มยาเข้าตู้ยา"
           title="เพิ่มยาเข้าตู้ยา"
-          className="fixed bottom-28 lg:bottom-8 right-5 lg:right-8 z-30 inline-flex h-16 w-16 items-center justify-center rounded-full bg-purple-700 text-white shadow-xl shadow-purple-900/30 hover:bg-purple-800 active:scale-95 transition-transform cursor-pointer focus:outline-none focus:ring-4 focus:ring-purple-300"
+          className="fixed bottom-36 lg:bottom-8 right-5 lg:right-8 z-30 inline-flex h-16 w-16 items-center justify-center rounded-full bg-purple-700 text-white shadow-xl shadow-purple-900/30 hover:bg-purple-800 active:scale-95 transition-transform cursor-pointer focus:outline-none focus:ring-4 focus:ring-purple-300"
         >
           <Plus className="w-8 h-8" aria-hidden="true" />
         </button>
       )}
+
+      {/* ผู้ใช้ใหม่เข้าหน้ายาครั้งแรก: ชวนเปิดแจ้งเตือนกินยา (ขึ้นครั้งเดียว ขึ้นเฉพาะเมื่อเปิดใช้ได้จริง) */}
+      <PushPromptModal />
 
       <MedFormModal
         open={form !== null}
@@ -347,16 +331,8 @@ export const MedsPage: React.FC = () => {
         logs={state.logs}
         onEdit={openEdit}
         onDelete={setDeleting}
-        onRefill={openRefill}
         onSchedule={openSchedule}
         onClose={() => setDetailId(null)}
-      />
-
-      <RefillModal
-        med={refilling}
-        homeName={settings.homeName}
-        onMarkRequested={markRequested}
-        onClose={() => setRefilling(null)}
       />
 
       <ConfirmDialog

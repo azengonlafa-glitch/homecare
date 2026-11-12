@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { CanvasDecor } from '../components/ui/Decor';
 import { Link, useNavigate } from 'react-router-dom';
-import { Home, KeyRound, UserPlus } from 'lucide-react';
+import { ArrowLeft, Home, KeyRound, UserPlus } from 'lucide-react';
 import { BrandMark } from '../components/layout/BrandMark';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -11,7 +11,7 @@ import { loadHomeData, saveHomeData } from '../lib/storage';
 import { saveHomeSetup } from '../lib/homeSetup';
 import { loadSettings, saveSettings } from '../lib/settings';
 import { cloudEnabled } from '../cloud/client';
-import { createHome, explainError, joinHome } from '../cloud/engine';
+import { createHome, explainError, joinHome, signOutAll } from '../cloud/engine';
 
 const DEFAULT_TIMEZONE = 'Asia/Bangkok';
 
@@ -139,20 +139,40 @@ export const HomeSetupPage: React.FC = () => {
     window.scrollTo({ top: 0 });
   };
 
+  /** ออกจากระบบแล้วกลับหน้าเข้าสู่ระบบ เพื่อใช้อีเมลอื่น */
+  const handleBackToLogin = () => {
+    if (cloudEnabled) {
+      void signOutAll();
+      return;
+    }
+    localStorage.removeItem('growa_auth_user');
+    navigate('/login', { replace: true });
+  };
+
   return (
     <div className="relative isolate min-h-dvh text-slate-900">
       <CanvasDecor />
       <header className="h-16 border-b border-slate-200 bg-white">
         <div className="h-full max-w-5xl mx-auto px-4 sm:px-6 flex items-center justify-between gap-3">
           <BrandMark />
-          {!cloudEnabled && (
-            <Link
-              to="/"
-              className="inline-flex items-center shrink-0 whitespace-nowrap min-h-[44px] px-2 text-sm font-semibold text-slate-600 hover:text-slate-900"
+          <div className="flex items-center gap-1">
+            {!cloudEnabled && (
+              <Link
+                to="/"
+                className="inline-flex items-center shrink-0 whitespace-nowrap min-h-[44px] px-2 text-sm font-semibold text-slate-600 hover:text-slate-900"
+              >
+                ข้ามไปก่อน
+              </Link>
+            )}
+            <button
+              type="button"
+              onClick={handleBackToLogin}
+              className="inline-flex items-center gap-1.5 shrink-0 whitespace-nowrap min-h-[44px] px-3 rounded-full text-sm font-bold text-purple-800 hover:bg-purple-50 cursor-pointer"
             >
-              ข้ามไปก่อน
-            </Link>
-          )}
+              <ArrowLeft className="w-4 h-4" aria-hidden="true" />
+              เปลี่ยนอีเมล
+            </button>
+          </div>
         </div>
       </header>
 
@@ -184,7 +204,7 @@ export const HomeSetupPage: React.FC = () => {
                   <div className="min-w-0">
                     <h2 className="text-xl font-bold text-slate-900">มีรหัสเชิญหรือไม่?</h2>
                     <p className="text-sm text-slate-600 mt-1">
-                      เข้าร่วมบ้านที่มีอยู่แล้วได้ฟรี ถ้าคุณมีรหัสเชิญ 8 หลักจากเจ้าของบ้าน กรอกที่นี่ได้เลย
+                      เข้าร่วมบ้านที่มีอยู่แล้วได้ฟรี ถ้าคุณมีรหัสเชิญ 8 หลักจากผู้ดูแลหลัก กรอกที่นี่ได้เลย
                     </p>
                   </div>
                 </div>

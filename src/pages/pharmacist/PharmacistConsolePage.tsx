@@ -38,6 +38,9 @@ interface RowProps {
   muted?: boolean;
 }
 
+/** เคสที่ส่งมาไม่เกิน 1 ชั่วโมง ติดป้าย "ใหม่" */
+const NEW_WINDOW_MS = 60 * 60 * 1000;
+
 const Row: React.FC<RowProps> = ({ s, selected, needsReply, onClaim, claiming, muted }) => (
   <li className="space-y-1.5">
     <Link
@@ -49,7 +52,12 @@ const Row: React.FC<RowProps> = ({ s, selected, needsReply, onClaim, claiming, m
         muted && !selected && 'bg-slate-50'
       )}
     >
-      <p className="text-lg font-bold text-slate-900 break-words">{s.patientLabel || 'ผู้รับบริการ'}</p>
+      <p className="flex flex-wrap items-center gap-2 text-lg font-bold text-slate-900 break-words">
+        {s.patientLabel || 'ผู้รับบริการ'}
+        {s.status === 'requested' && Date.now() - new Date(s.createdAt).getTime() < NEW_WINDOW_MS && (
+          <span className="badge-beat rounded-full bg-sun px-2.5 py-0.5 text-xs font-extrabold text-slate-900">ใหม่</span>
+        )}
+      </p>
       <p className="text-base text-slate-700 break-words line-clamp-2">{s.topic}</p>
       <p className="text-sm font-semibold text-slate-600">ส่งเมื่อ {waitingText(s.createdAt)}</p>
       {needsReply && (
@@ -97,6 +105,8 @@ export const QueuePanel: React.FC<{ selectedId?: string; onPick?: () => void }> 
   const [busy, setBusy] = useState(false);
   const [claiming, setClaiming] = useState('');
   const [search, setSearch] = useState('');
+  /** คิวรอรับเรื่อง: ใหม่สุดก่อน (เห็นคำขอที่เพิ่งเข้ามาทันที) หรือรอนานสุดก่อน (รับตามลำดับ) */
+  const [newestFirst, setNewestFirst] = useState(true);
 
   const { waiting, mine, others, done } = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -107,7 +117,10 @@ export const QueuePanel: React.FC<{ selectedId?: string; onPick?: () => void }> 
     const me = data?.me ?? '';
     const active = queue.filter((s) => s.status === 'active');
     return {
-      waiting: queue.filter((s) => s.status === 'requested'),
+      waiting: (() => {
+        const list = queue.filter((s) => s.status === 'requested');
+        return newestFirst ? list.reverse() : list;
+      })(),
       // เรื่องที่ผู้ป่วยรอเราตอบขึ้นก่อน เคสเก่าที่ยังไม่มีผู้ดูแลถือว่าเป็นของเรา เพราะรับต่อได้ทันที
       mine: active
         .filter((s) => s.assignedTo === me || s.assignedTo === null)
@@ -115,7 +128,7 @@ export const QueuePanel: React.FC<{ selectedId?: string; onPick?: () => void }> 
       others: active.filter((s) => s.assignedTo !== null && s.assignedTo !== me),
       done: queue.filter((s) => s.status === 'completed' || s.status === 'cancelled').reverse().slice(0, 30),
     };
-  }, [data, search]);
+  }, [data, search, newestFirst]);
 
   // เห็นจำนวนคำขอใหม่บนแท็บเบราว์เซอร์ แม้ทำงานอยู่หน้าอื่น
   const waitingCount = waiting.length;
@@ -219,6 +232,24 @@ export const QueuePanel: React.FC<{ selectedId?: string; onPick?: () => void }> 
 
       <Card className="space-y-2 p-4">
         <SectionTitle count={waiting.length}>รอรับเรื่อง</SectionTitle>
+        {waiting.length > 1 && (
+          <div role="group" aria-label="ลำดับคิวรอรับเรื่อง" className="seg-track grid grid-cols-2 gap-1 rounded-2xl p-1">
+            {[
+              { v: true, label: 'ใหม่สุดก่อน' },
+              { v: false, label: 'รอนานสุดก่อน' },
+            ].map((o) => (
+              <button
+                key={o.label}
+                type="button"
+                aria-pressed={newestFirst === o.v}
+                onClick={() => setNewestFirst(o.v)}
+                className={cn('min-h-[44px] rounded-xl text-base font-bold cursor-pointer', newestFirst === o.v ? 'seg-on text-white' : 'text-slate-700 hover:bg-white')}
+              >
+                {o.label}
+              </button>
+            ))}
+          </div>
+        )}
         {waiting.length === 0 ? (
           <Empty>ไม่มีคำขอใหม่</Empty>
         ) : (

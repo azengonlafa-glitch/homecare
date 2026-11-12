@@ -74,6 +74,8 @@ export interface OnboardingProfile {
   /** เวลาที่กดยอมรับเอกสาร (ISO) */
   consentAt: string | null;
   consentVersion: string | null;
+  /** ข้อ 4 ข) ตัวเลือก: ยินยอมให้แสดงข้อมูลให้สมาชิกบ้านที่เชิญ (ไม่เลือก = ไม่แสดง ไม่บังคับ) */
+  consentShareHome: boolean;
 }
 
 export interface OnboardingState {
@@ -121,6 +123,7 @@ export const emptyProfile: OnboardingProfile = {
   consent: false,
   consentAt: null,
   consentVersion: null,
+  consentShareHome: false,
 };
 
 export function loadOnboarding(): OnboardingState {

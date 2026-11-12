@@ -40,7 +40,7 @@ export interface MemberMed {
   detail?: MemberMedDetail;
 }
 
-export type MemberMedDetail = Omit<Medication, 'id' | 'createdAt' | 'refillRequestedAt' | 'stoppedAt'>;
+export type MemberMedDetail = Omit<Medication, 'id' | 'createdAt' | 'stoppedAt'>;
 
 export interface HealthHistoryItem {
   id: string;
@@ -89,8 +89,12 @@ export interface VitalReading {
   painScore?: number;
   /** ชั่วโมงที่นอนคืนก่อน */
   sleepHours?: number;
+  /** ค่าอื่นที่ไม่มีช่องเฉพาะ (ผลตรวจเลือด อัตราการหายใจ น้ำเข้า-ออก ฯลฯ) ตามรหัสใน vitalMetrics */
+  more?: Record<string, number>;
   note?: string;
   byName?: string;
+  /** มาจากบันทึกประจำวัน (โพสต์ในบันทึกอาการ) โพสต์ไหน: แก้/ลบโพสต์แล้วค่านี้เปลี่ยนตาม */
+  postId?: string;
 }
 
 export interface MemberRecord {

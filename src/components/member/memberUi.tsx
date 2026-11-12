@@ -1,7 +1,8 @@
 import React from 'react';
 import { Check, CircleDashed, Slash, X, type LucideIcon } from 'lucide-react';
 import { TONE_SOFT } from '../health/HealthCharts';
-import { DOSE_STATE_LABEL, type Classified, type DoseState } from '../../lib/memberDashboard';
+import { doseStateLabel, type Classified, type DoseState } from '../../lib/memberDashboard';
+import type { MedForm } from '../../lib/meds';
 import { cn } from '../../lib/cn';
 
 /** สไตล์ชิปสถานะการกินยา (ไม่ใช้สีอย่างเดียว: มีไอคอนและข้อความกำกับเสมอ) */
@@ -12,7 +13,7 @@ export const DOSE_STATE_STYLE: Record<DoseState, { chip: string; Icon: LucideIco
   unconfirmed: { chip: 'bg-slate-50 border-slate-300 text-slate-700', Icon: CircleDashed },
 };
 
-export const DoseStateChip: React.FC<{ state: DoseState; className?: string }> = ({ state, className }) => {
+export const DoseStateChip: React.FC<{ state: DoseState; form?: MedForm; className?: string }> = ({ state, form, className }) => {
   const { chip, Icon } = DOSE_STATE_STYLE[state];
   return (
     <span
@@ -23,7 +24,7 @@ export const DoseStateChip: React.FC<{ state: DoseState; className?: string }> =
       )}
     >
       <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-      {DOSE_STATE_LABEL[state]}
+      {doseStateLabel(state, form)}
     </span>
   );
 };

@@ -63,6 +63,10 @@ export const NotificationBell: React.FC = () => {
     setPermission(result);
   };
 
+  // เรื่องที่ยังค้างขึ้นก่อน เรื่องที่จัดการแล้วแสดงเฉพาะตอนไม่มีอะไรค้าง
+  const pendingItems = notifications.filter((n) => n.actionStatus !== 'resolved');
+  const shown = pendingItems.length > 0 ? pendingItems.slice(0, 4) : notifications.slice(0, 3);
+
   const totalUnread = unreadCount + incoming.length + dueFollowUps.length;
 
   // มีแจ้งเตือนใหม่เพิ่มเข้ามาขณะเปิดแอป (ไม่เล่นตอนเปิดหน้าครั้งแรก) ให้มีเสียงเตือน
@@ -88,7 +92,7 @@ export const NotificationBell: React.FC = () => {
           <Bell className="w-6 h-6" aria-hidden="true" />
         )}
         {totalUnread > 0 && (
-          <span className="anim-pop absolute -top-1 -right-1 min-w-6 h-6 px-1.5 rounded-full bg-purple-600 text-white text-xs font-bold flex items-center justify-center">
+          <span className="badge-beat absolute -top-2 -right-2 min-w-6 h-6 px-1.5 rounded-full bg-sun text-slate-900 ring-2 ring-white text-xs font-extrabold flex items-center justify-center">
             {totalUnread > 9 ? '9+' : totalUnread}
           </span>
         )}
@@ -110,14 +114,6 @@ export const NotificationBell: React.FC = () => {
                 </span>
               )}
             </div>
-            <Link
-              to="/notifications"
-              onClick={() => setOpen(false)}
-              className="text-xs font-extrabold text-purple-700 hover:text-purple-900 hover:underline inline-flex items-center gap-0.5"
-            >
-              <span>ศูนย์แจ้งเตือน</span>
-              <ChevronRight className="w-3.5 h-3.5" />
-            </Link>
           </div>
 
           <div className="overflow-y-auto flex-1 overscroll-contain divide-y divide-slate-100">
@@ -139,7 +135,7 @@ export const NotificationBell: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => decideRequest(req.id, 'always')}
-                        className="col-span-2 inline-flex min-h-[40px] items-center justify-center gap-1.5 rounded-xl bg-purple-700 text-sm font-bold text-white hover:bg-purple-800 cursor-pointer"
+                        className="col-span-2 inline-flex min-h-[48px] items-center justify-center gap-1.5 rounded-xl bg-purple-700 text-sm font-bold text-white hover:bg-purple-800 cursor-pointer"
                       >
                         <Check className="w-4 h-4" />
                         อนุญาต
@@ -194,62 +190,65 @@ export const NotificationBell: React.FC = () => {
                 <p className="mt-0.5 text-xs text-slate-500">รับประทานยาและติดตามสุขภาพครบถ้วน</p>
               </div>
             ) : (
-              <ul className="p-2 space-y-1.5">
-                {notifications.slice(0, 6).map((item: HealthNotification) => {
-                  const Icon = CAT_ICON[item.category];
-                  const isUrgent = item.priority === 'urgent';
-                  const isResolved = item.actionStatus === 'resolved';
+              <div className="p-3 space-y-2">
+                {pendingItems.length === 0 && notifications.length > 0 && (
+                  <p className="flex items-center gap-2 rounded-xl bg-emerald-50 px-3 py-2.5 text-sm font-bold text-emerald-800">
+                    <CheckCircle2 className="h-5 w-5 shrink-0" aria-hidden="true" />
+                    ไม่มีอะไรค้างแล้ว เรียบร้อยดี
+                  </p>
+                )}
+                {shown.length > 0 && (
+                  <p className="px-1 text-sm font-bold text-slate-600">
+                    {pendingItems.length > 0 ? 'ต้องดูแล' : 'ที่จัดการแล้วล่าสุด'}
+                  </p>
+                )}
+                <ul className="space-y-2">
+                  {shown.map((item: HealthNotification) => {
+                    const Icon = CAT_ICON[item.category];
+                    const isUrgent = item.priority === 'urgent';
+                    const isResolved = item.actionStatus === 'resolved';
 
-                  return (
-                    <li key={item.id}>
-                      <Link
-                        to={item.link || '/notifications'}
-                        onClick={() => {
-                          if (!item.isRead) markAsRead(item.id);
-                          setOpen(false);
-                        }}
-                        className={cn(
-                          'flex items-start gap-3 rounded-xl p-2.5 transition-colors group hover:bg-slate-50',
-                          !item.isRead ? 'bg-purple-50/50' : 'bg-white',
-                          isResolved && 'opacity-70'
-                        )}
-                      >
-                        <div
+                    return (
+                      <li key={item.id}>
+                        <Link
+                          to={item.link || '/notifications'}
+                          onClick={() => {
+                            if (!item.isRead) markAsRead(item.id);
+                            setOpen(false);
+                          }}
                           className={cn(
-                            'h-8 w-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5',
-                            isUrgent ? 'bg-rose-100 text-rose-700' : 'bg-purple-100 text-purple-700'
+                            'flex items-start gap-3 rounded-2xl border p-3 transition-colors hover:bg-slate-50',
+                            isResolved
+                              ? 'border-slate-100 bg-white opacity-75'
+                              : isUrgent
+                                ? 'border-rose-200 bg-rose-50/60'
+                                : 'border-slate-200 bg-white'
                           )}
                         >
-                          <Icon className="w-4 h-4" />
-                        </div>
+                          <div
+                            className={cn(
+                              'h-10 w-10 rounded-xl flex items-center justify-center shrink-0',
+                              isResolved
+                                ? 'bg-emerald-100 text-emerald-700'
+                                : isUrgent
+                                  ? 'bg-rose-100 text-rose-700'
+                                  : 'bg-purple-100 text-purple-700'
+                            )}
+                          >
+                            {isResolved ? <Check className="w-5 h-5" /> : <Icon className="w-5 h-5" />}
+                          </div>
 
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center justify-between gap-1">
-                            <span className="text-xs font-extrabold text-slate-900 group-hover:text-purple-800 line-clamp-1">
-                              {item.title}
-                            </span>
-                            {!item.isRead && (
-                              <span className="h-2 w-2 rounded-full bg-purple-600 shrink-0" />
-                            )}
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-bold leading-snug text-slate-900 break-words">{item.title}</p>
+                            <p className="mt-0.5 text-sm leading-snug text-slate-600 line-clamp-2">{item.body}</p>
+                            <p className="mt-1 text-xs text-slate-500">{relativeDateTime(item.createdAt)}</p>
                           </div>
-                          <p className="text-xs text-slate-600 line-clamp-1 mt-0.5">
-                            {item.body}
-                          </p>
-                          <div className="mt-1 flex items-center justify-between text-xs text-slate-400">
-                            <span>{relativeDateTime(item.createdAt)}</span>
-                            {isResolved && (
-                              <span className="text-emerald-700 font-bold flex items-center gap-0.5">
-                                <Check className="w-3 h-3" />
-                                <span>จัดการแล้ว</span>
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
             )}
 
             {/* ส่วนขออนุญาตแจ้งเตือนบนเบราว์เซอร์ */}
@@ -263,7 +262,7 @@ export const NotificationBell: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => void askPermission()}
-                    className="w-full min-h-[40px] rounded-xl bg-purple-100 text-xs font-bold text-purple-900 hover:bg-purple-200 transition-colors cursor-pointer"
+                    className="w-full min-h-[48px] rounded-xl bg-purple-100 text-sm font-bold text-purple-900 hover:bg-purple-200 transition-colors cursor-pointer"
                   >
                     เปิดการแจ้งเตือนบนเครื่องนี้
                   </button>
@@ -277,9 +276,9 @@ export const NotificationBell: React.FC = () => {
             <Link
               to="/notifications"
               onClick={() => setOpen(false)}
-              className="w-full inline-flex items-center justify-center gap-1.5 rounded-xl bg-purple-700 py-2.5 text-xs sm:text-sm font-extrabold text-white hover:bg-purple-800 transition-colors"
+              className="w-full inline-flex items-center justify-center gap-1.5 rounded-xl bg-purple-700 min-h-[48px] text-sm font-extrabold text-white hover:bg-purple-800 transition-colors"
             >
-              <span>เปิดศูนย์การแจ้งเตือน ({notifications.length} เหตุการณ์)</span>
+              <span>ดูการแจ้งเตือนทั้งหมด</span>
               <ChevronRight className="w-4 h-4" />
             </Link>
           </div>

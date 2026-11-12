@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Bell, Check, ChevronDown, Clock, Flag, Info, MapPin, Paperclip, Repeat, ThumbsUp, Users } from 'lucide-react';
+import { Bell, Check, Clock, Flag, Info, MapPin, Paperclip, Repeat, ThumbsUp, Users } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { TextField } from '../ui/TextField';
@@ -8,14 +8,15 @@ import { CheckboxField } from '../ui/CheckboxField';
 import { ChipsWithCustom } from '../ui/ChipsWithCustom';
 import { FieldGroup } from '../ui/ChoiceChips';
 import { AttachmentPicker } from '../ui/AttachmentPicker';
+import { PillSelect } from '../ui/SelectField';
+import { TimePicker } from '../ui/TimePicker';
+import { PillDatePicker } from '../ui/DatePicker';
 import { ConfirmDialog } from '../settings/ConfirmDialog';
 import { DEFAULT_TIME_ZONE, TIME_ZONE_OPTIONS } from '../../data/timeZones';
 import {
-  COUNTRY_SUGGESTIONS,
   EVENT_TAG_SUGGESTIONS,
   EVENT_TITLE_SUGGESTIONS,
   PLACE_SUGGESTIONS,
-  PROVINCE_SUGGESTIONS,
 } from '../../data/suggestions';
 import { deleteFiles } from '../../lib/fileStore';
 import type { HouseholdMember } from '../../lib/settings';
@@ -26,6 +27,7 @@ import {
   REPEAT_UNIT_LABEL,
   defaultRepeat,
   emptyLocation,
+  locationLines,
   parseKey,
   repeatLabel,
   type CalendarEvent,
@@ -103,7 +105,10 @@ const fromEvent = (ev: CalendarEvent | null, defaultDate: string): FormState => 
     repeatEndDate: rule.endDate,
     repeatCount: String(rule.count),
     locationOn: !!ev?.location,
-    location: ev?.location ?? emptyLocation(),
+    // รวมชื่อและที่อยู่เดิมเป็นข้อความเดียว (นัดเก่าที่แยกช่องไว้ยังเห็นครบ)
+    location: ev?.location
+      ? { ...emptyLocation(), country: '', name: [ev.location.name, locationLines(ev.location)].map((t) => t.trim()).filter(Boolean).join(' · ') }
+      : emptyLocation(),
     assignOn: !!ev && (ev.assignees.length > 0 || ev.needVolunteer),
     needVolunteer: ev?.needVolunteer ?? false,
     assignees: ev?.assignees ?? [],
@@ -126,34 +131,7 @@ const repeatEveryOptions = (current: number) => {
 const pillBase =
   'min-h-[44px] rounded-full bg-purple-50 text-purple-900 [color-scheme:light] accent-purple-700 text-base font-semibold border border-purple-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-600 disabled:opacity-50';
 
-/** dropdown ทรงเม็ดยา (ขนาดพอดีตัวอักษร) */
-const PillSelect: React.FC<{
-  id: string;
-  label: string;
-  value: string | number;
-  options: { value: string | number; label: string }[];
-  onChange: (value: string) => void;
-}> = ({ id, label, value, options, onChange }) => (
-  <div className="relative inline-block max-w-full">
-    <select
-      id={id}
-      aria-label={label}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className={cn(pillBase, 'appearance-none pl-4 pr-10 max-w-full cursor-pointer')}
-    >
-      {options.map((o) => (
-        <option key={o.value} value={o.value}>
-          {o.label}
-        </option>
-      ))}
-    </select>
-    <ChevronDown
-      className="w-4 h-4 text-purple-800 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
-      aria-hidden="true"
-    />
-  </div>
-);
+
 
 const PillInput: React.FC<React.InputHTMLAttributes<HTMLInputElement> & { id: string; label: string }> = ({
   label,
@@ -266,8 +244,8 @@ const FormDialog: React.FC<Omit<EventFormModalProps, 'open'>> = ({
       }
     }
 
-    if (form.locationOn && !form.location.name.trim() && !form.location.address1.trim()) {
-      next['ev-loc-name'] = 'กรอกชื่อสถานที่หรือที่อยู่อย่างน้อยหนึ่งอย่าง';
+    if (form.locationOn && !form.location.name.trim()) {
+      next['ev-loc-name'] = 'บอกสถานที่หรือที่อยู่สักหน่อย';
     }
     return next;
   };
@@ -308,7 +286,7 @@ const FormDialog: React.FC<Omit<EventFormModalProps, 'open'>> = ({
             count: Math.max(1, Math.floor(Number(form.repeatCount) || 1)),
           }
         : null,
-      location: form.locationOn ? form.location : null,
+      location: form.locationOn ? { ...form.location, name: form.location.name.trim(), country: '' } : null,
       assignees: form.assignOn ? form.assignees : [],
       needVolunteer: form.assignOn ? form.needVolunteer : false,
       attachments: form.attachments,
@@ -425,13 +403,11 @@ const FormDialog: React.FC<Omit<EventFormModalProps, 'open'>> = ({
             <div className="space-y-3 pl-1 sm:pl-9">
               <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
                 <span className="w-16 text-base text-slate-700">เริ่ม</span>
-                <PillInput
+                <PillDatePicker
                   id="ev-start-date"
-                  type="date"
-                  label="วันที่เริ่ม"
+                  ariaLabel="วันที่เริ่ม"
                   value={form.startDate}
-                  onChange={(e) => {
-                    const value = e.target.value;
+                  onChange={(value) => {
                     setForm((prev) => ({
                       ...prev,
                       startDate: value,
@@ -441,32 +417,31 @@ const FormDialog: React.FC<Omit<EventFormModalProps, 'open'>> = ({
                   }}
                 />
                 {!form.allDay && (
-                  <PillInput
+                  <TimePicker
                     id="ev-start-time"
-                    type="time"
-                    label="เวลาเริ่ม"
+                    ariaLabel="เวลาเริ่ม"
+                    variant="pill"
                     value={form.startTime}
-                    onChange={(e) => set('startTime', e.target.value)}
+                    onChange={(val) => set('startTime', val)}
                   />
                 )}
               </div>
               <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
                 <span className="w-16 text-base text-slate-700">สิ้นสุด</span>
-                <PillInput
+                <PillDatePicker
                   id="ev-end-date"
-                  type="date"
-                  label="วันที่สิ้นสุด"
+                  ariaLabel="วันที่สิ้นสุด"
                   min={form.startDate}
                   value={form.endDate}
-                  onChange={(e) => set('endDate', e.target.value)}
+                  onChange={(val) => set('endDate', val)}
                 />
                 {!form.allDay && (
-                  <PillInput
+                  <TimePicker
                     id="ev-end-time"
-                    type="time"
-                    label="เวลาสิ้นสุด"
+                    ariaLabel="เวลาสิ้นสุด"
+                    variant="pill"
                     value={form.endTime}
-                    onChange={(e) => set('endTime', e.target.value)}
+                    onChange={(val) => set('endTime', val)}
                   />
                 )}
               </div>
@@ -568,13 +543,12 @@ const FormDialog: React.FC<Omit<EventFormModalProps, 'open'>> = ({
                         <span className="text-base text-slate-900">ในวันที่</span>
                       </label>
                       {form.repeatEndMode === 'on' && (
-                        <PillInput
+                        <PillDatePicker
                           id="ev-repeat-end"
-                          type="date"
-                          label="วันที่สิ้นสุดการทำซ้ำ"
+                          ariaLabel="วันที่สิ้นสุดการทำซ้ำ"
                           min={form.startDate}
                           value={form.repeatEndDate}
-                          onChange={(e) => set('repeatEndDate', e.target.value)}
+                          onChange={(val) => set('repeatEndDate', val)}
                         />
                       )}
                     </div>
@@ -630,73 +604,17 @@ const FormDialog: React.FC<Omit<EventFormModalProps, 'open'>> = ({
               onChange={(v) => set('locationOn', v)}
             />
             {form.locationOn && (
-              <div className="space-y-5">
-                <TextField
-                  id="ev-loc-name"
-                  suggestions={PLACE_SUGGESTIONS}
-                  label="ชื่อสถานที่"
-                  autoComplete="off"
-                  placeholder="ใส่ชื่อสถานที่"
-                  value={form.location.name}
-                  onChange={(e) => setLoc('name', e.target.value)}
-                  error={errors['ev-loc-name']}
-                />
-                <TextField
-                  id="ev-loc-a1"
-                  label="ที่อยู่ 1"
-                  autoComplete="off"
-                  placeholder="ใส่ที่อยู่ 1"
-                  value={form.location.address1}
-                  onChange={(e) => setLoc('address1', e.target.value)}
-                />
-                <TextField
-                  id="ev-loc-a2"
-                  label="ที่อยู่ 2"
-                  labelSuffix="(ไม่บังคับ)"
-                  autoComplete="off"
-                  placeholder="ใส่ที่อยู่ 2"
-                  value={form.location.address2}
-                  onChange={(e) => setLoc('address2', e.target.value)}
-                />
-                <TextField
-                  id="ev-loc-country"
-                  suggestions={COUNTRY_SUGGESTIONS}
-                  label="ประเทศ"
-                  labelSuffix="(ไม่บังคับ)"
-                  autoComplete="off"
-                  value={form.location.country}
-                  onChange={(e) => setLoc('country', e.target.value)}
-                />
-                <TextField
-                  id="ev-loc-state"
-                  suggestions={PROVINCE_SUGGESTIONS}
-                  label="จังหวัด / รัฐ"
-                  labelSuffix="(ไม่บังคับ)"
-                  autoComplete="off"
-                  placeholder="ใส่จังหวัดหรือรัฐ"
-                  value={form.location.state}
-                  onChange={(e) => setLoc('state', e.target.value)}
-                />
-                <TextField
-                  id="ev-loc-city"
-                  label="เมือง / อำเภอ"
-                  labelSuffix="(ไม่บังคับ)"
-                  autoComplete="off"
-                  placeholder="ใส่เมืองหรืออำเภอ"
-                  value={form.location.city}
-                  onChange={(e) => setLoc('city', e.target.value)}
-                />
-                <TextField
-                  id="ev-loc-zip"
-                  label="รหัสไปรษณีย์"
-                  labelSuffix="(ไม่บังคับ)"
-                  inputMode="numeric"
-                  autoComplete="off"
-                  placeholder="ใส่รหัสไปรษณีย์"
-                  value={form.location.zip}
-                  onChange={(e) => setLoc('zip', e.target.value)}
-                />
-              </div>
+              <TextField
+                id="ev-loc-name"
+                suggestions={PLACE_SUGGESTIONS}
+                label="สถานที่ / ที่อยู่"
+                hint="พิมพ์ชื่อสถานที่หรือที่อยู่ที่เดียวได้เลย เช่น โรงพยาบาลศิริราช"
+                autoComplete="off"
+                placeholder="เช่น โรงพยาบาลศิริราช หรือ บ้านคุณยาย"
+                value={form.location.name}
+                onChange={(e) => setLoc('name', e.target.value)}
+                error={errors['ev-loc-name']}
+              />
             )}
           </div>
 

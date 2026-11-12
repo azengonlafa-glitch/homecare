@@ -3,8 +3,10 @@ import { Link, Navigate, NavLink, Outlet } from 'react-router-dom';
 import { BarChart3, Inbox, LogOut } from 'lucide-react';
 import { ErrorCard, LoadingCard, ModeBanner } from '../../components/consult/ConsultUI';
 import { Card } from '../../components/ui/Card';
+import { buttonClass } from '../../components/ui/Button';
 import { CanvasDecor } from '../../components/ui/Decor';
-import { Mascot } from '../../components/ui/Mascot';
+import { GrowaLogo } from '../../components/ui/GrowaLogo';
+import { Dino } from '../../components/ui/Dino';
 import { ToastProvider } from '../../components/ui/Toast';
 import { useConsultData } from '../../consult/hooks';
 import { cloudEnabled } from '../../cloud/client';
@@ -13,12 +15,12 @@ import { readAuthUser } from '../../cloud/identity';
 
 export const Frame: React.FC<{ title?: string; homeHref?: string; children: React.ReactNode }> = ({ title = 'พื้นที่ผู้ให้บริการ Growa', homeHref = '/pharmacist', children }) => (
   <ToastProvider>
-    <div className="relative isolate min-h-dvh text-slate-900">
+    <div className="relative isolate min-h-dvh text-slate-900" data-section="consult">
       <CanvasDecor />
-      <header className="sticky top-0 z-40 bg-canvas/85 backdrop-blur-md">
+      <header className="sticky top-0 z-40 border-b border-[#EADBCC]/70 bg-[#FFFDF7]/75 backdrop-blur-md">
         <div className="mx-auto flex min-h-[72px] max-w-[110rem] items-center justify-between gap-3 px-4 sm:px-6">
           <Link to={homeHref} className="flex min-h-[48px] min-w-0 items-center gap-2.5 text-lg sm:text-xl font-extrabold text-purple-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600 rounded-lg">
-            <Mascot kind="burst" still className="h-10 w-10 shrink-0" />
+            <GrowaLogo className="h-12 w-12 shrink-0 drop-shadow-sm" />
             <span className="truncate">{title}</span>
           </Link>
           {cloudEnabled && readAuthUser() && (
@@ -29,7 +31,7 @@ export const Frame: React.FC<{ title?: string; homeHref?: string; children: Reac
           )}
         </div>
       </header>
-      <main id="main-content" className="mx-auto max-w-[110rem] space-y-4 p-4 sm:p-6">
+      <main id="main-content" className="anim-fade-up mx-auto max-w-[110rem] space-y-4 p-4 sm:p-6">
         <ModeBanner />
         {children}
       </main>
@@ -49,20 +51,31 @@ export const StaffShell: React.FC = () => {
     return (
       <Frame>
         <Card className="py-12 text-center">
-          <Mascot kind="cloud" mood="calm" className="mx-auto mb-3 h-24 w-24" />
+          <Dino pose="peek" bob className="mx-auto mb-3 h-28 w-32" />
           <h1 className="text-xl font-bold text-slate-900">บัญชีนี้ไม่มีสิทธิ์เข้าถึงข้อมูลผู้รับบริการ</h1>
           <p className="mt-1 text-base text-slate-600">
             {staff?.role === 'admin' ? 'แอดมินจัดการผู้ให้บริการได้ แต่เปิดข้อมูลสุขภาพไม่ได้' : 'พื้นที่นี้สำหรับเภสัชกรและคลินิกที่ลงทะเบียนแล้ว'}
           </p>
-          <Link to="/" className="mt-4 inline-block font-bold text-purple-800 underline">
-            กลับหน้าหลัก
-          </Link>
+          {staff?.role === 'admin' ? (
+            <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
+              <Link to="/admin" className={buttonClass('primary', 'md')}>
+                ไปหน้าจัดการ Growa (แอดมิน)
+              </Link>
+              <Link to="/" className="font-bold text-purple-800 underline">
+                กลับหน้าหลัก
+              </Link>
+            </div>
+          ) : (
+            <Link to="/" className="mt-4 inline-block font-bold text-purple-800 underline">
+              กลับหน้าหลัก
+            </Link>
+          )}
         </Card>
       </Frame>
     );
   }
   const tab = ({ isActive }: { isActive: boolean }) =>
-    `nav-item inline-flex min-h-[48px] items-center gap-2 rounded-[1.25rem] px-4 text-base font-bold ${isActive ? 'nav-item-active bg-purple-700 text-white' : 'bg-white text-slate-800 ring-1 ring-purple-100 hover:bg-purple-50'}`;
+    `nav-item inline-flex min-h-[48px] items-center gap-2 rounded-[1.25rem] px-4 text-base font-bold ${isActive ? 'nav-item-active tab-stripe text-white' : 'bg-white/85 text-slate-800 ring-1 ring-slate-200 hover:bg-white'}`;
   return (
     <Frame>
       <nav aria-label="เมนูหลักของทีมงาน" className="flex gap-2">

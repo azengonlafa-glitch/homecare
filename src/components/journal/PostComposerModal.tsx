@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { HeartPulse, Smile, X } from 'lucide-react';
+import { Gauge, HeartPulse, Smile, X } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { TextField } from '../ui/TextField';
@@ -11,6 +11,7 @@ import { SYMPTOM_TITLE_SUGGESTIONS } from '../../data/suggestions';
 import type { Attachment } from '../../lib/onboarding';
 import type { MoodKey } from '../../data/journalOptions';
 import { SYMPTOM_DESCRIPTIONS } from '../../data/symptomDescriptions';
+import { draftHasValues, emptyVitalDraft, parseVitalDraft, vitalChips, type VitalDraft, type VitalValues } from '../../lib/dailyRecord';
 
 export interface PostDraft {
   about: string;
@@ -20,6 +21,8 @@ export interface PostDraft {
   moodMain: MoodKey | null;
   moodDetails: string[];
   photo: Attachment | null;
+  /** ค่าสุขภาพที่วัดได้ (ไม่บังคับ) */
+  vitals: VitalDraft;
 }
 
 interface PostComposerModalProps {
@@ -30,8 +33,11 @@ interface PostComposerModalProps {
   onChange: (patch: Partial<PostDraft>) => void;
   onOpenSymptoms: () => void;
   onOpenMood: () => void;
-  onSubmit: () => void;
+  onOpenVitals: () => void;
+  onSubmit: (vitals: VitalValues | null) => void;
   onClose: () => void;
+  /** ตรวจว่าบันทึกค่าสุขภาพให้คนนี้ได้ไหม คืนข้อความเมื่อทำไม่ได้ */
+  vitalsBlockedFor?: (about: string) => string | null;
 }
 
 const MAX_PHOTO_BYTES = 10 * 1024 * 1024;
@@ -43,31 +49,46 @@ const ComposerDialog: React.FC<Omit<PostComposerModalProps, 'open'>> = ({
   onChange,
   onOpenSymptoms,
   onOpenMood,
+  onOpenVitals,
   onSubmit,
   onClose,
+  vitalsBlockedFor,
 }) => {
   const [error, setError] = useState('');
+  const hasVitalInput = draftHasValues(draft.vitals);
+  const parsedVitals = parseVitalDraft(draft.vitals);
+  const chips = parsedVitals.ok && parsedVitals.values ? vitalChips(parsedVitals.values) : [];
 
   const isEmpty =
     !draft.title.trim() &&
     !draft.content.trim() &&
     draft.symptoms.length === 0 &&
     !draft.moodMain &&
-    !draft.photo;
+    !draft.photo &&
+    !hasVitalInput;
 
   const submit = () => {
     if (isEmpty) {
-      setError('เขียนข้อความ หรือเลือกอาการ อารมณ์ หรือรูปภาพอย่างน้อยหนึ่งอย่างก่อนโพสต์');
+      setError('เขียนข้อความ หรือเลือกอาการ อารมณ์ รูปภาพ หรือกรอกค่าสุขภาพอย่างน้อยหนึ่งอย่างก่อนบันทึก');
       return;
     }
-    onSubmit();
+    if (!parsedVitals.ok) {
+      setError(parsedVitals.error);
+      return;
+    }
+    const blocked = parsedVitals.values ? vitalsBlockedFor?.(draft.about) : null;
+    if (blocked) {
+      setError(blocked);
+      return;
+    }
+    onSubmit(parsedVitals.values);
   };
 
   return (
     <Modal
       open
       onClose={onClose}
-      title={mode === 'edit' ? 'แก้ไขโพสต์' : 'เพิ่มบันทึกอาการ'}
+      title={mode === 'edit' ? 'แก้ไขบันทึกประจำวัน' : 'บันทึกประจำวัน'}
       initialFocusSelector="#jr-content"
       footer={
         <div className="space-y-2">
@@ -77,14 +98,14 @@ const ComposerDialog: React.FC<Omit<PostComposerModalProps, 'open'>> = ({
             </p>
           )}
           <Button type="button" fullWidth onClick={submit}>
-            {mode === 'edit' ? 'บันทึกการแก้ไข' : 'โพสต์'}
+            {mode === 'edit' ? 'บันทึกการแก้ไข' : 'บันทึก'}
           </Button>
         </div>
       }
     >
       <div className="py-6 space-y-7">
-        <FieldGroup label="บันทึกอาการของใคร">
-          <div role="group" aria-label="บันทึกอาการของใคร" className="flex flex-wrap gap-2">
+        <FieldGroup label="บันทึกของใคร">
+          <div role="group" aria-label="บันทึกของใคร" className="flex flex-wrap gap-2">
             {aboutOptions.map((name) => (
               <Chip key={name} selected={draft.about === name} onClick={() => onChange({ about: name })}>
                 {name}
@@ -145,6 +166,37 @@ const ComposerDialog: React.FC<Omit<PostComposerModalProps, 'open'>> = ({
             <HeartPulse className="w-5 h-5" aria-hidden="true" />
             <span>{draft.symptoms.length > 0 ? 'เพิ่มหรือแก้ไขอาการ' : 'เลือกอาการ'}</span>
           </Button>
+        </FieldGroup>
+
+        <FieldGroup label="ค่าสุขภาพที่วัดได้" hint="ไม่บังคับ · ค่าที่บันทึกจะขึ้นกราฟพัฒนาการในหน้าสมาชิก">
+          {chips.length > 0 && (
+            <ul className="flex flex-wrap gap-2" aria-label="ค่าสุขภาพที่กรอกไว้">
+              {chips.map((c) => (
+                <li key={c.key} className="inline-flex min-h-[44px] items-center gap-1.5 rounded-full border border-sky-200 bg-sky-soft px-4 text-base text-sky-950">
+                  <span className="font-semibold">{c.label}</span>
+                  <span className="font-extrabold tabular-nums">{c.value}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+          {!parsedVitals.ok && (
+            <p className="text-base font-semibold text-red-700">มีค่าที่ต้องตรวจสอบ: {parsedVitals.error}</p>
+          )}
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" variant="soft" size="sm" onClick={onOpenVitals}>
+              <Gauge className="w-5 h-5" aria-hidden="true" />
+              <span>{hasVitalInput ? 'เพิ่มหรือแก้ไขค่าสุขภาพ' : 'กรอกค่าสุขภาพ'}</span>
+            </Button>
+            {hasVitalInput && (
+              <button
+                type="button"
+                onClick={() => onChange({ vitals: emptyVitalDraft() })}
+                className="inline-flex items-center min-h-[44px] px-2 text-base font-semibold text-slate-600 hover:text-red-700 cursor-pointer"
+              >
+                ล้าง
+              </button>
+            )}
+          </div>
         </FieldGroup>
 
         <FieldGroup label="อารมณ์ของวันนี้">

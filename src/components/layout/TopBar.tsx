@@ -14,7 +14,7 @@ interface TopBarProps {
 
 /** แถบบน: ขนาดใหญ่เต็มตา ฟอนต์อ่านง่าย ตอบสนองทั้งจอมือถือและจอคอม */
 export const TopBar: React.FC<TopBarProps> = ({ user, photo, onLogout }) => (
-  <header className="sticky top-0 z-40 h-20 border-b border-[#EADBCC]/70 bg-[#FFFDF7]/75 backdrop-blur-md">
+  <header className="sticky top-0 z-40 h-20 [@media(max-height:500px)]:static [@media(max-height:500px)]:h-16 border-b border-[#EADBCC]/70 bg-[#FFFDF7]/75 backdrop-blur-md lg:border-b-0 lg:bg-transparent lg:bg-gradient-to-b lg:from-[#FFFDF7]/70 lg:to-[#FFFDF7]/0 lg:backdrop-blur-none">
     <div className="h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-2 sm:gap-4">
       <div className="lg:hidden min-w-0 flex-1">
         <HomeHeader variant="topbar" />
@@ -36,7 +36,7 @@ export const TopBar: React.FC<TopBarProps> = ({ user, photo, onLogout }) => (
               onClick={onLogout}
               title="ออกจากระบบ"
               aria-label="ออกจากระบบ"
-              className="inline-flex items-center justify-center min-h-[40px] sm:min-h-[44px] px-2 sm:px-3.5 shrink-0 whitespace-nowrap rounded-xl text-base font-semibold text-slate-600 hover:text-red-600 hover:bg-white cursor-pointer transition-colors"
+              className="inline-flex items-center justify-center min-h-[44px] px-2 sm:px-3.5 shrink-0 whitespace-nowrap rounded-xl text-base font-semibold text-slate-600 hover:text-red-600 hover:bg-white cursor-pointer transition-colors"
             >
               <LogOut className="w-5 h-5 sm:hidden" aria-hidden="true" />
               <span className="hidden sm:inline">ออกจากระบบ</span>
@@ -45,7 +45,8 @@ export const TopBar: React.FC<TopBarProps> = ({ user, photo, onLogout }) => (
         ) : (
           <NavLink
             to="/login"
-            className="flex items-center gap-2 shrink-0 whitespace-nowrap min-h-[50px] px-4 sm:px-5 rounded-2xl text-base sm:text-lg font-bold text-purple-700 hover:text-purple-800 bg-purple-50 hover:bg-purple-100 border border-purple-200 transition-colors shadow-xs"
+            aria-label="เข้าสู่ระบบ"
+            className="flex items-center gap-2 shrink-0 whitespace-nowrap min-h-[50px] px-3.5 sm:px-5 rounded-2xl text-base sm:text-lg font-bold text-purple-700 hover:text-purple-800 bg-purple-50 hover:bg-purple-100 border border-purple-200 transition-colors shadow-xs"
           >
             <LogIn className="w-5 h-5" aria-hidden="true" />
             <span className="hidden sm:inline">เข้าสู่ระบบ</span>

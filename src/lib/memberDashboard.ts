@@ -15,7 +15,9 @@ import {
   FORM_OPTIONS,
   PERIOD_LABEL,
   daysLeft,
+  commonDoseWords,
   daysToExpiry,
+  doseWords,
   findLog,
   isDue,
   isOverdue,
@@ -25,6 +27,7 @@ import {
   todayKey,
   type DoseLog,
   type DosePeriod,
+  type MedForm,
   type Medication,
 } from './meds';
 import { BMI_GAUGE, zoneOf, type Tone } from './healthAnalysis';
@@ -304,7 +307,7 @@ export function weightShift(
 
 /** แปลงรายการยาที่สมาชิกแชร์ไว้เป็นข้อมูลยาเต็ม (ถ้าไม่มีรายละเอียด เริ่มนับตั้งแต่บันทึกแรก ไม่เดาวันเริ่ม) */
 export function medFromMember(m: MemberMed, logs: DoseLog[] = []): Medication {
-  const base = { id: m.id, stoppedAt: null, refillRequestedAt: null, createdAt: '' };
+  const base = { id: m.id, stoppedAt: null, createdAt: '' };
   if (m.detail) return { ...base, ...m.detail };
   const match = /^([\d.]+)\s*(.*)$/.exec(m.dose.trim());
   const form = FORM_OPTIONS.find((f) => f.label === m.form);
@@ -340,11 +343,10 @@ export function medFromMember(m: MemberMed, logs: DoseLog[] = []): Medication {
 
 export type DoseState = 'taken' | 'missed' | 'skipped' | 'unconfirmed';
 
-export const DOSE_STATE_LABEL: Record<DoseState, string> = {
-  taken: 'รับประทานแล้ว',
-  skipped: 'ข้าม (งดตามแพทย์สั่ง)',
-  missed: 'ไม่ได้รับประทาน',
-  unconfirmed: 'ยังไม่ยืนยัน',
+/** ป้ายสถานะของมื้อยา คำตามรูปแบบยา (กินแล้ว / ฉีดแล้ว / หยอดแล้ว ...) */
+export const doseStateLabel = (state: DoseState, form?: MedForm | null): string => {
+  const w = doseWords(form);
+  return state === 'taken' ? w.done : state === 'missed' ? w.notDone : state === 'skipped' ? 'ข้าม (งดตามแพทย์สั่ง)' : 'ยังไม่ยืนยัน';
 };
 
 export interface DoseItem {
@@ -636,7 +638,7 @@ export function buildFollowUps(ctx: FollowContext): FollowItem[] {
         id: `dose-late-${d.key}`,
         level: 'watch',
         kind: 'dose',
-        title: `ยังไม่ยืนยันการกินยา ${d.med.name}`,
+        title: `ยังไม่ยืนยันการ${doseWords(d.med.form).phrase} ${d.med.name}`,
         detail: `มื้อ${PERIOD_LABEL[d.period]} ${d.time} น. เลยเวลามาแล้ว`,
         target: 'meds',
       });
@@ -645,7 +647,7 @@ export function buildFollowUps(ctx: FollowContext): FollowItem[] {
         id: `dose-missed-${d.key}`,
         level: 'watch',
         kind: 'dose',
-        title: `ไม่ได้กินยา ${d.med.name}`,
+        title: `ไม่ได้${doseWords(d.med.form).phrase} ${d.med.name}`,
         detail: `มื้อ${PERIOD_LABEL[d.period]}วันนี้${d.log?.reason ? ` · ${d.log.reason}` : ''}`,
         target: 'meds',
       });
@@ -655,12 +657,13 @@ export function buildFollowUps(ctx: FollowContext): FollowItem[] {
   const yesterday = dateKey(addDays(now, -1));
   const yReport = rangeDoseReport(ctx.meds, ctx.logs, yesterday, yesterday, now);
   if (yReport.totals.unconfirmed > 0) {
+    const cw = commonDoseWords(ctx.meds.map((m) => m.form));
     items.push({
       id: 'dose-yesterday',
       level: 'watch',
       kind: 'dose',
-      title: `เมื่อวานมี ${yReport.totals.unconfirmed} มื้อที่ไม่ได้บันทึกการกินยา`,
-      detail: 'ตรวจสอบว่ากินยาครบหรือไม่',
+      title: `เมื่อวานมี ${yReport.totals.unconfirmed} มื้อที่ไม่ได้บันทึกการ${cw.phrase}`,
+      detail: `ตรวจสอบว่า${cw.phrase}ครบหรือไม่`,
       target: 'meds',
     });
   }
@@ -789,7 +792,7 @@ export function buildFollowUps(ctx: FollowContext): FollowItem[] {
         level: 'watch',
         kind: 'stock',
         title: m.remaining <= 0 ? `${m.name} หมดแล้ว` : `${m.name} ใกล้หมด`,
-        detail: m.remaining <= 0 ? 'ควรจัดหายาเพิ่ม' : `เหลือพอกินอีกประมาณ ${left ?? '-'} วัน`,
+        detail: m.remaining <= 0 ? 'ควรจัดหายาเพิ่ม' : `เหลือพอ${doseWords(m.form).use}อีกประมาณ ${left ?? '-'} วัน`,
         target: 'meds',
       });
     }

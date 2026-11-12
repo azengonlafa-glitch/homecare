@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Stethoscope } from 'lucide-react';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { Card } from '../../components/ui/Card';
+import { EmergencyNote } from '../../components/ui/EmergencyNote';
 import { Button, buttonClass } from '../../components/ui/Button';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { ErrorCard, LoadingCard } from '../../components/consult/ConsultUI';
@@ -10,7 +11,7 @@ import { ProviderCard } from '../../components/consult/ProviderCard';
 import { clearDraft, loadDraft, startDraft, useConsultData } from '../../consult/hooks';
 import type { Provider } from '../../consult/types';
 
-/** Module 1: ศูนย์กลางเลือกผู้ให้บริการ */
+/** Module 1: ศูนย์กลางเลือกร้านยาหรือคลินิก */
 export const ConsultHomePage: React.FC = () => {
   const navigate = useNavigate();
   const [draft, setDraft] = useState(() => loadDraft());
@@ -51,10 +52,12 @@ export const ConsultHomePage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="ปรึกษาผู้เชี่ยวชาญ" description="เลือกคนที่อยากปรึกษา แล้วคุยได้ทั้งข้อความ โทร หรือวิดีโอคอลในห้องเดียวกัน ข้อมูลสุขภาพและอาการล่าสุดจะส่งให้ผู้เชี่ยวชาญ คุณตรวจสอบและยินยอมก่อนส่งเสมอ" />
+      <PageHeader title="ปรึกษาเภสัชกร" description="เลือกคนที่อยากปรึกษา แล้วคุยได้ทั้งข้อความ โทร หรือวิดีโอคอลในห้องเดียวกัน ข้อมูลสุขภาพและอาการล่าสุดจะส่งให้เภสัชกรหรือคลินิก คุณตรวจสอบและยินยอมก่อนส่งเสมอ" />
+
+      <EmergencyNote />
 
       {draft && (
-        <Card className="flex flex-col sm:flex-row sm:items-center gap-3 p-5">
+        <Card className="fit-row justify-between p-5">
           <p className="flex-1 text-base font-semibold text-slate-900">คุณมีแบบสอบถามที่ยังทำไม่เสร็จ</p>
           <div className="flex gap-2">
             <Link to="/consult/checkin" className={buttonClass('soft', 'sm')}>
@@ -74,13 +77,13 @@ export const ConsultHomePage: React.FC = () => {
         </Card>
       )}
 
-      <section aria-label="ผู้ให้บริการ" className="space-y-6">
+      <section aria-label="ร้านยาหรือคลินิก" className="space-y-6">
         {loading && !data ? (
-          <LoadingCard label="กำลังโหลดผู้ให้บริการ..." />
+          <LoadingCard label="กำลังโหลดร้านยาหรือคลินิก..." />
         ) : error ? (
           <ErrorCard message={error} onRetry={reload} />
         ) : groups.length === 0 ? (
-          <EmptyState icon={Stethoscope} message="ยังไม่มีผู้ให้บริการในระบบ" />
+          <EmptyState pose="confused" icon={Stethoscope} message="ยังไม่มีร้านยาหรือคลินิกในระบบ" />
         ) : (
           groups.map((group) => (
             <div key={group.kind} className="space-y-3">
@@ -92,7 +95,7 @@ export const ConsultHomePage: React.FC = () => {
                     provider={p}
                     footer={
                       <>
-                        {!p.online && <p className="text-sm text-slate-600">ยังไม่ออนไลน์ ส่งคำขอไว้ได้ ผู้ให้บริการจะตอบเมื่อกลับมาออนไลน์</p>}
+                        {!p.online && <p className="text-sm text-slate-600">ยังไม่ออนไลน์ ส่งคำขอไว้ได้ ร้านยาหรือคลินิกจะตอบเมื่อกลับมาออนไลน์</p>}
                         <Button size="sm" fullWidth onClick={() => choose(p)}>
                           เลือก
                         </Button>
@@ -115,7 +118,7 @@ export const ConsultHomePage: React.FC = () => {
           )}
           {access.admin && (
             <Link to="/admin" className={buttonClass('neutral', 'sm')}>
-              จัดการผู้ให้บริการ
+              จัดการร้านยาหรือคลินิก
             </Link>
           )}
         </div>

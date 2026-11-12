@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronRight, Lock, Smile, Users } from 'lucide-react';
+import { ChevronRight, House, Lock, Smile, Users } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 import { PageHeader } from '../components/ui/PageHeader';
 import { Avatar } from '../components/ui/Avatar';
 import { MoodPickerModal } from '../components/journal/MoodPickerModal';
 import { cn } from '../lib/cn';
-import { CURRENT_MEMBER_ID, ROLE_META, loadSettings, type HouseholdMember } from '../lib/settings';
+import { CURRENT_MEMBER_ID, ROLE_META, canManageHome, loadSettings, type HouseholdMember } from '../lib/settings';
 import { genderLabel, loadMemberRecords, MEMBERS_CHANGED_EVENT, type MemberRecord } from '../lib/members';
 import { canViewMember, pendingIncoming, useAccessRequests } from '../lib/access';
 import { SETTINGS_CHANGED_EVENT } from '../lib/settings';
@@ -16,7 +16,7 @@ import type { MoodKey } from '../data/journalOptions';
 
 /** ป้ายบทบาทแบบสั้น (ให้พอดีบัตรสี่เหลี่ยม) */
 const SHORT_ROLE: Record<HouseholdMember['role'], string> = {
-  owner: 'ผู้ดูแลบ้าน',
+  owner: 'ผู้ดูแลหลัก',
   member: 'สมาชิก',
   external: 'ผู้ดูแลภายนอก',
 };
@@ -95,15 +95,16 @@ const MemberTile: React.FC<{
               onOpenMoodPicker();
             }}
             title="แตะเพื่อบันทึกอารมณ์ของคุณวันนี้"
-            className="relative inline-flex max-w-full shrink-0 items-center gap-1 rounded-full bg-purple-50 border border-purple-200 px-2 py-0.5 text-xs font-bold text-purple-700 hover:bg-purple-100 cursor-pointer transition-transform hover:scale-105 active:scale-95 before:absolute before:-inset-y-2.5 before:inset-x-0 before:content-[''] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600"
+            className="relative inline-flex max-w-full shrink-0 items-center gap-1 rounded-full bg-purple-50 border border-purple-200 px-2.5 py-0.5 text-sm font-bold text-purple-700 hover:bg-purple-100 cursor-pointer transition-transform hover:scale-105 active:scale-95 before:absolute before:-inset-y-2.5 before:inset-x-0 before:content-[''] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600"
           >
             <Smile className="w-3.5 h-3.5 shrink-0 text-purple-600" aria-hidden="true" />
-            <span className="truncate">+ บันทึกอารมณ์</span>
+            <span className="truncate sm:hidden">+ อารมณ์</span>
+            <span className="truncate hidden sm:inline">+ บันทึกอารมณ์</span>
           </button>
         ) : (
           <span
             title="ยังไม่มีบันทึกอารมณ์ในวันนี้"
-            className="inline-flex max-w-full shrink-0 items-center gap-1 rounded-full bg-slate-50 border border-slate-200 px-2 py-0.5 text-xs font-medium text-slate-400"
+            className="inline-flex max-w-full shrink-0 items-center gap-1 rounded-full bg-slate-50 border border-slate-200 px-2 py-0.5 text-sm font-medium text-slate-600"
           >
             <Smile className="w-3.5 h-3.5 shrink-0 text-slate-300" aria-hidden="true" />
             <span className="truncate sm:hidden">ยังไม่ระบุ</span>
@@ -163,6 +164,7 @@ export const MembersPage: React.FC = () => {
   };
 
   const pending = pendingIncoming(requests).length;
+  const isOwner = canManageHome(settings);
 
   return (
     <div className="space-y-6">
@@ -203,20 +205,15 @@ export const MembersPage: React.FC = () => {
         })}
       </ul>
 
-      <Card className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-w-0">
-          <p className="text-base sm:text-lg font-bold text-slate-900">ความเป็นส่วนตัวของฉัน</p>
-          <p className="mt-0.5 text-base text-slate-600">
-            เลือกได้ว่าใครดูข้อมูลของฉันได้ และใครแก้ไขได้บ้าง
-          </p>
-        </div>
+      {isOwner && (
         <Link
-          to="/settings/privacy"
-          className="inline-flex min-h-[48px] shrink-0 items-center justify-center rounded-xl border border-purple-200 bg-purple-50 px-5 text-base font-bold text-purple-900 hover:bg-purple-100"
+          to="/home-settings"
+          className="flex min-h-[56px] items-center justify-center gap-2 rounded-2xl border-2 border-slate-200 bg-white px-5 py-3 text-base font-bold text-slate-900 hover:border-purple-300 hover:bg-purple-50/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600"
         >
-          ตั้งค่าความเป็นส่วนตัว
+          <House className="h-5 w-5" aria-hidden="true" />
+          ตั้งค่าบ้าน
         </Link>
-      </Card>
+      )}
 
       <MoodPickerModal
         open={moodPickerOpen}

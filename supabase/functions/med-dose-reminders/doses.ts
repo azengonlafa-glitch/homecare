@@ -15,6 +15,8 @@ export interface MedLite {
   durationDays?: number | null;
   stoppedAt?: string | null;
   reminderDelayMin?: number;
+  /** รูปแบบยา (tablet / capsule / liquid / drops / injection ...) ไม่มี = ยากิน */
+  form?: string;
 }
 
 export interface LogLite {
@@ -80,12 +82,19 @@ export function isScheduledOn(m: MedLite, key: string): boolean {
   return true;
 }
 
-/** มื้อที่ถึงเวลาเตือนตอนนี้และยังไม่ได้บันทึก รหัสเป็น yyyy-mm-dd:ช่วงเวลา (หลายยาในมื้อเดียวกันเตือนครั้งเดียว) */
-export function dueDoseKeys(doc: MedsDoc | null | undefined, now = new Date()): { key: string; period: DosePeriod }[] {
+/** ยากิน (เม็ด แคปซูล ยาน้ำ ผง เม็ดฟู่ วิตามิน สมุนไพร) ตรงกับ oral ใน WORD_TABLE ของ src/lib/meds.ts ไม่ระบุรูปแบบ = ยากิน */
+const ORAL_FORMS = new Set(['tablet', 'capsule', 'liquid', 'powder', 'effervescent', 'supplement', 'herbal']);
+const isOral = (m: MedLite) => !m.form || ORAL_FORMS.has(m.form);
+
+/**
+ * มื้อที่ถึงเวลาเตือนตอนนี้และยังไม่ได้บันทึก รหัสเป็น yyyy-mm-dd:ช่วงเวลา (หลายยาในมื้อเดียวกันเตือนครั้งเดียว)
+ * oral = ยาในมื้อนั้นเป็นยากินทั้งหมด (ใช้เลือกคำ "กินยา" หรือ "ใช้ยา")
+ */
+export function dueDoseKeys(doc: MedsDoc | null | undefined, now = new Date()): { key: string; period: DosePeriod; oral: boolean }[] {
   const { date, minutes } = bangkokNow(now);
   const logs = Array.isArray(doc?.logs) ? doc!.logs! : [];
   const meds = Array.isArray(doc?.meds) ? doc!.meds! : [];
-  const found = new Map<string, DosePeriod>();
+  const found = new Map<string, { period: DosePeriod; oral: boolean }>();
 
   for (const med of meds) {
     if (!med?.id || !isScheduledOn(med, date)) continue;
@@ -93,15 +102,23 @@ export function dueDoseKeys(doc: MedsDoc | null | undefined, now = new Date()): 
       if (!(period in DEFAULT_TIMES)) continue;
       if (logs.some((l) => l.date === date && l.medId === med.id && l.period === period)) continue;
       const first = minutesOf(med.times?.[period] || DEFAULT_TIMES[period]) + Math.max(0, med.reminderDelayMin ?? 0);
-      if (minutes >= first && minutes < first + SEND_WINDOW_MIN) found.set(`${date}:${period}`, period);
+      if (minutes >= first && minutes < first + SEND_WINDOW_MIN) {
+        const key = `${date}:${period}`;
+        const prev = found.get(key);
+        found.set(key, { period, oral: (prev?.oral ?? true) && isOral(med) });
+      }
     }
   }
-  return [...found.entries()].map(([key, period]) => ({ key, period }));
+  return [...found.entries()].map(([key, v]) => ({ key, period: v.period, oral: v.oral }));
 }
 
-export const dosePayload = (key: string): string =>
+/**
+ * ข้อความขึ้นหน้าจอล็อก จึงไม่ระบุชนิดยา: ยากินทั้งหมด = "กินยา" ถ้ามียาแบบอื่นปน (ฉีด หยอด ทา พ่น ฯลฯ) = "ใช้ยา"
+ * (ไม่เขียน "ฉีดยา" ตรง ๆ เพราะเผยข้อมูลสุขภาพของเจ้าของเครื่อง)
+ */
+export const dosePayload = (key: string, oral = true): string =>
   JSON.stringify({
-    title: 'Growa: ถึงเวลากินยา',
+    title: oral ? 'Growa: ถึงเวลากินยา' : 'Growa: ถึงเวลาใช้ยา',
     body: 'แตะเพื่อเปิดตารางยาของวันนี้',
     url: '/meds',
     tag: `dose-${key}`,
@@ -150,7 +167,7 @@ export async function sendDoseReminders(deps: DoseDeps, now = new Date()): Promi
     const mine = subs.filter((s) => s.user_id === user.user_id);
     if (mine.length === 0) continue;
 
-    for (const { key } of due) {
+    for (const { key, oral } of due) {
       if (!(await deps.claim(user.user_id, key))) {
         summary.skippedDuplicate += 1;
         continue;
@@ -158,7 +175,7 @@ export async function sendDoseReminders(deps: DoseDeps, now = new Date()): Promi
       let delivered = false;
       for (const sub of mine) {
         if (removed.has(sub.endpoint)) continue;
-        const result = await deps.send(sub, dosePayload(key));
+        const result = await deps.send(sub, dosePayload(key, oral));
         if (result === 'ok') delivered = true;
         if (result === 'gone') {
           await deps.deleteSubscription(sub.endpoint);

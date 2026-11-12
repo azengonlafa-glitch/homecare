@@ -1,28 +1,23 @@
 import { celebrate } from '../lib/celebrate';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { HeartPulse, Image as ImageIcon, NotebookPen, PenLine, Smile } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Gauge, HeartPulse, Image as ImageIcon, PenLine, Smile } from 'lucide-react';
+import { Dino } from '../components/ui/Dino';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Avatar } from '../components/ui/Avatar';
 import { PageHeader } from '../components/ui/PageHeader';
-import { OptionPickerModal } from '../components/ui/OptionPickerModal';
 import { ConfirmDialog } from '../components/settings/ConfirmDialog';
-import { MoodPickerModal } from '../components/journal/MoodPickerModal';
-import { PostComposerModal, type PostDraft } from '../components/journal/PostComposerModal';
 import { PostCard } from '../components/journal/PostCard';
+import { deleteDailyRecord, useDailyRecordComposer } from '../components/journal/DailyRecordComposer';
 import { ReminderPanel } from '../components/journal/ReminderPanel';
+import { EmergencyNote } from '../components/ui/EmergencyNote';
 import { useToast } from '../components/ui/Toast';
 import { useMedAlerts, type MedAlert } from '../lib/medAlerts';
-import { applyDoseStatus, loadMeds, saveMeds } from '../lib/meds';
+import { applyDoseStatus, doseWords, loadMeds, saveMeds } from '../lib/meds';
 import { CURRENT_MEMBER_ID, SETTINGS_CHANGED_EVENT, loadSettings } from '../lib/settings';
-import { SYMPTOMS, type MoodKey } from '../data/journalOptions';
-import { SYMPTOM_DESCRIPTIONS } from '../data/symptomDescriptions';
-import { deleteFiles } from '../lib/fileStore';
-import { loadHomeData } from '../lib/storage';
-import { cloudEnabled } from '../cloud/client';
 import { CLOUD_UPDATED_EVENT } from '../cloud/queue';
 import {
-  SELF_LABEL,
+  JOURNAL_CHANGED_EVENT,
   currentJournalUser,
   dayLabel,
   loadPosts,
@@ -30,18 +25,6 @@ import {
   savePosts,
   type JournalPost,
 } from '../lib/journal';
-
-type Step = 'symptoms' | 'mood' | 'details' | null;
-
-const emptyDraft = (): PostDraft => ({
-  about: SELF_LABEL,
-  title: '',
-  content: '',
-  symptoms: [],
-  moodMain: null,
-  moodDetails: [],
-  photo: null,
-});
 
 const quickButton =
   'inline-flex items-center gap-2 min-h-[48px] px-5 rounded-full text-base font-bold border transition-colors cursor-pointer';
@@ -76,146 +59,27 @@ export const JournalPage: React.FC = () => {
         name: settings.nickname || 'ฉัน',
       })
     );
-    toast.show(`บันทึกว่า${med.name} กินแล้ว`);
+    toast.show(`บันทึกว่า${med.name} ${doseWords(med.form).done}`);
     celebrate();
   };
 
-  const [step, setStep] = useState<Step>(null);
-  const [guided, setGuided] = useState(false);
-  const [detailsVisited, setDetailsVisited] = useState(false);
-  const [editing, setEditing] = useState<JournalPost | null>(null);
-  const [draft, setDraft] = useState<PostDraft>(emptyDraft);
-  const [confirmDiscard, setConfirmDiscard] = useState(false);
   const [deleting, setDeleting] = useState<JournalPost | null>(null);
+  const composer = useDailyRecordComposer();
 
-  // รูปที่อัปโหลดระหว่างเขียนโพสต์ ใช้ล้างทิ้งเมื่อยกเลิกหรือเปลี่ยนรูป
-  const uploadedIds = useRef(new Set<string>());
-  const initialSnapshot = useRef('');
-
-  // เมื่อคนอื่นในบ้านเพิ่ม/แก้โพสต์ ให้โหลดรายการใหม่
+  // เมื่อคนอื่นในบ้านเพิ่ม/แก้โพสต์ หรือบันทึกจากหน้าต่างบันทึกประจำวัน ให้โหลดรายการใหม่
   useEffect(() => {
     const reload = () => setPosts(loadPosts());
     window.addEventListener(CLOUD_UPDATED_EVENT, reload);
-    return () => window.removeEventListener(CLOUD_UPDATED_EVENT, reload);
+    window.addEventListener(JOURNAL_CHANGED_EVENT, reload);
+    return () => {
+      window.removeEventListener(CLOUD_UPDATED_EVENT, reload);
+      window.removeEventListener(JOURNAL_CHANGED_EVENT, reload);
+    };
   }, []);
-
-  const aboutOptions = useMemo(
-    () => [
-      SELF_LABEL,
-      ...(cloudEnabled
-        ? loadSettings()
-            .members.filter((m) => m.id !== CURRENT_MEMBER_ID)
-            .map((m) => m.name)
-        : loadHomeData().patients.map((p) => p.name)),
-    ],
-    []
-  );
 
   const commit = (next: JournalPost[]) => {
     setPosts(next);
     savePosts(next);
-  };
-
-  const updateDraft = (patch: Partial<PostDraft>) => {
-    if (patch.photo) uploadedIds.current.add(patch.photo.id);
-    setDraft((prev) => ({ ...prev, ...patch }));
-  };
-
-  // ----- เริ่ม/จบการเขียนโพสต์ -----
-  const begin = (first: Exclude<Step, null>, guidedFlow = false) => {
-    const fresh = emptyDraft();
-    setEditing(null);
-    setDraft(fresh);
-    initialSnapshot.current = JSON.stringify(fresh);
-    uploadedIds.current.clear();
-    setGuided(guidedFlow);
-    setDetailsVisited(first === 'details');
-    setStep(first);
-  };
-
-  const beginEdit = (post: JournalPost) => {
-    const fromPost: PostDraft = {
-      about: post.about,
-      title: post.title,
-      content: post.content,
-      symptoms: post.symptoms,
-      moodMain: post.moodMain,
-      moodDetails: post.moodDetails,
-      photo: post.photo,
-    };
-    setEditing(post);
-    setDraft(fromPost);
-    initialSnapshot.current = JSON.stringify(fromPost);
-    uploadedIds.current.clear();
-    setGuided(false);
-    setDetailsVisited(true);
-    setStep('details');
-  };
-
-  /** ปิดทุกอย่างและลบรูปที่อัปโหลดไว้แต่ไม่ได้ใช้ (รูปเดิมของโพสต์ที่กำลังแก้ไขต้องเก็บไว้) */
-  const finishFlow = (keepPhotoId?: string) => {
-    const originalId = editing?.photo?.id;
-    const toDelete = [...uploadedIds.current].filter((id) => id !== keepPhotoId && id !== originalId);
-    void deleteFiles(toDelete.map((id) => ({ id, name: '', type: '', size: 0 })));
-    uploadedIds.current.clear();
-    setStep(null);
-    setEditing(null);
-    setConfirmDiscard(false);
-  };
-
-  const isDirty = JSON.stringify(draft) !== initialSnapshot.current;
-
-  const requestCloseDetails = () => (isDirty ? setConfirmDiscard(true) : finishFlow());
-
-  const closePicker = () => (detailsVisited ? setStep('details') : finishFlow());
-
-  const goAfterSymptoms = () => {
-    if (guided) setStep('mood');
-    else {
-      setDetailsVisited(true);
-      setStep('details');
-    }
-  };
-
-  const goToDetails = () => {
-    setGuided(false);
-    setDetailsVisited(true);
-    setStep('details');
-  };
-
-  // ----- บันทึกโพสต์ -----
-  const submit = () => {
-    const now = new Date().toISOString();
-    const finalPhotoId = draft.photo?.id;
-
-    if (editing) {
-      // รูปเดิมที่ถูกเปลี่ยนหรือลบออก ต้องลบจากที่เก็บด้วย
-      if (editing.photo && editing.photo.id !== finalPhotoId) void deleteFiles([editing.photo]);
-      commit(
-        posts.map((p) =>
-          p.id === editing.id
-            ? { ...p, ...draft, title: draft.title.trim(), content: draft.content.trim(), editedAt: now }
-            : p
-        )
-      );
-    } else {
-      commit([
-        {
-          id: newId(),
-          authorId: user.id,
-          authorName: user.name,
-          ...draft,
-          title: draft.title.trim(),
-          content: draft.content.trim(),
-          createdAt: now,
-          editedAt: null,
-          likes: [],
-          comments: [],
-        },
-        ...posts,
-      ]);
-    }
-    finishFlow(finalPhotoId);
   };
 
   // ----- ถูกใจ / ความเห็น / ลบ -----
@@ -263,8 +127,7 @@ export const JournalPage: React.FC = () => {
 
   const confirmDelete = () => {
     if (!deleting) return;
-    if (deleting.photo) void deleteFiles([deleting.photo]);
-    commit(posts.filter((p) => p.id !== deleting.id));
+    deleteDailyRecord(deleting);
     setDeleting(null);
   };
 
@@ -282,7 +145,7 @@ export const JournalPage: React.FC = () => {
     <div className="space-y-6">
       <PageHeader
         title="บันทึกอาการ"
-        description="โพสต์อาการและความรู้สึกให้คนในบ้านตามดู และย้อนดูการเปลี่ยนแปลงได้ภายหลัง"
+        description="บันทึกประจำวัน: อาการ อารมณ์ รูป และค่าสุขภาพ ในโพสต์เดียว คนในบ้านตามดูได้ และดูพัฒนาการได้ที่หน้าสมาชิก"
       />
 
       {/* การแจ้งเตือนเรื่องยาที่ค้างอยู่ (ถ้ามี) */}
@@ -294,17 +157,18 @@ export const JournalPage: React.FC = () => {
           <Avatar src={photo} name={user.name} className="w-12 h-12 text-lg shadow-xs" />
           <button
             type="button"
-            onClick={() => begin('details')}
+            onClick={() => composer.start()}
             className="flex-1 min-h-[52px] px-5 rounded-full border border-slate-300 bg-slate-50 text-left text-base sm:text-lg text-slate-600 hover:bg-slate-100 cursor-text truncate"
           >
-            วันนี้เป็นอย่างไรบ้าง? เล่าให้คนในบ้านฟัง
+            <span className="sm:hidden">วันนี้เป็นอย่างไรบ้าง?</span>
+            <span className="hidden sm:inline">วันนี้เป็นอย่างไรบ้าง? เล่าให้คนในบ้านฟัง</span>
           </button>
         </div>
 
         <div className="mt-4 flex flex-wrap items-center gap-2">
           <button
             type="button"
-            onClick={() => begin('symptoms')}
+            onClick={() => composer.start({ first: 'symptoms' })}
             className={`${quickButton} bg-red-50 text-red-800 border-red-200 hover:bg-red-100`}
           >
             <HeartPulse className="w-5 h-5" aria-hidden="true" />
@@ -312,7 +176,7 @@ export const JournalPage: React.FC = () => {
           </button>
           <button
             type="button"
-            onClick={() => begin('mood')}
+            onClick={() => composer.start({ first: 'mood' })}
             className={`${quickButton} bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100`}
           >
             <Smile className="w-5 h-5" aria-hidden="true" />
@@ -320,31 +184,39 @@ export const JournalPage: React.FC = () => {
           </button>
           <button
             type="button"
-            onClick={() => begin('details')}
+            onClick={() => composer.start({ first: 'vitals' })}
+            className={`${quickButton} bg-sky-soft text-sky-900 border-sky-200 hover:bg-sky-100`}
+          >
+            <Gauge className="w-5 h-5" aria-hidden="true" />
+            <span>ค่าสุขภาพ</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => composer.start()}
             className={`${quickButton} bg-purple-50 text-purple-900 border-purple-200 hover:bg-purple-100`}
           >
             <ImageIcon className="w-5 h-5" aria-hidden="true" />
             <span>รูปภาพ</span>
           </button>
 
-          <Button type="button" onClick={() => begin('symptoms', true)} className="ml-auto w-full sm:w-auto">
+          <Button type="button" onClick={() => composer.start({ first: 'symptoms', guided: true })} className="ml-auto w-full sm:w-auto">
             <PenLine className="w-5 h-5" aria-hidden="true" />
-            <span>โพสต์</span>
+            <span>บันทึกวันนี้</span>
           </Button>
         </div>
       </Card>
 
+      <EmergencyNote />
+
       {/* รายการโพสต์ */}
       {posts.length === 0 ? (
         <Card className="py-14 text-center">
-          <div className="w-20 h-20 mx-auto mb-5 rounded-3xl bg-purple-50 text-purple-700 flex items-center justify-center">
-            <NotebookPen className="w-10 h-10" aria-hidden="true" />
-          </div>
+          <Dino pose="cheer" bob className="mx-auto mb-4 h-28 w-32" />
           <h2 className="text-xl font-bold text-slate-900">ยังไม่มีบันทึกอาการ</h2>
           <p className="text-base text-slate-600 mt-1 max-w-md mx-auto">
             เริ่มโพสต์อาการแรก เพื่อให้คนในบ้านเห็นและช่วยตามดูอาการได้
           </p>
-          <Button type="button" className="mt-6" onClick={() => begin('symptoms', true)}>
+          <Button type="button" className="mt-6" onClick={() => composer.start({ first: 'symptoms', guided: true })}>
             เริ่มบันทึกอาการ
           </Button>
         </Card>
@@ -352,7 +224,7 @@ export const JournalPage: React.FC = () => {
         <div className="space-y-8">
           {groups.map(([label, items]) => (
             <section key={label} aria-labelledby={`day-${label}`}>
-              <h2 id={`day-${label}`} className="text-lg font-bold text-slate-700 mb-3">
+              <h2 id={`day-${label}`} className="bg-label mb-3 text-lg font-bold text-slate-900">
                 {label}
               </h2>
               <div className="stagger space-y-4">
@@ -364,7 +236,7 @@ export const JournalPage: React.FC = () => {
                     onToggleLike={toggleLike}
                     onAddComment={addComment}
                     onDeleteComment={deleteComment}
-                    onEdit={beginEdit}
+                    onEdit={composer.startEdit}
                     onDelete={setDeleting}
                   />
                 ))}
@@ -374,66 +246,12 @@ export const JournalPage: React.FC = () => {
         </div>
       )}
 
-      {/* ขั้นที่ 1: เลือกอาการ (ค้นหาด้านบน พิมพ์อาการอื่นท้ายรายการ) */}
-      <OptionPickerModal
-        open={step === 'symptoms'}
-        onClose={closePicker}
-        title="เลือกอาการที่พบ"
-        options={SYMPTOMS}
-        descriptions={SYMPTOM_DESCRIPTIONS}
-        value={draft.symptoms}
-        searchPlaceholder="ค้นหาอาการ เช่น ปวดหัว ไอ มีไข้"
-        listHeading="อาการทั้งหมด"
-        customHeading="ไม่มีอาการที่ต้องการ? พิมพ์เพิ่มเอง"
-        customPlaceholder="พิมพ์อาการอื่น ๆ ที่ไม่มีในรายการ"
-        saveLabel={guided ? 'ถัดไป' : 'บันทึก'}
-        onSkip={guided ? goAfterSymptoms : undefined}
-        skipLabel="ข้าม"
-        onSave={(symptoms) => {
-          updateDraft({ symptoms });
-          goAfterSymptoms();
-        }}
-      />
-
-      {/* ขั้นที่ 2: เลือกอารมณ์ (กลุ่มใหญ่ แล้วแตกเป็นความรู้สึกเฉพาะ) */}
-      <MoodPickerModal
-        open={step === 'mood'}
-        onClose={closePicker}
-        main={draft.moodMain}
-        details={draft.moodDetails}
-        onSkip={guided ? goToDetails : undefined}
-        onSave={(main: MoodKey | null, details) => {
-          updateDraft({ moodMain: main, moodDetails: details });
-          goToDetails();
-        }}
-      />
-
-      {/* ขั้นที่ 3: รายละเอียดโพสต์ */}
-      <PostComposerModal
-        open={step === 'details'}
-        mode={editing ? 'edit' : 'new'}
-        draft={draft}
-        aboutOptions={aboutOptions}
-        onChange={updateDraft}
-        onOpenSymptoms={() => setStep('symptoms')}
-        onOpenMood={() => setStep('mood')}
-        onSubmit={submit}
-        onClose={requestCloseDetails}
-      />
-
-      <ConfirmDialog
-        open={confirmDiscard}
-        title="ทิ้งโพสต์ที่ยังไม่ได้บันทึก?"
-        message="สิ่งที่คุณเขียนหรือเลือกไว้จะหายไป"
-        confirmLabel="ทิ้งโพสต์"
-        onCancel={() => setConfirmDiscard(false)}
-        onConfirm={() => finishFlow()}
-      />
+      {composer.element}
 
       <ConfirmDialog
         open={deleting !== null}
         title="ลบโพสต์นี้?"
-        message="โพสต์ รูป และความเห็นทั้งหมดจะถูกลบ ย้อนกลับไม่ได้"
+        message="บันทึก รูป ความเห็น และค่าสุขภาพของบันทึกนี้จะถูกลบ ย้อนกลับไม่ได้"
         confirmLabel="ลบโพสต์"
         onCancel={() => setDeleting(null)}
         onConfirm={confirmDelete}

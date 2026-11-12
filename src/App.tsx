@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AppLayout } from './components/layout/AppLayout';
 import { MedsPage } from './pages/MedsPage';
@@ -9,39 +9,44 @@ import { MenuPage } from './pages/MenuPage';
 import { LoginPage } from './pages/LoginPage';
 import { SignUpPage } from './pages/SignUpPage';
 import { HomeSetupPage } from './pages/HomeSetupPage';
-import { OnboardingPage } from './pages/OnboardingPage';
+const OnboardingPage = lazyNamed(() => import('./pages/OnboardingPage'), 'OnboardingPage');
 import { RequireAuth, RequireOnboarding } from './components/auth/RequireOnboarding';
 import { HomeSettingsPage } from './pages/HomeSettingsPage';
-import { HealthProfilePage } from './pages/HealthProfilePage';
-import { FoldersPage } from './pages/FoldersPage';
-import { FolderDetailPage } from './pages/FolderDetailPage';
+const HealthProfilePage = lazyNamed(() => import('./pages/HealthProfilePage'), 'HealthProfilePage');
+const FoldersPage = lazyNamed(() => import('./pages/FoldersPage'), 'FoldersPage');
+const FolderDetailPage = lazyNamed(() => import('./pages/FolderDetailPage'), 'FolderDetailPage');
 import { MembersPage } from './pages/MembersPage';
 import { MemberDetailPage } from './pages/MemberDetailPage';
 import { NotificationsPage } from './pages/NotificationsPage';
 import { SettingsPage } from './pages/SettingsPage';
-import { PrivacySettingsPage } from './pages/settings/PrivacySettingsPage';
-import { ProfileSettingsPage } from './pages/settings/ProfileSettingsPage';
-import { RemindersSettingsPage } from './pages/settings/RemindersSettingsPage';
-import { FontSizeSettingsPage } from './pages/settings/FontSizeSettingsPage';
+const PrivacySettingsPage = lazyNamed(() => import('./pages/settings/PrivacySettingsPage'), 'PrivacySettingsPage');
+const ProfileSettingsPage = lazyNamed(() => import('./pages/settings/ProfileSettingsPage'), 'ProfileSettingsPage');
+const RemindersSettingsPage = lazyNamed(() => import('./pages/settings/RemindersSettingsPage'), 'RemindersSettingsPage');
+const FontSizeSettingsPage = lazyNamed(() => import('./pages/settings/FontSizeSettingsPage'), 'FontSizeSettingsPage');
+const DataSettingsPage = lazyNamed(() => import('./pages/settings/DataSettingsPage'), 'DataSettingsPage');
+const PrivacyPolicyPage = lazyNamed(() => import('./pages/PrivacyPolicyPage'), 'PrivacyPolicyPage');
 
-import { ConsultShell } from './pages/consult/ConsultShell';
-import { ConsultHomePage } from './pages/consult/ConsultHomePage';
-import { CheckinPage } from './pages/consult/CheckinPage';
-import { ReviewConsentPage } from './pages/consult/ReviewConsentPage';
-import { ConsultRoomPage } from './pages/consult/ConsultRoomPage';
-import { ProviderPublicPage } from './pages/consult/ProviderPublicPage';
-import { ConsultHistoryPage } from './pages/consult/ConsultHistoryPage';
-import { FollowUpPage } from './pages/consult/FollowUpPage';
-import { StaffShell } from './pages/pharmacist/StaffShell';
-import { AdminShell } from './pages/admin/AdminShell';
-import { AdminListPage } from './pages/admin/AdminListPage';
-import { AdminProviderPage } from './pages/admin/AdminProviderPage';
-import { AdminProviderFormPage } from './pages/admin/AdminProviderFormPage';
-import { ConsolePlaceholder, PharmacistConsolePage } from './pages/pharmacist/PharmacistConsolePage';
-import { PharmacistWorkspaceRoute } from './pages/pharmacist/PharmacistWorkspacePage';
-import { StaffDashboardPage } from './pages/pharmacist/StaffDashboardPage';
+const ConsultShell = lazyNamed(() => import('./pages/consult/ConsultShell'), 'ConsultShell');
+const ConsultHomePage = lazyNamed(() => import('./pages/consult/ConsultHomePage'), 'ConsultHomePage');
+const CheckinPage = lazyNamed(() => import('./pages/consult/CheckinPage'), 'CheckinPage');
+const ReviewConsentPage = lazyNamed(() => import('./pages/consult/ReviewConsentPage'), 'ReviewConsentPage');
+const ConsultRoomPage = lazyNamed(() => import('./pages/consult/ConsultRoomPage'), 'ConsultRoomPage');
+const ProviderPublicPage = lazyNamed(() => import('./pages/consult/ProviderPublicPage'), 'ProviderPublicPage');
+const ConsultHistoryPage = lazyNamed(() => import('./pages/consult/ConsultHistoryPage'), 'ConsultHistoryPage');
+const FollowUpPage = lazyNamed(() => import('./pages/consult/FollowUpPage'), 'FollowUpPage');
+const StaffShell = lazyNamed(() => import('./pages/pharmacist/StaffShell'), 'StaffShell');
+const AdminShell = lazyNamed(() => import('./pages/admin/AdminShell'), 'AdminShell');
+const AdminListPage = lazyNamed(() => import('./pages/admin/AdminListPage'), 'AdminListPage');
+const AdminProviderPage = lazyNamed(() => import('./pages/admin/AdminProviderPage'), 'AdminProviderPage');
+const AdminProviderFormPage = lazyNamed(() => import('./pages/admin/AdminProviderFormPage'), 'AdminProviderFormPage');
+const ConsolePlaceholder = lazyNamed(() => import('./pages/pharmacist/PharmacistConsolePage'), 'ConsolePlaceholder');
+const PharmacistConsolePage = lazyNamed(() => import('./pages/pharmacist/PharmacistConsolePage'), 'PharmacistConsolePage');
+const PharmacistWorkspaceRoute = lazyNamed(() => import('./pages/pharmacist/PharmacistWorkspacePage'), 'PharmacistWorkspaceRoute');
+const StaffDashboardPage = lazyNamed(() => import('./pages/pharmacist/StaffDashboardPage'), 'StaffDashboardPage');
 
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
+import { lazyNamed } from './lib/lazyNamed';
+import { PageLoading } from './components/ui/PageLoading';
 
 /** นำทางไปยังหน้าล่าสุดที่ผู้ใช้เคยเข้าชม (ถ้ายังไม่เคยเข้า ให้เปิดหน้าบันทึกอาการเป็นค่าเริ่มต้น) */
 const DefaultRouteRedirect: React.FC = () => {
@@ -50,14 +55,27 @@ const DefaultRouteRedirect: React.FC = () => {
   return <Navigate to={target} replace />;
 };
 
+/** ที่อยู่ที่ไม่มีจริง: ลืมที่อยู่นี้ไม่ให้เป็น "หน้าล่าสุด" แล้วไปหน้าบันทึกอาการ */
+const NotFoundRedirect: React.FC = () => {
+  try {
+    localStorage.removeItem('growa_last_visited_path');
+  } catch {
+    // ข้ามได้
+  }
+  return <Navigate to="/journal" replace />;
+};
+
 export const App: React.FC = () => {
   return (
     <ErrorBoundary>
       <BrowserRouter>
+        <Suspense fallback={<PageLoading />}>
         <Routes>
         {/* เข้าสู่ระบบและสมัครสมาชิก */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignUpPage />} />
+        {/* นโยบายความเป็นส่วนตัว: อ่านได้โดยไม่ต้องล็อกอิน */}
+        <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
 
         {/* หลังเข้าสู่ระบบ: เข้าร่วมบ้านด้วยรหัสเชิญ หรือสร้างบ้านใหม่ */}
         <Route path="/setup" element={<RequireAuth><HomeSetupPage /></RequireAuth>} />
@@ -112,8 +130,13 @@ export const App: React.FC = () => {
             <Route path="room/:id" element={<ConsultRoomPage />} />
             <Route path="history" element={<ConsultHistoryPage />} />
             <Route path="followup/:id" element={<FollowUpPage />} />
+            {/* พิมพ์ที่อยู่ผิดบ่อย: พาไปหน้าทีมงาน/แอดมินที่ถูกต้อง */}
+            <Route path="pharmacist/*" element={<Navigate to="/pharmacist" replace />} />
+            <Route path="admin/*" element={<Navigate to="/admin" replace />} />
           </Route>
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="pharmacy/*" element={<Navigate to="/pharmacist" replace />} />
+          {/* ที่อยู่ที่ไม่มีจริง: ไปหน้าบันทึกอาการตรง ๆ (ไม่ผ่าน "/" เพราะ "/" พากลับไปหน้าล่าสุด ซึ่งอาจเป็นที่อยู่ผิดนี้เอง แล้ววนไม่จบ) */}
+          <Route path="*" element={<NotFoundRedirect />} />
         </Route>
 
         {/* หน้าตั้งค่าและหน้าย่อย (ใช้เลย์เอาต์เดียวกับระบบหลัก) */}
@@ -130,8 +153,10 @@ export const App: React.FC = () => {
           <Route path="reminders" element={<RemindersSettingsPage />} />
           <Route path="privacy" element={<PrivacySettingsPage />} />
           <Route path="font-size" element={<FontSizeSettingsPage />} />
+          <Route path="data" element={<DataSettingsPage />} />
         </Route>
       </Routes>
+        </Suspense>
     </BrowserRouter>
   </ErrorBoundary>
   );

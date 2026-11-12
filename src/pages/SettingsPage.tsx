@@ -147,6 +147,11 @@ export const SettingsPage: React.FC = () => {
             }
           />
           <SettingsRow
+            to="/settings/data"
+            label="ข้อมูลและความยินยอมของฉัน"
+            value="ขอสำเนา ถอนความยินยอม ลบบัญชี"
+          />
+          <SettingsRow
             to="/settings/font-size"
             label="ขนาดตัวอักษร"
             value={fontScaleLabel(settings.fontScale)}
@@ -179,10 +184,10 @@ export const SettingsPage: React.FC = () => {
         <button
           type="button"
           onClick={() => setConfirm('leave')}
-          className="w-full inline-flex items-center justify-center gap-2 min-h-[58px] px-6 rounded-2xl sm:rounded-full bg-red-600 hover:bg-red-700 active:bg-red-800 text-white text-lg font-bold shadow-sm shadow-red-200 transition-colors cursor-pointer"
+          className="w-full inline-flex items-center justify-center gap-2 min-h-[58px] px-6 rounded-2xl sm:rounded-full bg-white/90 hover:bg-red-50 active:bg-red-100 border-2 border-red-300 text-red-700 text-lg font-bold transition-colors cursor-pointer"
         >
           <LogOut className="w-6 h-6" aria-hidden="true" />
-          <span>ออกจากบ้าน</span>
+          <span>ออกจากกลุ่มบ้าน</span>
         </button>
         {hasHomeNow && (
           <button
@@ -197,15 +202,15 @@ export const SettingsPage: React.FC = () => {
 
       <ConfirmDialog
         open={confirm === 'leave'}
-        title={isSoloOwner ? 'ออกจากบ้านและลบบ้านนี้?' : isOwner ? 'ออกจากบ้านนี้ยังไม่ได้' : 'ออกจากบ้านนี้?'}
+        title={isSoloOwner ? 'ออกจากกลุ่มบ้านและลบบ้านนี้?' : isOwner ? 'ออกจากกลุ่มบ้านนี้ยังไม่ได้' : 'ออกจากกลุ่มบ้านนี้?'}
         message={
           isSoloOwner
-            ? 'คุณอยู่คนเดียวในบ้านนี้ การออกจากบ้านจะลบบ้านและข้อมูลของบ้าน (บันทึกอาการ ปฏิทิน) ทั้งหมด กู้คืนไม่ได้ แล้วระบบจะพาไปหน้ากรอกรหัสบ้านหรือสร้างบ้านใหม่ ข้อมูลสุขภาพส่วนตัวของคุณยังอยู่'
+            ? 'คุณอยู่คนเดียวในบ้านนี้ การออกจากกลุ่มบ้านจะลบบ้านและข้อมูลของบ้าน (บันทึกอาการ ปฏิทิน) ทั้งหมด กู้คืนไม่ได้ แล้วระบบจะพาไปหน้ากรอกรหัสบ้านหรือสร้างบ้านใหม่ ข้อมูลสุขภาพส่วนตัวของคุณยังอยู่'
             : isOwner
-              ? 'คุณเป็นผู้ดูแลหลักของบ้านนี้ ต้องมอบบทบาทผู้ดูแลหลักให้คนอื่นก่อน แล้วค่อยออกจากบ้านได้ ไปจัดการที่หน้าตั้งค่าบ้านได้เลย'
+              ? 'คุณเป็นผู้ดูแลหลักของบ้านนี้ ต้องมอบบทบาทผู้ดูแลหลักให้คนอื่นก่อน แล้วค่อยออกจากกลุ่มบ้านได้ ไปจัดการที่หน้าตั้งค่าบ้านได้เลย'
               : 'คุณจะไม่เห็นข้อมูลของบ้านนี้อีก แล้วระบบจะพาไปหน้ากรอกรหัสบ้านหรือสร้างบ้านใหม่ ข้อมูลสุขภาพส่วนตัวของคุณยังอยู่'
         }
-        confirmLabel={isSoloOwner ? 'ลบบ้านและออก' : isOwner ? 'ไปหน้าตั้งค่าบ้าน' : 'ออกจากบ้าน'}
+        confirmLabel={isSoloOwner ? 'ลบบ้านและออก' : isOwner ? 'ไปหน้าตั้งค่าบ้าน' : 'ออกจากกลุ่มบ้าน'}
         onCancel={() => setConfirm(null)}
         onConfirm={isSoloOwner ? handleDeleteAndLeave : isOwner ? goManageHome : handleLeaveHome}
       />

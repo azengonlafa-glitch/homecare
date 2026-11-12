@@ -4,6 +4,7 @@ import { AlertTriangle, BellRing, Check, Clock, Users } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { cn } from '../../lib/cn';
 import type { MedAlert } from '../../lib/medAlerts';
+import { doseWords } from '../../lib/meds';
 
 interface ReminderPanelProps {
   alerts: MedAlert[];
@@ -28,6 +29,7 @@ const AlertCard: React.FC<{ alert: MedAlert; onTake: (alert: MedAlert) => void }
   onTake,
 }) => {
   const missed = alert.kind === 'missed';
+  const w = doseWords(alert.form);
   const isDanger = alert.tone === 'danger' || missed;
 
   return (
@@ -62,21 +64,21 @@ const AlertCard: React.FC<{ alert: MedAlert; onTake: (alert: MedAlert) => void }
             </h3>
 
             {missed && alert.minutesLate !== undefined && (
-              <span className="inline-flex items-center gap-1 rounded-md border border-rose-200 bg-white px-2 py-0.5 text-xs font-bold text-rose-700 shrink-0">
+              <span className="inline-flex max-w-full items-center gap-1 rounded-md border border-rose-200 bg-white px-2 py-0.5 text-xs font-bold text-rose-700">
                 <Clock className="w-3 h-3" aria-hidden="true" />
                 {formatLateMinutes(alert.minutesLate)}
               </span>
             )}
 
             {missed && alert.rounds > 1 && (
-              <span className="inline-flex items-center rounded-md border border-slate-200 bg-white px-2 py-0.5 text-xs font-semibold text-slate-600 shrink-0">
+              <span className="inline-flex items-center rounded-md border border-slate-200 bg-white px-2 py-0.5 text-xs font-semibold text-slate-700 max-w-full">
                 เตือนครั้งที่ {alert.round} จาก {alert.rounds}
               </span>
             )}
           </div>
 
           {/* รายละเอียด */}
-          <p className="text-xs sm:text-sm text-slate-600 break-words">
+          <p className="text-sm text-slate-700 break-words">
             {alert.body}
           </p>
 
@@ -93,7 +95,7 @@ const AlertCard: React.FC<{ alert: MedAlert; onTake: (alert: MedAlert) => void }
 
           {alert.nextTime && (
             <p className="text-xs text-slate-500">
-              ถ้ายังไม่กินยา จะเตือนซ้ำอีกครั้งเวลา {alert.nextTime} น.
+              ถ้ายังไม่{w.phrase} จะเตือนซ้ำอีกครั้งเวลา {alert.nextTime} น.
             </p>
           )}
 
@@ -103,15 +105,15 @@ const AlertCard: React.FC<{ alert: MedAlert; onTake: (alert: MedAlert) => void }
               <Button
                 size="sm"
                 onClick={() => onTake(alert)}
-                className="h-9 px-4 text-xs font-bold bg-purple-700 hover:bg-purple-800 text-white rounded-xl shadow-xs"
+                className="min-h-[48px] px-5 text-sm font-bold bg-purple-700 hover:bg-purple-800 text-white rounded-xl shadow-xs"
               >
                 <Check className="w-4 h-4 mr-1" aria-hidden="true" />
-                <span>กินแล้ว</span>
+                <span>{w.done}</span>
               </Button>
             )}
             <Link
               to="/meds"
-              className="inline-flex items-center h-9 px-3.5 rounded-xl text-xs font-bold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 hover:text-slate-900 transition-colors"
+              className="inline-flex items-center min-h-[48px] px-4 rounded-xl text-sm font-bold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 hover:text-slate-900 transition-colors"
             >
               <span>ไปที่ตู้ยา</span>
             </Link>
@@ -123,15 +125,88 @@ const AlertCard: React.FC<{ alert: MedAlert; onTake: (alert: MedAlert) => void }
 };
 
 /**
+ * ลืมกินยาหลายรายการพร้อมกัน: รวมเป็นการ์ดใบเดียว (เดิมเป็นการ์ดใหญ่ซ้ำกันใบละเกือบครึ่งจอมือถือ)
+ * แต่ละรายการยังมีปุ่ม "กินแล้ว" ของตัวเอง เพราะบันทึกทีละมื้อทีละยา
+ */
+const MissedGroupCard: React.FC<{ alerts: MedAlert[]; onTake: (alert: MedAlert) => void }> = ({
+  alerts,
+  onTake,
+}) => {
+  const lateMost = Math.max(...alerts.map((a) => a.minutesLate ?? 0));
+  const shared = alerts.find((a) => a.sharedWithFamily);
+
+  return (
+    <div className="rounded-[1.75rem] border border-rose-200 bg-rose-50 p-4 sm:p-5">
+      <div className="flex items-start gap-3.5">
+        <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-100 text-rose-700 sm:h-11 sm:w-11">
+          <BellRing className="h-5 w-5" aria-hidden="true" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="break-words text-base font-extrabold text-slate-900 sm:text-lg">
+              ลืมกินยา {alerts.length} รายการหรือเปล่า?
+            </h3>
+            {lateMost > 0 && (
+              <span className="inline-flex max-w-full items-center gap-1 rounded-md border border-rose-200 bg-white px-2 py-0.5 text-xs font-bold text-rose-700">
+                <Clock className="h-3 w-3" aria-hidden="true" />
+                {formatLateMinutes(lateMost)}
+              </span>
+            )}
+          </div>
+          {shared && (
+            <p className="mt-1 flex items-center gap-1.5 text-sm font-semibold text-purple-900">
+              <Users className="h-3.5 w-3.5 shrink-0 text-purple-700" aria-hidden="true" />
+              <span className="break-words">
+                แจ้งทุกคนในบ้านแล้ว
+                {shared.familyNames.length > 0 && ` · ${shared.familyNames.join(', ')}`}
+              </span>
+            </p>
+          )}
+
+          <ul className="mt-3 divide-y divide-rose-200/80">
+            {alerts.map((alert) => (
+              <li key={alert.key} className="fit-row py-3 first:pt-0">
+                <p className="flex-1 break-words text-sm text-slate-800">{alert.body}</p>
+                <Button
+                  size="sm"
+                  onClick={() => onTake(alert)}
+                  className="min-h-[48px] shrink-0 rounded-xl px-5 text-sm font-bold"
+                >
+                  <Check className="mr-1 h-4 w-4" aria-hidden="true" />
+                  <span>{doseWords(alert.form).done}</span>
+                </Button>
+              </li>
+            ))}
+          </ul>
+
+          <Link
+            to="/meds"
+            className="mt-1 inline-flex min-h-[48px] items-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 transition-colors hover:bg-slate-50 hover:text-slate-900"
+          >
+            ไปที่ตู้ยา
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/**
  * แถบเตือนเรื่องยาบนหน้าบันทึกอาการ:
  * แสดงรายการแจ้งเตือนแบบ Flat Card ไม่ซ้อนกรอบการ์ดสองชั้น และไม่แสดงไอคอนกระดิ่งซ้ำซ้อน
+ * ลืมกินยาตั้งแต่ 2 รายการขึ้นไปจะรวมเป็นการ์ดเดียว
  */
 export const ReminderPanel: React.FC<ReminderPanelProps> = ({ alerts, onTake, className }) => {
   if (alerts.length === 0) return null;
 
+  const missed = alerts.filter((a) => a.kind === 'missed');
+  const others = alerts.filter((a) => a.kind !== 'missed');
+  const group = missed.length >= 2;
+
   return (
     <div className={cn('space-y-3', className)}>
-      {alerts.map((alert) => (
+      {group && <MissedGroupCard alerts={missed} onTake={onTake} />}
+      {(group ? others : alerts).map((alert) => (
         <AlertCard key={alert.key} alert={alert} onTake={onTake} />
       ))}
     </div>

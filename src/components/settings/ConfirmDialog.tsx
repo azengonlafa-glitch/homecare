@@ -1,5 +1,6 @@
 import React from 'react';
 import { Modal } from '../ui/Modal';
+import { Dino } from '../ui/Dino';
 import { Button } from '../ui/Button';
 import { cn } from '../../lib/cn';
 
@@ -51,6 +52,9 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
       </div>
     }
   >
-    <p className="py-5 text-base sm:text-lg leading-relaxed text-slate-700 break-words">{message}</p>
+    <div className="flex items-center gap-4 py-5">
+      <Dino pose={tone === 'danger' ? 'worried' : 'wink'} className="h-20 w-24 shrink-0" />
+      <p className="min-w-0 text-base sm:text-lg leading-relaxed text-slate-700 break-words">{message}</p>
+    </div>
   </Modal>
 );

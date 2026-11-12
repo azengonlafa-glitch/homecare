@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar } from 'lucide-react';
+import { Dino } from '../components/ui/Dino';
 import { PageHeader } from '../components/ui/PageHeader';
 import { Card } from '../components/ui/Card';
 import { Link } from 'react-router-dom';
@@ -14,9 +14,7 @@ export const AppointmentsPage: React.FC = () => {
       />
 
       <Card className="py-14 px-6 text-center shadow-xs">
-        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-purple-50 text-purple-700">
-          <Calendar className="h-8 w-8" aria-hidden="true" />
-        </div>
+        <Dino pose="sleep" bob className="mx-auto mb-4 h-28 w-32" />
         <h2 className="text-xl font-bold text-slate-900">ยังไม่มีรายการนัดหมายเร็ว ๆ นี้</h2>
         <p className="mt-2 text-base text-slate-600 max-w-md mx-auto">
           คุณสามารถดูและสร้างนัดหมายแพทย์ร่วมกับกิจกรรมอื่น ๆ ของบ้านได้ที่หน้าปฏิทิน

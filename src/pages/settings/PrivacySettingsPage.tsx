@@ -197,12 +197,12 @@ export const PrivacySettingsPage: React.FC = () => {
               <ul className="divide-y divide-slate-100">
                 {others.map((m) => (
                   <li key={m.id} className="py-3.5 first:pt-0 last:pb-0">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                      <div className="min-w-0">
+                    <div className="fit-row justify-between">
+                      <div className="min-w-0 flex-1">
                         <p className="text-base font-bold text-slate-900 break-words">{m.name}</p>
                         <p className="text-sm font-medium text-slate-500">{m.relation}</p>
                       </div>
-                      <div className="w-full sm:w-52 shrink-0">
+                      <div className="w-full sm:w-52 shrink-0 ml-auto">
                         <SegmentedControl
                           name={`editor-${m.id}`}
                           legend={`สิทธิ์แก้ไขข้อมูลของฉันสำหรับ ${m.name}`}

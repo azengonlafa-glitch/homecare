@@ -126,7 +126,7 @@ export function useDueFollowUps(enabled = true): DueFollowUp[] {
         const bundles = await backend.listMyBundles();
         const today = todayKey();
         const next = bundles.flatMap((b) =>
-          b.followUps.filter((f) => isDue(f, today)).map((followUp) => ({ followUp, providerName: b.provider?.displayName ?? 'ผู้ให้บริการ' }))
+          b.followUps.filter((f) => isDue(f, today)).map((followUp) => ({ followUp, providerName: b.provider?.displayName ?? 'ร้านยาหรือคลินิก' }))
         );
         if (alive) setItems(next);
       } catch {

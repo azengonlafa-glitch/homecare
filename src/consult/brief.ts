@@ -182,7 +182,7 @@ export const previousEntries = (prior: SessionBundle[]): BriefPrevious[] =>
     .sort((a, b) => b.session.createdAt.localeCompare(a.session.createdAt))
     .map((b) => ({
       date: b.session.createdAt,
-      providerName: b.provider?.displayName ?? 'ผู้ให้บริการ',
+      providerName: b.provider?.displayName ?? 'ร้านยาหรือคลินิก',
       topic: b.session.topic,
       severity: b.checkin?.severity ?? null,
       assessment: b.note?.assessment ?? '',

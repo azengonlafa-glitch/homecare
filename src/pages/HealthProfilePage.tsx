@@ -9,8 +9,6 @@ import { StepBody, StepPersonal } from '../components/onboarding/PersonalSteps';
 import { StepAllergies, StepConditions, StepFamily } from '../components/onboarding/HealthSteps';
 import { StepContact } from '../components/onboarding/ContactConsentSteps';
 import { HealthAnalysis } from '../components/health/HealthAnalysis';
-import { ConsultEntryCard } from '../components/consult/ConsultEntryCard';
-import { FolderEntryCard } from '../components/folders/FolderEntryCard';
 import type { StepProps } from '../components/onboarding/stepTypes';
 import { STEPS } from '../data/onboardingOptions';
 import { loadOnboarding, saveOnboarding, validateStep, type OnboardingProfile } from '../lib/onboarding';
@@ -150,12 +148,10 @@ export const HealthProfilePage: React.FC = () => {
   return (
     <div className="mx-auto w-full max-w-5xl space-y-6">
       <PageHeader title="ข้อมูลสุขภาพ" description="ประวัติส่วนตัวของคุณ แก้ไขได้ และดูวิเคราะห์เทียบกับคนสุขภาพดี" />
-      <ConsultEntryCard />
-      <FolderEntryCard />
 
       <div
         role="tablist"
-        aria-label="โหมดการแสดงผล"
+        aria-label="มุมมองข้อมูลสุขภาพ"
         className="grid grid-cols-2 gap-1 p-1 rounded-full bg-slate-100 border border-slate-200"
       >
         {TABS.map((tab, i) => (
@@ -215,7 +211,7 @@ export const HealthProfilePage: React.FC = () => {
         <div id="hp-panel-analysis" role="tabpanel" aria-labelledby="hp-tab-analysis">
           {dirty && (
             <p role="status" className="mb-4 rounded-2xl bg-amber-50 border border-amber-200 px-4 py-3 text-base text-amber-900">
-              มีการแก้ไขที่ยังไม่ได้บันทึก กราฟนี้แสดงตามที่แก้ไขอยู่ กลับไปกด “บันทึก” ในโหมดข้อมูลของฉัน
+              มีการแก้ไขที่ยังไม่ได้บันทึก กราฟนี้แสดงตามที่แก้ไขอยู่ กลับไปกด “บันทึก” ในแท็บ “ข้อมูลของฉัน”
             </p>
           )}
           <HealthAnalysis profile={profile} onEdit={() => setMode('edit')} />

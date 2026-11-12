@@ -15,7 +15,7 @@ export const PROVIDER_STATUS_LABEL: Record<'open' | 'paused' | 'banned', string>
 };
 
 export const STATUS_LABEL: Record<SessionStatus, string> = {
-  requested: 'รอผู้ให้บริการรับเรื่อง',
+  requested: 'รอร้านยาหรือคลินิกรับเรื่อง',
   active: 'กำลังปรึกษา',
   completed: 'เสร็จสิ้น',
   cancelled: 'ยกเลิกแล้ว',
@@ -127,7 +127,7 @@ export interface Question {
 const toOptions = (list: SymptomOption[]): QuestionOption[] => list.map((o) => ({ value: o.id, label: o.label }));
 
 /**
- * คำถามเพิ่มเติมตามอาการ แสดงเฉพาะที่เกี่ยวข้อง คำตอบส่งให้ผู้ให้บริการอ่าน ระบบไม่ประเมินเอง
+ * คำถามเพิ่มเติมตามอาการ แสดงเฉพาะที่เกี่ยวข้อง คำตอบส่งให้ร้านยาหรือคลินิกอ่าน ระบบไม่ประเมินเอง
  */
 export function questionsFor(a: Pick<CheckinAnswers, 'purpose' | 'symptoms'>): Question[] {
   const has = (id: string) => a.symptoms.includes(id);

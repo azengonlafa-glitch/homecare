@@ -49,13 +49,13 @@ export const LineChart: React.FC<LineChartProps> = ({ days, label }) => {
       <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`${label} รวม ${total} คำขอ ใน ${days.length} วัน`} className="block max-w-full">
         {ticks.map((t) => (
           <g key={t}>
-            <line x1={PAD.left} x2={W - PAD.right} y1={y(t)} y2={y(t)} stroke="#e2e8f0" strokeWidth="1" />
-            <text x={PAD.left - 6} y={y(t) + 4} textAnchor="end" fontSize="14" fill="#475569">
+            <line x1={PAD.left} x2={W - PAD.right} y1={y(t)} y2={y(t)} stroke="#DAE7D8" strokeWidth="1" />
+            <text x={PAD.left - 6} y={y(t) + 4} textAnchor="end" fontSize="14" fill="#4C6049">
               {t}
             </text>
           </g>
         ))}
-        <path d={path((d) => d.completed)} fill="none" stroke="#047857" strokeWidth="2.5" strokeDasharray="6 4" strokeLinejoin="round" strokeLinecap="round" />
+        <path d={path((d) => d.completed)} fill="none" stroke="#D97706" strokeWidth="2.5" strokeDasharray="6 4" strokeLinejoin="round" strokeLinecap="round" />
         <path d={path((d) => d.requests)} fill="none" stroke="#15703A" strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" />
         {showDots &&
           days.map((d, i) => (
@@ -66,7 +66,7 @@ export const LineChart: React.FC<LineChartProps> = ({ days, label }) => {
             </g>
           ))}
         {labelIdx.map((i) => (
-          <text key={i} x={x(i)} y={H - 8} textAnchor={i === 0 ? 'start' : i === days.length - 1 ? 'end' : 'middle'} fontSize="14" fill="#475569">
+          <text key={i} x={x(i)} y={H - 8} textAnchor={i === 0 ? 'start' : i === days.length - 1 ? 'end' : 'middle'} fontSize="14" fill="#4C6049">
             {shortDate(days[i].date)}
           </text>
         ))}
@@ -80,7 +80,7 @@ export const LineChart: React.FC<LineChartProps> = ({ days, label }) => {
         </li>
         <li className="flex items-center gap-2">
           <svg width="28" height="8" aria-hidden="true">
-            <line x1="0" y1="4" x2="28" y2="4" stroke="#047857" strokeWidth="2.5" strokeDasharray="6 4" />
+            <line x1="0" y1="4" x2="28" y2="4" stroke="#D97706" strokeWidth="2.5" strokeDasharray="6 4" />
           </svg>
           ปรึกษาจบ
         </li>

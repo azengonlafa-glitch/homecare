@@ -78,6 +78,20 @@ export async function disablePush(): Promise<PushState> {
   return 'off';
 }
 
+export type TestPushResult = 'sent' | 'no-device' | 'too-soon' | 'failed';
+
+/** ให้เซิร์ฟเวอร์ส่งแจ้งเตือนทดสอบมาที่เครื่องของบัญชีนี้ ใช้เช็กว่าแจ้งเตือนถึงเครื่องจริง */
+export async function sendTestPush(): Promise<TestPushResult> {
+  const { data, error } = await requireClient().functions.invoke('push-test', { body: {} });
+  if (error) {
+    const status = (error as { context?: { status?: number } }).context?.status;
+    return status === 429 ? 'too-soon' : 'failed';
+  }
+  const result = data as { devices?: number; sent?: number } | null;
+  if (!result || result.devices === 0) return 'no-device';
+  return (result.sent ?? 0) > 0 ? 'sent' : 'failed';
+}
+
 /** เรียกก่อนออกจากระบบ ห้ามทำให้การออกจากระบบค้างหรือพัง */
 export async function unsubscribeOnSignOut(): Promise<void> {
   if (!cloudEnabled || !hasPushApi()) return;

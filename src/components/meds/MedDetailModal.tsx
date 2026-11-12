@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AlarmClock, Flame, Pencil, RefreshCcw, Trash2 } from 'lucide-react';
+import { AlarmClock, Flame, Pencil, Trash2 } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { AttachmentImage } from '../ui/AttachmentImage';
@@ -7,8 +7,9 @@ import { ExpiryBadge, StockBadge } from './StockBadge';
 import { DrugInfoPanel } from './DrugInfoPanel';
 import { drugById, matchDrugInText } from '../../data/drugDb';
 import {
-  DOSE_STATUS_LABEL,
   PERIOD_LABEL,
+  doseStatusLabel,
+  doseWords,
   dayStates,
   daysToExpiry,
   endDateOf,
@@ -35,19 +36,18 @@ interface MedDetailModalProps {
   logs: DoseLog[];
   onEdit: (med: Medication) => void;
   onDelete: (med: Medication) => void;
-  onRefill: (med: Medication) => void;
   /** ตั้งเวลากินให้ยาที่อยู่ในตู้ (ยังไม่มีตาราง) */
   onSchedule?: (med: Medication) => void;
   onClose: () => void;
 }
 
-const DAY_STYLE: Record<DayState, { cls: string; label: string }> = {
+const dayStyle = (verb: string, notDone: string): Record<DayState, { cls: string; label: string }> => ({
   all: { cls: 'bg-emerald-500', label: 'ครบ' },
   partial: { cls: 'bg-amber-400', label: 'ไม่ครบ' },
-  missed: { cls: 'bg-red-500', label: 'ไม่ได้กิน/ไม่ได้บันทึก' },
+  missed: { cls: 'bg-red-500', label: `${notDone}/ไม่ได้บันทึก` },
   pending: { cls: 'bg-white border-2 border-slate-300', label: 'ยังไม่ถึงเวลา' },
-  none: { cls: 'bg-slate-100', label: 'ไม่ต้องกิน' },
-};
+  none: { cls: 'bg-slate-100', label: `ไม่ต้อง${verb}` },
+});
 
 const STATUS_TEXT: Record<DoseStatus, string> = {
   taken: 'text-emerald-800 bg-emerald-50 border-emerald-200',
@@ -75,9 +75,11 @@ const Row: React.FC<{ label: string; children: React.ReactNode }> = ({ label, ch
 /** 30 วันล่าสุดเป็นช่องสี (มีคำอธิบายสีและข้อความใน title/aria) */
 export const DayStrip: React.FC<{ med: Medication; logs: DoseLog[]; days?: number }> = ({ med, logs, days = 30 }) => {
   const states = dayStates(med, logs, days);
+  const w = doseWords(med.form);
+  const DAY_STYLE = dayStyle(w.verb, w.notDone);
   return (
     <div>
-      <ol className="grid grid-cols-[repeat(15,minmax(0,1fr))] gap-1" aria-label={`สรุปการกินยา ${days} วันล่าสุด`}>
+      <ol className="grid grid-cols-[repeat(15,minmax(0,1fr))] gap-1" aria-label={`สรุป${w.phrase} ${days} วันล่าสุด`}>
         {states.map((d) => (
           <li
             key={d.date}
@@ -102,11 +104,12 @@ export const DayStrip: React.FC<{ med: Medication; logs: DoseLog[]; days?: numbe
 const HISTORY_PAGE = 15;
 
 /** รายละเอียดยาแต่ละตัว: สถิติการกินตั้งแต่เริ่มใช้ ข้อมูลยา รูป และประวัติการบันทึกทั้งหมด */
-export const MedDetailModal: React.FC<MedDetailModalProps> = ({ med, logs, onEdit, onDelete, onRefill, onSchedule, onClose }) => {
+export const MedDetailModal: React.FC<MedDetailModalProps> = ({ med, logs, onEdit, onDelete, onSchedule, onClose }) => {
   const [shown, setShown] = useState(HISTORY_PAGE);
   if (!med) return null;
 
   const stats = medStats(med, logs);
+  const w = doseWords(med.form);
   const history = historyOf(logs, med.id);
   const drug = (med.drugRef ? drugById(med.drugRef) : undefined) ?? matchDrugInText(med.name);
   const runOut = med.active ? runOutDate(med) : null;
@@ -136,10 +139,6 @@ export const MedDetailModal: React.FC<MedDetailModalProps> = ({ med, logs, onEdi
             <Pencil className="w-5 h-5" aria-hidden="true" />
             <span>แก้ไข</span>
           </Button>
-          <Button size="sm" onClick={() => onRefill(med)}>
-            <RefreshCcw className="w-5 h-5" aria-hidden="true" />
-            <span>ขอเติมยานี้</span>
-          </Button>
         </div>
       }
     >
@@ -161,24 +160,24 @@ export const MedDetailModal: React.FC<MedDetailModalProps> = ({ med, logs, onEdi
         {med.asNeeded && onSchedule && (
           <Button fullWidth onClick={() => onSchedule(med)}>
             <AlarmClock className="w-5 h-5" aria-hidden="true" />
-            <span>ตั้งเวลากินยานี้</span>
+            <span>ตั้งเวลา{w.phrase}</span>
           </Button>
         )}
 
         {/* สถิติ (ยาที่ไม่มีตารางประจำไม่มีมื้อให้นับ) */}
         {!med.asNeeded && (
-        <section aria-label="สถิติการกินยา">
-          <h3 className="text-lg font-bold text-slate-900">การกินยาตั้งแต่ {thaiDate(stats.from)}</h3>
+        <section aria-label={`สถิติ${w.phrase}`}>
+          <h3 className="text-lg font-bold text-slate-900">การ{w.phrase}ตั้งแต่ {thaiDate(stats.from)}</h3>
           <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2">
             <Stat
-              label="กินตามนัด"
+              label={`${w.verb}ตามนัด`}
               value={stats.adherence === null ? '–' : `${stats.adherence}%`}
               className={adherenceTone(stats.adherence)}
             />
-            <Stat label={`กินแล้ว (จาก ${stats.expected} มื้อ)`} value={stats.taken} />
+            <Stat label={`${w.done} (จาก ${stats.expected} มื้อ)`} value={stats.taken} />
             <Stat label="พลาด / ไม่ได้บันทึก" value={stats.missed + stats.unrecorded} />
             <Stat
-              label="กินครบติดกัน (วัน)"
+              label={`${w.verb}ครบติดกัน (วัน)`}
               value={
                 <span className="inline-flex items-center gap-1">
                   {stats.streak > 0 && <Flame className="w-5 h-5 text-orange-500" aria-hidden="true" />}
@@ -188,7 +187,7 @@ export const MedDetailModal: React.FC<MedDetailModalProps> = ({ med, logs, onEdi
             />
           </div>
           <p className="mt-2 text-sm text-slate-600">
-            งดตามแพทย์สั่ง {stats.skipped} มื้อ (ไม่นับเป็นพลาด) · กินช้า {stats.late} มื้อ · กินไปแล้วรวม {formatQty(stats.totalUnits)} {med.unit}
+            งดตามแพทย์สั่ง {stats.skipped} มื้อ (ไม่นับเป็นพลาด) · {w.late} {stats.late} มื้อ · {w.verb}ไปแล้วรวม {formatQty(stats.totalUnits)} {med.unit}
           </p>
           <div className="mt-4">
             <p className="text-base font-bold text-slate-900 mb-2">30 วันล่าสุด</p>
@@ -201,7 +200,7 @@ export const MedDetailModal: React.FC<MedDetailModalProps> = ({ med, logs, onEdi
         <section aria-label="ข้อมูลการใช้ยา">
           <h3 className="text-lg font-bold text-slate-900 mb-3">ข้อมูลการใช้ยา</h3>
           <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-base">
-            <Row label="วิธีกิน">{instructionText(med)}</Row>
+            <Row label={`วิธี${w.verb}`}>{instructionText(med)}</Row>
             <Row label="รูปแบบ">{formatMedForm(med)}</Row>
             {med.asNeeded ? (
               <Row label="ตาราง">ไม่มีตารางประจำ</Row>
@@ -210,7 +209,7 @@ export const MedDetailModal: React.FC<MedDetailModalProps> = ({ med, logs, onEdi
                 <Row label="เวลา">{timesText}</Row>
                 <Row label="วัน">{weekdaysText(med.weekdays)}</Row>
                 <Row label="แจ้งเตือน">
-                  {delay === 0 ? 'ตรงเวลา' : `หลังถึงเวลา ${delay} นาที`} · ถ้ายังไม่กินแจ้งซ้ำทุก {reminderRepeatOf(med)} นาที
+                  {delay === 0 ? 'ตรงเวลา' : `หลังถึงเวลา ${delay} นาที`} · ถ้ายังไม่{w.verb}แจ้งซ้ำทุก {reminderRepeatOf(med)} นาที
                 </Row>
                 <Row label="เริ่มใช้">{thaiDate(med.startDate)}</Row>
                 <Row label="ระยะเวลา">
@@ -235,11 +234,6 @@ export const MedDetailModal: React.FC<MedDetailModalProps> = ({ med, logs, onEdi
             {!med.asNeeded && <Row label="เตือนเมื่อเหลือ">{med.lowStockDays} วัน</Row>}
             {med.lastRefillDate && <Row label="รับยาล่าสุด">{thaiDate(med.lastRefillDate)}</Row>}
             {med.refillsRemaining !== null && <Row label="เติมยาได้อีก">{med.refillsRemaining} ครั้ง</Row>}
-            {med.refillRequestedAt && (
-              <Row label="ขอเติมยาล่าสุด">
-                {new Date(med.refillRequestedAt).toLocaleDateString('th-TH', { dateStyle: 'medium' })}
-              </Row>
-            )}
             {med.note && <Row label="หมายเหตุ">{med.note}</Row>}
           </dl>
         </section>
@@ -267,7 +261,7 @@ export const MedDetailModal: React.FC<MedDetailModalProps> = ({ med, logs, onEdi
         <section aria-label="ประวัติการบันทึก">
           <h3 className="text-lg font-bold text-slate-900 mb-3">ประวัติการบันทึก ({history.length})</h3>
           {history.length === 0 ? (
-            <p className="text-base text-slate-600">ยังไม่มีการบันทึก กด “กิน” ในตารางกินยาวันนี้</p>
+            <p className="text-base text-slate-600">ยังไม่มีการบันทึก กด “{w.verb}” ในตาราง{w.phrase}วันนี้</p>
           ) : (
             <>
               <ul className="divide-y divide-slate-200 rounded-2xl border border-slate-200">
@@ -286,7 +280,7 @@ export const MedDetailModal: React.FC<MedDetailModalProps> = ({ med, logs, onEdi
                       {l.reason && <p className="text-sm text-slate-600 break-words">เหตุผล: {l.reason}</p>}
                     </div>
                     <span className={cn('shrink-0 px-3 py-1 rounded-full border text-sm font-bold', STATUS_TEXT[l.status])}>
-                      {DOSE_STATUS_LABEL[l.status]}
+                      {doseStatusLabel(l.status, med.form)}
                     </span>
                   </li>
                 ))}

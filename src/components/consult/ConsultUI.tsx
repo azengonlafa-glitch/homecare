@@ -1,5 +1,6 @@
 import React from 'react';
-import { AlertTriangle, FlaskConical, RotateCcw } from 'lucide-react';
+import { Dino } from '../ui/Dino';
+import { FlaskConical, RotateCcw } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
 import { DinoLoader } from '../ui/DinoLoader';
@@ -14,7 +15,7 @@ export const ModeBanner: React.FC = () =>
     <div role="note" className="flex items-start gap-3 rounded-2xl border border-amber-300 bg-amber-50 p-4 text-amber-950">
       <FlaskConical className="w-6 h-6 shrink-0 mt-0.5" aria-hidden="true" />
       <p className="text-base font-semibold leading-snug min-w-0">
-        โหมดทดสอบ: ยังไม่ได้เชื่อมต่อเภสัชกรจริง ผู้ให้บริการเป็นตัวอย่าง ข้อมูลอยู่ในเครื่องนี้เท่านั้น และไม่มีใครตอบกลับ
+        โหมดทดสอบ: ยังไม่ได้เชื่อมต่อเภสัชกรจริง ร้านยาหรือคลินิกเป็นตัวอย่าง ข้อมูลอยู่ในเครื่องนี้เท่านั้น และไม่มีใครตอบกลับ
       </p>
     </div>
   ) : null;
@@ -25,7 +26,7 @@ export const LoadingCard: React.FC<{ label?: string }> = ({ label = 'กำล�
 
 export const ErrorCard: React.FC<{ message: string; onRetry?: () => void }> = ({ message, onRetry }) => (
   <Card role="alert" className="py-10 text-center border-red-200">
-    <AlertTriangle className="w-10 h-10 text-red-600 mx-auto mb-3" aria-hidden="true" />
+    <Dino pose="worried" bob className="mx-auto mb-3 h-24 w-28" />
     <p className="font-semibold text-slate-900">{message}</p>
     {onRetry && (
       <Button variant="neutral" size="sm" className="mt-4" onClick={onRetry}>

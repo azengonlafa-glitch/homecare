@@ -54,16 +54,16 @@ export const PageLayout: React.FC<PageLayoutProps> = ({
         <Link
           to="/settings"
           aria-label="ย้อนกลับไปหน้าตั้งค่า"
-          className="inline-flex items-center gap-1.5 min-h-[48px] pl-1 pr-4 -ml-1 rounded-xl text-lg font-bold text-slate-700 hover:text-purple-800 hover:bg-purple-50 transition-colors"
+          className="mb-3 flex w-fit items-center gap-1.5 min-h-[48px] pl-2 pr-4 rounded-full bg-[#FFFDF7]/90 backdrop-blur-sm ring-1 ring-white shadow-sm text-lg font-bold text-slate-800 hover:text-purple-800 hover:bg-white transition-colors"
         >
           <ChevronLeft className="w-6 h-6 shrink-0" aria-hidden="true" />
           <span>ตั้งค่า</span>
         </Link>
       )}
 
-      <header className="mt-1 mb-6 min-w-0">
+      <header className="bg-label-block block w-fit max-w-full mt-0 mb-6 min-w-0">
         <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight break-words">{title}</h1>
-        {description && <p className="mt-2 text-base text-slate-600 break-words">{description}</p>}
+        {description && <p className="mt-1 text-base text-slate-700 break-words">{description}</p>}
       </header>
 
       {renderContent()}

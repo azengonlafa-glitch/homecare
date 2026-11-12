@@ -7,6 +7,7 @@ import {
   PERIOD_LABEL,
   daysLeft,
   daysToExpiry,
+  doseWords,
   findLog,
   isOverdue,
   isScheduledOn,
@@ -18,6 +19,7 @@ import {
   stockLevel,
   todayKey,
   type DosePeriod,
+  type MedForm,
   type MedsState,
 } from './meds';
 import {
@@ -38,6 +40,8 @@ export interface MedAlert {
   key: string;
   kind: AlertKind;
   medId: string;
+  /** รูปแบบยา ใช้เลือกคำ กิน/ฉีด/หยอด ในข้อความ */
+  form?: MedForm;
   period?: DosePeriod;
   title: string;
   body: string;
@@ -109,6 +113,7 @@ export function buildAlerts(
           key: `missed:${today}:${med.id}:${p}:r${round}`,
           kind: 'missed',
           medId: med.id,
+          form: med.form,
           period: p,
           round,
           rounds,
@@ -117,7 +122,10 @@ export function buildAlerts(
           minutesLate,
           sharedWithFamily,
           familyNames: sharedWithFamily ? familyNames : [],
-          title: round === 1 ? `ถึงเวลากินยามื้อ${PERIOD_LABEL[p]}` : `ลืมกินยามื้อ${PERIOD_LABEL[p]}หรือเปล่า?`,
+          title:
+            round === 1
+              ? `ถึงเวลา${doseWords(med.form).phrase}มื้อ${PERIOD_LABEL[p]}`
+              : `ลืม${doseWords(med.form).phrase}มื้อ${PERIOD_LABEL[p]}หรือเปล่า?`,
           body: `${med.name} (เวลา ${dueTime} น.) ยังไม่ได้บันทึก`,
           tone: 'danger',
         });
@@ -135,14 +143,15 @@ export function buildAlerts(
         key: `stock:${med.id}:${out ? 'out' : level}`,
         kind: out ? 'out' : 'low',
         medId: med.id,
+        form: med.form,
         round: 1,
         rounds: 1,
         sharedWithFamily: false,
         familyNames: [],
         title: out ? `${med.name} หมดแล้ว` : `${med.name} ใกล้หมด`,
         body: out
-          ? 'กด “ขอเติมยา” เพื่อส่งข้อความถึงร้านยา'
-          : `${days ? `พอกินอีก ${days} วัน` : 'เหลือไม่ถึง 1 วัน'}${med.refillRequestedAt ? ' · ขอเติมยาไปแล้ว' : ''}`,
+          ? 'ยาหมดแล้ว'
+          : days ? `พอ${doseWords(med.form).use}อีก ${days} วัน` : 'เหลือไม่ถึง 1 วัน',
         tone: out || level === 'critical' ? 'danger' : 'warn',
       });
     }
@@ -157,6 +166,7 @@ export function buildAlerts(
       key: `expiry:${med.id}:${med.expiryDate}:${expired ? 'x' : left <= 7 ? 'w' : 'n'}`,
       kind: 'expiry',
       medId: med.id,
+      form: med.form,
       round: 1,
       rounds: 1,
       sharedWithFamily: false,
@@ -188,10 +198,10 @@ const readNotified = (): Set<string> => {
   }
 };
 
-/** ข้อความแจ้งคนในบ้านว่าสมาชิกคนนี้ยังไม่ได้กินยาหลังเตือนหลายรอบ */
+/** ข้อความแจ้งคนในบ้านว่าสมาชิกคนนี้ยังไม่ได้กิน/ฉีด/หยอดยา (ตามรูปแบบยา) หลังเตือนหลายรอบ */
 function noticeText(who: string, a: MedAlert) {
   return {
-    title: `${who} ยังไม่ได้กินยา${a.period ? `มื้อ${PERIOD_LABEL[a.period]}` : ''}`,
+    title: `${who} ยังไม่ได้${doseWords(a.form).phrase}${a.period ? `มื้อ${PERIOD_LABEL[a.period]}` : ''}`,
     body: `${a.body} · เตือนไปแล้ว ${a.round} ครั้ง ยังไม่ได้บันทึก ช่วยโทรถามหรือแวะดูหน่อย`,
   };
 }

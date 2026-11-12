@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { Dino } from '../components/ui/Dino';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { Camera, Check, ChevronDown, Copy, Crown, House, Image as ImageIcon, MessageCircle, Plus, RefreshCw, Share2, Trash2 } from 'lucide-react';
 import { Card } from '../components/ui/Card';
@@ -90,7 +91,7 @@ const RoleMenu: React.FC<{
         aria-expanded={open}
         aria-label={`เปลี่ยนบทบาทของ ${member.name}`}
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1.5 min-h-[40px] px-3.5 rounded-full border border-dashed border-slate-400 text-sm font-bold text-slate-700 hover:bg-slate-100 hover:border-purple-600 active:bg-slate-200 transition-colors cursor-pointer"
+        className="inline-flex items-center gap-1.5 min-h-[48px] px-3.5 rounded-full border border-dashed border-slate-400 text-sm font-bold text-slate-700 hover:bg-slate-100 hover:border-purple-600 active:bg-slate-200 transition-colors cursor-pointer"
       >
         <Plus className="w-4 h-4 text-purple-700" aria-hidden="true" />
         <span>บทบาท</span>
@@ -174,7 +175,7 @@ interface ManageRowProps {
 }
 
 const ManageRow: React.FC<ManageRowProps> = ({ title, description, label, danger, onClick }) => (
-  <li className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 rounded-2xl border border-slate-200 p-4">
+  <li className="fit-row justify-between rounded-2xl border border-slate-200 p-4">
     <div className="min-w-0 flex-1">
       <p className="text-base sm:text-lg font-bold text-slate-900">{title}</p>
       <p className="mt-0.5 text-sm sm:text-base text-slate-600">{description}</p>
@@ -265,7 +266,7 @@ export const HomeSettingsPage: React.FC = () => {
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();
     const found: Record<string, string> = {};
-    if (!form.homeName.trim()) found['home-name'] = 'กรอกชื่อบ้านก่อนนะ';
+    if (!form.homeName.trim()) found['home-name'] = 'กรุณากรอกชื่อบ้าน';
     if (isThailand && form.zip.trim() && !/^\d{5}$/.test(form.zip.trim())) {
       found['home-zip'] = 'รหัสไปรษณีย์ไทยมี 5 หลัก';
     }
@@ -401,7 +402,7 @@ export const HomeSettingsPage: React.FC = () => {
       commit({ ...settings, members: settings.members.filter((m) => m.id !== removingMember.id) });
     }
     setRemovingMember(null);
-    toast.show(`นำ ${name} ออกจากบ้านแล้ว`);
+    toast.show(`นำ ${name} ออกจากกลุ่มบ้านแล้ว`);
   };
 
   // ----- จัดการบ้าน -----
@@ -735,9 +736,9 @@ export const HomeSettingsPage: React.FC = () => {
               <SectionTitle title="จัดการบ้าน" hint="เฉพาะผู้ดูแลหลักเท่านั้นที่เห็นส่วนนี้" />
               <ul className="space-y-3">
                 <ManageRow
-                  title="โอนความเป็นเจ้าของบ้าน"
-                  description="ยกความเป็นผู้ดูแลหลักของบ้านนี้ให้สมาชิกคนอื่น"
-                  label="โอนบ้าน"
+                  title="มอบบทบาทผู้ดูแลหลัก"
+                  description="ยกบทบาทผู้ดูแลหลักของบ้านนี้ให้สมาชิกคนอื่น"
+                  label="มอบบทบาท"
                   onClick={() => setTransferOpen(true)}
                 />
                 <ManageRow
@@ -777,7 +778,10 @@ export const HomeSettingsPage: React.FC = () => {
         </div>
 
         {settings.members.length === 0 ? (
-          <p className="px-5 py-10 text-center text-base text-slate-600">ยังไม่มีสมาชิกในบ้านนี้</p>
+          <div className="px-5 py-8 text-center">
+            <Dino pose="love" bob className="mx-auto mb-2 h-24 w-28" />
+            <p className="text-base text-slate-600">ยังไม่มีสมาชิกในบ้านนี้</p>
+          </div>
         ) : (
           <ul className="divide-y divide-slate-200 border-t border-slate-200">
             {settings.members.map((member) => {
@@ -785,9 +789,10 @@ export const HomeSettingsPage: React.FC = () => {
               return (
                 <li
                   key={member.id}
-                  className="px-4 sm:px-8 py-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6"
+                  className="px-4 sm:px-8 py-4 flex flex-wrap items-center gap-x-6 gap-y-3"
                 >
-                  <div className="flex items-center gap-4 min-w-0 flex-1">
+                  {/* ชื่อได้ที่อย่างน้อย 14rem ก่อน ถ้าที่ไม่พอ ป้ายบทบาทและปุ่มจะตกลงบรรทัดล่าง */}
+                  <div className="flex items-center gap-4 min-w-0 flex-1 basis-[14rem]">
                     <Avatar
                       name={member.name}
                       src={member.id === CURRENT_MEMBER_ID ? settings.profile.photo : undefined}
@@ -802,14 +807,14 @@ export const HomeSettingsPage: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+                  <div className="flex flex-wrap items-center gap-2 ml-auto justify-end">
                     <RoleChip role={member.role} />
                     {!isOwnerRow && <RoleMenu member={member} onSelect={(role) => changeRole(member, role)} />}
                     {!isOwnerRow && (
                       <button
                         type="button"
                         onClick={() => setRemovingMember(member)}
-                        className="inline-flex items-center min-h-[40px] px-3 rounded-xl text-sm font-semibold text-red-700 hover:bg-red-50 active:bg-red-100 transition-colors cursor-pointer"
+                        className="inline-flex items-center min-h-[48px] px-3.5 rounded-xl text-sm font-semibold text-red-700 hover:bg-red-50 active:bg-red-100 transition-colors cursor-pointer"
                       >
                         นำออก
                       </button>
@@ -834,7 +839,7 @@ export const HomeSettingsPage: React.FC = () => {
 
       <ConfirmDialog
         open={!!removingMember}
-        title={`นำ ${removingMember?.name ?? ''} ออกจากบ้าน?`}
+        title={`นำ ${removingMember?.name ?? ''} ออกจากกลุ่มบ้าน?`}
         message={`${removingMember?.name ?? 'สมาชิกคนนี้'} จะเปิดดูข้อมูลของบ้านนี้ไม่ได้อีก ถ้าต้องการให้กลับมา ต้องชวนด้วยรหัสอีกครั้ง`}
         confirmLabel="นำออก"
         onCancel={() => setRemovingMember(null)}
@@ -866,7 +871,7 @@ export const HomeSettingsPage: React.FC = () => {
           setTransferOpen(false);
           setTransferTo('');
         }}
-        title="โอนความเป็นเจ้าของบ้าน"
+        title="มอบบทบาทผู้ดูแลหลัก"
         footer={
           <div className="grid grid-cols-2 gap-3">
             <Button
@@ -880,17 +885,17 @@ export const HomeSettingsPage: React.FC = () => {
               ยกเลิก
             </Button>
             <Button fullWidth disabled={!transferTo} onClick={() => transferOwnership(transferTo)}>
-              โอนบ้าน
+              มอบบทบาท
             </Button>
           </div>
         }
       >
         <div className="py-6 space-y-4">
           <p className="text-base text-slate-700">
-            เลือกสมาชิกที่จะเป็นผู้ดูแลหลักคนใหม่ หลังโอนแล้วคุณจะไม่สามารถจัดการสมาชิก รหัสชวน หรือตัวบ้านได้อีก
+            เลือกสมาชิกที่จะเป็นผู้ดูแลหลักคนใหม่ หลังมอบบทบาทแล้วคุณจะไม่สามารถจัดการสมาชิก รหัสชวน หรือตัวบ้านได้อีก
           </p>
           {otherMembers.length === 0 ? (
-            <p className="text-base font-semibold text-slate-600">ยังไม่มีสมาชิกคนอื่นให้โอน ชวนญาติเข้าบ้านก่อนนะ</p>
+            <p className="text-base font-semibold text-slate-600">ยังไม่มีสมาชิกคนอื่นให้มอบบทบาท ชวนญาติเข้าบ้านก่อน</p>
           ) : (
             <ul className="space-y-1">
               {otherMembers.map((member) => (

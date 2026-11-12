@@ -58,6 +58,7 @@ export const NAV_ITEMS: NavItem[] = [
     mobileLabel: 'สมาชิก',
     icon: Users,
     sidebarIcon: true,
+    mobilePrimary: true,
     description: 'ดูข้อมูลและตารางยาของแต่ละคน',
   },
   {
@@ -69,13 +70,14 @@ export const NAV_ITEMS: NavItem[] = [
     icon: House,
     sidebarIcon: true,
     ownerOnly: true,
+    hidden: true, // เข้าจากปุ่ม "ตั้งค่าบ้าน" ในหน้าสมาชิก (เฉพาะผู้ดูแลหลัก)
     description: 'จัดการบ้านและคนในบ้าน',
   },
-  { group: 'personal', tint: 'coral', to: '/meds', art: 'meds', label: 'ยาและการดูแล', mobileLabel: 'ยา/ดูแล', icon: Pill, sidebarIcon: true, mobilePrimary: true, description: 'ตารางยาและการกินยาของคุณ' },
+  { group: 'personal', tint: 'coral', to: '/meds', art: 'meds', label: 'ยาและการดูแล', mobileLabel: 'ยา', icon: Pill, sidebarIcon: true, mobilePrimary: true, description: 'ตารางยาและการกินยาของคุณ' },
   { group: 'personal', tint: 'sun', to: '/notifications', art: 'bell', label: 'การแจ้งเตือน', mobileLabel: 'แจ้งเตือน', icon: Bell, sidebarIcon: true, description: 'การแจ้งเตือนทั้งหมด' },
   { group: 'personal', tint: 'cream', to: '/folders', art: 'folder', label: 'โฟลเดอร์เอกสาร', mobileLabel: 'โฟลเดอร์', icon: FolderOpen, sidebarIcon: true, description: 'เก็บใบสั่งยา ผลตรวจ และเอกสาร' },
   { group: 'personal', tint: 'coral', to: '/health', art: 'health', label: 'ข้อมูลสุขภาพ', mobileLabel: 'สุขภาพ', icon: HeartPulse, sidebarIcon: true, description: 'ข้อมูลสุขภาพและภาพรวมของคุณ' },
-  { group: 'personal', tint: 'lilac', to: '/consult', art: 'consult', label: 'ปรึกษาผู้เชี่ยวชาญ', mobileLabel: 'ปรึกษา', icon: Stethoscope, sidebarIcon: true, description: 'ปรึกษาเภสัชกรและผู้เชี่ยวชาญ' },
+  { group: 'personal', tint: 'lilac', to: '/consult', art: 'consult', label: 'ปรึกษาเภสัชกร', mobileLabel: 'ปรึกษา', icon: Stethoscope, sidebarIcon: true, description: 'ปรึกษาเภสัชกรหรือคลินิก' },
   { group: 'personal', tint: 'mint', to: '/settings', art: 'settings', label: 'ตั้งค่าส่วนตัว', mobileLabel: 'ตั้งค่า', icon: Settings, sidebarIcon: true, description: 'ขนาดตัวอักษร บัญชี และอื่นๆ' },
 ];
 

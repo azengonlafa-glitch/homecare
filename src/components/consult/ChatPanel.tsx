@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { FileText, FolderOpen, Loader2, MessageCircle, Paperclip, Send, X } from 'lucide-react';
+import { Dino } from '../ui/Dino';
+import { FileText, FolderOpen, Loader2, Paperclip, Send, X } from 'lucide-react';
 import { FolderPickerModal } from '../folders/FolderPickerModal';
 import { copyManyToConsult } from '../../consult/folderFiles';
 import type { FolderDoc } from '../../lib/folders';
@@ -147,7 +148,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ sessionId, as, canSend, cl
           </p>
         ) : !messages?.length ? (
           <div className="py-10 text-center text-slate-600">
-            <MessageCircle className="w-10 h-10 mx-auto mb-2 text-slate-300" aria-hidden="true" />
+            <Dino pose="wink" bob className="mx-auto mb-2 h-20 w-24" />
             <p className="font-medium">ยังไม่มีข้อความ</p>
           </div>
         ) : (

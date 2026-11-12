@@ -9,6 +9,7 @@ import {
   stockLevel,
   daysLeft,
   daysToExpiry,
+  doseWords,
   todayKey,
   loadMeds,
   type DoseLog,
@@ -306,6 +307,8 @@ export function generateHealthNotifications(
   ) => {
     const activeMeds = meds.filter((m) => m.active);
     for (const med of activeMeds) {
+      // คำตามรูปแบบยา (กิน/ฉีด/หยอด/ทา/พ่น/ตรวจ/ใช้) ให้ตรงกับหน้ายาและตัวเตือนบนหน้าบันทึกอาการ
+      const w = doseWords(med.form);
       // 1.1 ตรวจสอบมื้อยาของวันนี้
       if (isScheduledOn(med, today)) {
         for (const p of med.periods as DosePeriod[]) {
@@ -320,7 +323,7 @@ export function generateHealthNotifications(
             const title =
               log.status === 'skipped'
                 ? `มีการข้ามยา ${med.name} (มื้อ${PERIOD_LABEL[p as DosePeriod]})` + (!isMeMember ? ` ของ ${targetMemberName}` : '')
-                : `ไม่ได้กินยา ${med.name} (มื้อ${PERIOD_LABEL[p as DosePeriod]})` + (!isMeMember ? ` ของ ${targetMemberName}` : '');
+                : `ไม่ได้${w.phrase} ${med.name} (มื้อ${PERIOD_LABEL[p as DosePeriod]})` + (!isMeMember ? ` ของ ${targetMemberName}` : '');
             const body = log.reason
               ? `ระบุเหตุผล: ${log.reason}`
               : `บันทึกเวลา ${new Date(log.at).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })} น.`;
@@ -365,8 +368,8 @@ export function generateHealthNotifications(
                 : `med:dose_due:${today}:${targetMemberId}:${med.id}:${p}`;
               const isMeMember = targetMemberId === CURRENT_MEMBER_ID;
               const title = isLate
-                ? `ยังไม่มีการยืนยันการรับประทานยา: ${med.name}` + (!isMeMember ? ` (${targetMemberName})` : '')
-                : `ถึงเวลารับประทานยา: ${med.name}` + (!isMeMember ? ` (${targetMemberName})` : '');
+                ? `ยังไม่ได้${w.phrase}: ${med.name}` + (!isMeMember ? ` (${targetMemberName})` : '')
+                : `ถึงเวลา${w.phrase}: ${med.name}` + (!isMeMember ? ` (${targetMemberName})` : '');
               const body = isLate
                 ? `มื้อ${PERIOD_LABEL[p as DosePeriod]} (${schedTime} น.) เลยเวลากำหนดแล้ว กรุณาตรวจสอบ`
                 : `มื้อ${PERIOD_LABEL[p as DosePeriod]} ${schedTime} น. ครั้งละ ${med.perDose} ${med.unit}`;
@@ -391,7 +394,7 @@ export function generateHealthNotifications(
                   period: p,
                   dateKey: today,
                   link: targetMemberId === CURRENT_MEMBER_ID ? '/meds' : `/members/${targetMemberId}`,
-                  actionLabel: targetMemberId === CURRENT_MEMBER_ID ? 'ยืนยันการรับประทาน' : 'ดูข้อมูลยา',
+                  actionLabel: targetMemberId === CURRENT_MEMBER_ID ? `ยืนยันการ${w.phrase}` : 'ดูข้อมูลยา',
                   actionStatus: 'pending',
                   escalatedAt: isEscalated ? now.toISOString() : null,
                   createdAt: new Date(now.getFullYear(), now.getMonth(), now.getDate(), Math.floor(schedMin / 60), schedMin % 60).toISOString(),
@@ -413,7 +416,7 @@ export function generateHealthNotifications(
                   category: 'medication',
                   type: 'dose_upcoming',
                   priority: 'routine',
-                  title: `ใกล้ถึงเวลารับประทานยา ${med.name}` + (targetMemberId !== CURRENT_MEMBER_ID ? ` (${targetMemberName})` : ''),
+                  title: `ใกล้ถึงเวลา${w.phrase} ${med.name}` + (targetMemberId !== CURRENT_MEMBER_ID ? ` (${targetMemberName})` : ''),
                   body: `มื้อ${PERIOD_LABEL[p as DosePeriod]} ในอีก ${minutesUntil} นาที (${schedTime} น.)`,
                   memberId: targetMemberId,
                   memberName: targetMemberName,
@@ -456,7 +459,7 @@ export function generateHealthNotifications(
                       category: 'medication',
                       type: 'dose_upcoming',
                       priority: 'routine',
-                      title: `ใกล้ถึงเวลารับประทานยา ${med.name}` + (targetMemberId !== CURRENT_MEMBER_ID ? ` (${targetMemberName})` : ''),
+                      title: `ใกล้ถึงเวลา${w.phrase} ${med.name}` + (targetMemberId !== CURRENT_MEMBER_ID ? ` (${targetMemberName})` : ''),
                       body: `มื้อ${PERIOD_LABEL[p as DosePeriod]} ในอีก ${minutesUntil} นาที (${schedTime} น.)`,
                       memberId: targetMemberId,
                       memberName: targetMemberName,
@@ -496,14 +499,14 @@ export function generateHealthNotifications(
             priority: out ? 'urgent' : 'important',
             title: out ? `ยาหมดแล้ว: ${med.name} (${targetMemberName})` : `ยาใกล้หมด: ${med.name} (${targetMemberName})`,
             body: out
-              ? 'คงเหลือ 0 หน่วย กรุณาขอเติมยาหรือติดต่อเภสัชกร'
-              : `พอกินอีกประมาณ ${days ?? 0} วัน (เหลือ ${med.remaining} ${med.unit})`,
+              ? 'คงเหลือ 0 หน่วย กรุณาเติมยาหรือติดต่อเภสัชกร'
+              : `พอ${w.use}อีกประมาณ ${days ?? 0} วัน (เหลือ ${med.remaining} ${med.unit})`,
             memberId: targetMemberId,
             memberName: targetMemberName,
             medId: med.id,
             medName: med.name,
             link: targetMemberId === CURRENT_MEMBER_ID ? '/meds' : `/members/${targetMemberId}`,
-            actionLabel: 'ขอเติมยา',
+            actionLabel: 'ดูยา',
             actionStatus: 'pending',
             createdAt: now.toISOString(),
             now,
@@ -528,7 +531,7 @@ export function generateHealthNotifications(
             priority: expired ? 'urgent' : 'important',
             title: expired ? `ยาหมดอายุแล้ว: ${med.name} (${targetMemberName})` : `ยาใกล้หมดอายุ: ${med.name} (${targetMemberName})`,
             body: expired
-              ? `หมดอายุเมื่อ ${med.expiryDate} ไม่ควรนำมารับประทาน`
+              ? `หมดอายุเมื่อ ${med.expiryDate} ไม่ควรนำมา${w.use}`
               : `จะหมดอายุในอีก ${daysExp} วัน (${med.expiryDate})`,
             memberId: targetMemberId,
             memberName: targetMemberName,
@@ -752,35 +755,7 @@ export function generateHealthNotifications(
   // ----------------------------------------------------
   // หมวด 4: การแจ้งเตือนระบบ (System Notifications)
   // ----------------------------------------------------
-  for (const med of ctx.medsState.meds) {
-    if (med.refillRequestedAt) {
-      const reqTime = new Date(med.refillRequestedAt).getTime();
-      if (now.getTime() - reqTime <= 7 * 86_400_000) {
-        const fp = `system:order_success:${med.id}:${med.refillRequestedAt.slice(0, 10)}`;
-        generated.push(
-          buildOrMerge(existingMap, {
-            fingerprint: fp,
-            category: 'system',
-            type: 'order_success',
-            priority: 'routine',
-            title: `การสั่งซื้อ/ขอเติมยาสำเร็จ: ${med.name}`,
-            body: `ส่งรายการขอเติมยาไปยังร้านยาเรียบร้อยแล้ว`,
-            medId: med.id,
-            medName: med.name,
-            link: '/meds',
-            actionLabel: 'ดูตารางยา',
-            actionStatus: 'resolved',
-            resolveReason: 'ระบบส่งคำขอสำเร็จ',
-            createdAt: med.refillRequestedAt,
-            now,
-            members,
-            ownerId: owner?.id,
-            routing,
-          })
-        );
-      }
-    }
-  }
+  // (ยังไม่มีการแจ้งเตือนระบบที่สร้างอัตโนมัติ)
 
   // รวมรายการเดิมที่ยังไม่ถูกแทนที่ (เช่น การแจ้งเตือนเก่าที่ยังค้างอยู่)
   const finalMap = new Map<string, HealthNotification>();

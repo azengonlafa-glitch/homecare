@@ -292,7 +292,7 @@ export const BriefView: React.FC<{ brief: PatientBrief; sessionId?: string; audi
           <Bot className="w-5 h-5 shrink-0" aria-hidden="true" />
           จัดโดยระบบ ไม่ใช่ข้อมูลที่ผู้ใช้รายงาน
         </h3>
-        <p className="text-sm text-purple-900">สร้างจากกฎตายตัว ไม่ได้ใช้ AI ไม่ใช่การวินิจฉัย {audience === 'staff' ? 'กรุณาตรวจกับข้อมูลด้านบน' : 'ตรวจกับข้อมูลด้านบนได้'}</p>
+        <p className="text-sm text-purple-900">สรุปจากข้อมูลที่กรอกไว้ ไม่ได้ใช้ AI และไม่ใช่การวินิจฉัย {audience === 'staff' ? 'กรุณาตรวจกับข้อมูลด้านบน' : 'ตรวจกับข้อมูลด้านบนได้'}</p>
         <p className="text-base text-slate-800 break-words">{assistant.summary}</p>
         {assistant.missing.length > 0 && (
           <div className="text-base text-slate-800 space-y-1.5">

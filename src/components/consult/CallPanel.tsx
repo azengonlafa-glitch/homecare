@@ -106,7 +106,7 @@ export const CallPanel: React.FC<{ call: RtcCall; kind: 'voice' | 'video'; peerN
             <StartIcon className="w-6 h-6" aria-hidden="true" />
             เริ่ม{kindName(kind)}
           </Button>
-          {!canCall && <p className="text-center text-base text-slate-600">โทรได้เมื่อผู้ให้บริการรับเรื่องแล้ว ระหว่างนี้พิมพ์ข้อความได้</p>}
+          {!canCall && <p className="text-center text-base text-slate-600">โทรได้เมื่อร้านยาหรือคลินิกรับเรื่องแล้ว ระหว่างนี้พิมพ์ข้อความได้</p>}
         </>
       ) : (
         <>

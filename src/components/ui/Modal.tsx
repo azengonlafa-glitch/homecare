@@ -1,7 +1,8 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { cn } from '../../lib/cn';
+import { playUiSound } from '../../lib/sound';
 
 interface ModalProps {
   open: boolean;
@@ -59,6 +60,24 @@ export const Modal: React.FC<ModalProps> = ({
 }) => {
   const dialogRef = useRef<HTMLDivElement>(null);
   const titleId = React.useId();
+  // ค้างหน้าต่างไว้ครู่หนึ่งหลังสั่งปิด เพื่อเล่นอนิเมชันตอนปิด (ลดการเคลื่อนไหว = ปิดทันที)
+  const [mounted, setMounted] = useState(open);
+  const wasOpen = useRef(false);
+  useEffect(() => {
+    if (open !== wasOpen.current) playUiSound(open ? 'open' : 'close');
+    wasOpen.current = open;
+    if (open) {
+      setMounted(true);
+      return;
+    }
+    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    if (reduce) {
+      setMounted(false);
+      return;
+    }
+    const t = window.setTimeout(() => setMounted(false), 200);
+    return () => window.clearTimeout(t);
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -78,7 +97,8 @@ export const Modal: React.FC<ModalProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
-  if (!open) return null;
+  if (!open && !mounted) return null;
+  const closing = !open;
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape' && dismissable) {
@@ -102,9 +122,12 @@ export const Modal: React.FC<ModalProps> = ({
 
   return createPortal(
     <div
-      className="anim-fade fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-purple-950/50 sm:p-4"
+      className={cn(
+        'modal-backdrop fixed inset-0 z-[60] flex items-end sm:items-center justify-center sm:p-4',
+        closing && 'is-closing pointer-events-none'
+      )}
       onMouseDown={(e) => {
-        if (dismissable && e.target === e.currentTarget) onClose();
+        if (!closing && dismissable && e.target === e.currentTarget) onClose();
       }}
     >
       <div
@@ -113,9 +136,14 @@ export const Modal: React.FC<ModalProps> = ({
         aria-modal="true"
         aria-labelledby={titleId}
         onKeyDown={handleKeyDown}
-        className="anim-spring flex flex-col w-full sm:max-w-3xl max-h-[92dvh] sm:max-h-[86dvh] bg-white rounded-t-[2.25rem] sm:rounded-[2.25rem] shadow-2xl overflow-hidden"
+        className={cn(
+          'modal-sheet modal-paper relative flex flex-col w-full sm:max-w-3xl max-h-[92dvh] sm:max-h-[86dvh] rounded-t-[2.25rem] sm:rounded-[2.25rem]',
+          closing && 'is-closing'
+        )}
       >
-        <div className="px-5 sm:px-8 pt-5 sm:pt-7 pb-4 shrink-0">
+        {/* ที่จับด้านบนบนมือถือ บอกว่าเป็นแผ่นที่เลื่อนขึ้นมา */}
+        <span aria-hidden="true" className="sm:hidden mx-auto mt-2.5 h-1.5 w-12 shrink-0 rounded-full bg-slate-300" />
+        <div className="px-5 sm:px-8 pt-3 sm:pt-7 pb-4 shrink-0">
           <div className="flex items-start justify-between gap-4">
             <h2 id={titleId} className="text-xl sm:text-2xl font-bold text-slate-900 break-words min-w-0">
               {title}
@@ -124,7 +152,7 @@ export const Modal: React.FC<ModalProps> = ({
               type="button"
               onClick={onClose}
               aria-label="ปิดหน้าต่าง"
-              className="inline-flex items-center justify-center w-11 h-11 shrink-0 rounded-full bg-purple-50 text-purple-800 hover:bg-purple-100 cursor-pointer"
+              className="modal-close inline-flex items-center justify-center w-11 h-11 shrink-0 rounded-full bg-white/80 ring-1 ring-slate-200 text-slate-700 hover:bg-white hover:text-slate-900 cursor-pointer"
             >
               <X className="w-6 h-6" aria-hidden="true" />
             </button>
@@ -138,7 +166,7 @@ export const Modal: React.FC<ModalProps> = ({
           tabIndex={bodyLabel ? 0 : undefined}
           aria-label={bodyLabel}
           className={cn(
-            'flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 sm:px-8 border-t border-slate-200',
+            'flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 sm:px-8 border-t-2 border-dashed border-slate-200',
             bodyLabel && 'focus-visible:outline-offset-[-3px]'
           )}
         >
@@ -146,7 +174,7 @@ export const Modal: React.FC<ModalProps> = ({
         </div>
 
         {footer && (
-          <div className="shrink-0 px-5 sm:px-8 py-4 border-t border-slate-200 bg-white pb-[max(1rem,env(safe-area-inset-bottom))]">
+          <div className="shrink-0 px-5 sm:px-8 py-4 border-t-2 border-dashed border-slate-200 pb-[max(1rem,env(safe-area-inset-bottom))]">
             {footer}
           </div>
         )}

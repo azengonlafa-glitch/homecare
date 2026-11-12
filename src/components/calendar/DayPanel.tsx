@@ -1,5 +1,6 @@
 import React from 'react';
-import { CalendarX, Plus } from 'lucide-react';
+import { Dino } from '../ui/Dino';
+import { Plus } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { EventCard } from './EventCard';
 import type { HouseholdMember } from '../../lib/settings';
@@ -64,9 +65,7 @@ export const DayPanel: React.FC<DayPanelProps> = ({
 
       {occurrences.length === 0 ? (
         <div className="py-10 text-center">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-purple-50 text-purple-700 flex items-center justify-center">
-            <CalendarX className="w-8 h-8" aria-hidden="true" />
-          </div>
+          <Dino pose="sleep" bob className="mx-auto mb-3 h-24 w-28" />
           <p className="text-base text-slate-600">วันนี้ไม่มีกิจกรรมที่ต้องทำ</p>
         </div>
       ) : (

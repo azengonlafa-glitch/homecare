@@ -8,7 +8,7 @@ import { ConfirmDialog } from '../components/settings/ConfirmDialog';
 import { AttachmentThumb } from '../components/ui/AttachmentPicker';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
-import { Mascot } from '../components/ui/Mascot';
+import { Dino } from '../components/ui/Dino';
 import { TextField } from '../components/ui/TextField';
 import { useToast } from '../components/ui/Toast';
 import {
@@ -54,7 +54,7 @@ export const FolderDetailPage: React.FC = () => {
   if (!folder) {
     return (
       <Card className="space-y-4 py-12 text-center">
-        <Mascot kind="cloud" mood="calm" className="mx-auto h-24 w-24" />
+        <Dino pose="confused" bob className="mx-auto h-28 w-32" />
         <h1 className="text-xl font-semibold text-slate-900">ไม่พบโฟลเดอร์นี้</h1>
         <p className="text-base text-slate-700">โฟลเดอร์อาจถูกลบไปแล้ว</p>
         <Link to="/folders" className="inline-block font-bold text-purple-800 underline">
@@ -65,7 +65,7 @@ export const FolderDetailPage: React.FC = () => {
   }
 
   const color = colorOf(folder.color);
-  const fail = (err: unknown) => toast.show(err instanceof Error ? err.message : 'ทำรายการไม่สำเร็จ', { tone: 'error' });
+  const fail = (err: unknown) => toast.show(err instanceof Error ? err.message : 'ทำรายการไม่สำเร็จ ลองอีกครั้ง', { tone: 'error' });
 
   const addDocs = (items: { attachment: Attachment; input: DocInput }[]) => {
     try {
@@ -151,7 +151,7 @@ export const FolderDetailPage: React.FC = () => {
 
       {folder.docs.length === 0 ? (
         <Card className="space-y-4 py-10 text-center">
-          <Mascot kind="ball" mood="sleepy" className="mx-auto h-24 w-24" />
+          <Dino pose="peek" bob className="mx-auto h-28 w-32" />
           <div className="space-y-1">
             <h2 className="text-xl font-semibold text-slate-900">โฟลเดอร์นี้ยังว่างอยู่</h2>
             <p className="text-base text-slate-700">เพิ่มรูปหรือไฟล์ PDF แล้วใส่ชื่อ ชนิด และวันที่ จะหาเจอง่ายตอนปรึกษา</p>
@@ -237,7 +237,7 @@ export const FolderDetailPage: React.FC = () => {
       <DocumentFormModal open={adding} onClose={() => setAdding(false)} onAdd={addDocs} />
       <DocumentFormModal open={!!editingDoc} doc={editingDoc ?? undefined} onClose={() => setEditingDoc(null)} onEdit={editDoc} />
       <FolderFormModal open={editingFolder} state={state} folder={folder} onClose={() => setEditingFolder(false)} onSubmit={editFolder} />
-      <ConfirmDialog open={!!deletingDoc} title="ลบเอกสารนี้?" message={`ลบ “${deletingDoc?.title ?? ''}” ออกจากโฟลเดอร์ ไฟล์จะถูกลบด้วยและกู้คืนไม่ได้ (ถ้าเคยส่งให้ผู้เชี่ยวชาญแล้ว สำเนาที่ส่งไปจะยังอยู่ในประวัติการปรึกษา)`} confirmLabel="ลบเอกสาร" onConfirm={removeDoc} onCancel={() => setDeletingDoc(null)} />
+      <ConfirmDialog open={!!deletingDoc} title="ลบเอกสารนี้?" message={`ลบ “${deletingDoc?.title ?? ''}” ออกจากโฟลเดอร์ ไฟล์จะถูกลบด้วยและกู้คืนไม่ได้ (ถ้าเคยส่งให้เภสัชกรหรือคลินิกแล้ว สำเนาที่ส่งไปจะยังอยู่ในประวัติการปรึกษา)`} confirmLabel="ลบเอกสาร" onConfirm={removeDoc} onCancel={() => setDeletingDoc(null)} />
       <ConfirmDialog open={deletingFolder} title={`ลบโฟลเดอร์ ${folder.name}?`} message={folder.docs.length > 0 ? `เอกสาร ${folder.docs.length} ไฟล์ในโฟลเดอร์นี้จะถูกลบทั้งหมดและกู้คืนไม่ได้` : 'โฟลเดอร์นี้ว่างอยู่ ลบได้ทันที'} confirmLabel="ลบโฟลเดอร์" onConfirm={removeFolder} onCancel={() => setDeletingFolder(false)} />
     </div>
   );

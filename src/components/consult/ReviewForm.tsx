@@ -59,7 +59,7 @@ export const ReviewForm: React.FC<{ sessionId: string; providerName: string; exi
     <Card className="space-y-3 p-4 sm:p-5">
       <div>
         <h2 className="text-lg font-bold text-slate-900">ให้คะแนน {providerName}</h2>
-        <p className="text-sm sm:text-base text-slate-600">รีวิวของคุณช่วยให้คนอื่นเลือกผู้ให้บริการได้ง่ายขึ้น แสดงแบบไม่ระบุชื่อ และไม่เปิดเผยข้อมูลสุขภาพของคุณ</p>
+        <p className="text-sm sm:text-base text-slate-600">รีวิวของคุณช่วยให้คนอื่นเลือกร้านยาหรือคลินิกได้ง่ายขึ้น แสดงแบบไม่ระบุชื่อ และไม่เปิดเผยข้อมูลสุขภาพของคุณ</p>
       </div>
       <StarInput
         value={stars}

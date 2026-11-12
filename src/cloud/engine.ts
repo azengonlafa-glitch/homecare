@@ -763,8 +763,14 @@ export function explainError(err: unknown): string {
   const table: [RegExp, string][] = [
     [/invalid_code/, 'ไม่พบรหัสเชิญนี้ ตรวจสอบรหัสอีกครั้ง'],
     [/already_in_home/, 'บัญชีนี้อยู่ในบ้านแล้ว'],
-    [/owner_cannot_leave/, 'ผู้ดูแลหลักออกจากบ้านเองไม่ได้ ต้องมอบบทบาทให้คนอื่นหรือลบบ้านก่อน'],
+    [/too_many_attempts/, 'ใส่รหัสเชิญผิดหลายครั้งแล้ว รอ 15 นาทีแล้วลองใหม่ หรือขอรหัสใหม่จากผู้ดูแลหลักของบ้าน'],
+    [/owner_cannot_leave/, 'ผู้ดูแลหลักออกจากกลุ่มบ้านเองไม่ได้ ต้องมอบบทบาทให้คนอื่นหรือลบบ้านก่อน'],
     [/forbidden/, 'คุณไม่มีสิทธิ์ทำรายการนี้'],
+    [/not_authenticated/, 'หมดเวลาเข้าสู่ระบบแล้ว เข้าสู่ระบบอีกครั้งแล้วลองใหม่'],
+    [/owner_has_members/, 'คุณเป็นผู้ดูแลหลักของบ้านที่ยังมีคนอื่นอยู่ มอบบทบาทผู้ดูแลหลักให้คนอื่นก่อน แล้วค่อยลบบัญชี'],
+    [/files_remaining/, 'ลบไฟล์แนบของคุณไม่ครบ จึงยังไม่ลบบัญชี (ข้อมูลของคุณยังอยู่ครบ) ลองอีกครั้ง'],
+    [/delete_my_account|PGRST202|Could not find the function/i, 'ระบบลบบัญชียังไม่เปิดใช้งานบนเซิร์ฟเวอร์ ข้อมูลของคุณยังอยู่ครบ โปรดติดต่อทีมงาน'],
+    [/no_home/, 'ยังไม่ได้เข้าร่วมบ้าน เข้าร่วมหรือสร้างบ้านก่อนจึงจะทำรายการนี้ได้'],
     [/Invalid login credentials/i, 'อีเมลหรือรหัสผ่านไม่ถูกต้อง'],
     [/Email not confirmed/i, 'ยังไม่ได้ยืนยันอีเมล กรุณาเปิดอีเมลแล้วกดลิงก์ยืนยัน'],
     [/User already registered/i, 'อีเมลนี้สมัครไว้แล้ว ลองเข้าสู่ระบบแทน'],
@@ -772,7 +778,7 @@ export function explainError(err: unknown): string {
     [/rate limit|too many/i, 'ทำรายการบ่อยเกินไป กรุณารอสักครู่แล้วลองใหม่'],
     [/Failed to fetch|NetworkError|network/i, 'เชื่อมต่ออินเทอร์เน็ตไม่ได้ กรุณาลองใหม่'],
   ];
-  return table.find(([re]) => re.test(message))?.[1] ?? 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง';
+  return table.find(([re]) => re.test(message))?.[1] ?? 'ทำรายการไม่สำเร็จ ลองอีกครั้ง ถ้ายังไม่ได้ ให้โหลดหน้านี้ใหม่หรือลองใหม่ภายหลัง';
 }
 
 export async function signUpWithEmail(email: string, password: string, name: string): Promise<{ needsConfirm: boolean }> {
@@ -834,6 +840,8 @@ export async function joinHome(code: string, relation: string): Promise<void> {
   if (!c) throw new Error('not_authenticated');
   const { data, error } = await requireClient().rpc('join_home', { p_code: code, p_relation: relation });
   if (error) throw error;
+  // ตั้งแต่ hardening.sql: รหัสผิดคืนค่า null แทนการโยนข้อผิดพลาด (เพื่อนับจำนวนครั้งที่ลองผิดได้)
+  if (!data) throw new Error('invalid_code');
   c.homeId = data as string;
   c.role = 'member';
   await afterHomeChange();
@@ -886,6 +894,78 @@ export async function deleteHome(): Promise<void> {
   clearHomeCaches();
   stopRealtime();
   startRealtime();
+}
+
+// ---------- ลบบัญชีของฉัน (PDPA ม.33: สิทธิขอให้ลบข้อมูล) ----------
+
+/**
+ * ลบไฟล์ทั้งหมดใต้โฟลเดอร์หนึ่งใน Storage แล้วตรวจซ้ำว่าไม่เหลือ
+ * (ไฟล์ลบผ่าน SQL ไม่ได้ ต้องผ่าน Storage API) ถ้าเหลือต้องหยุด ไม่ลบบัญชีทั้งที่ไฟล์ยังค้าง
+ */
+async function removeAllFilesUnder(sb: ReturnType<typeof requireClient>, bucket: string, prefix: string): Promise<void> {
+  const { data, error } = await sb.storage.from(bucket).list(prefix, { limit: 1000 });
+  if (error) throw error;
+  if (data?.length) {
+    const { error: removeError } = await sb.storage.from(bucket).remove(data.map((f) => `${prefix}/${f.name}`));
+    if (removeError) throw removeError;
+  }
+  const { data: left, error: leftError } = await sb.storage.from(bucket).list(prefix, { limit: 1 });
+  if (leftError) throw leftError;
+  if (left?.length) throw new Error('files_remaining');
+}
+
+/**
+ * ลบบัญชีและข้อมูลทั้งหมดของผู้ใช้คนนี้ แล้วออกจากระบบ
+ * 1) ผู้ดูแลหลักที่ยังมีคนอื่นอยู่ในบ้าน: ปฏิเสธ (owner_has_members) ต้องมอบบทบาทก่อน
+ * 2) ผู้ดูแลหลักที่อยู่คนเดียว: ลบไฟล์แนบของบ้าน แล้วฟังก์ชันฝั่งเซิร์ฟเวอร์ลบบ้านให้
+ * 3) ลบไฟล์การปรึกษาของตัวเอง
+ * 4) เรียก delete_my_account() ฝั่งเซิร์ฟเวอร์ (supabase/account_delete.sql) ลบบัญชี ข้อมูลส่วนตัว และการปรึกษา
+ * ทุกขั้นก่อนข้อ 4 ล้มเหลวได้โดยข้อมูลยังอยู่ครบ
+ */
+export async function deleteMyAccount(): Promise<void> {
+  const c = ctx;
+  if (!c) throw new Error('not_authenticated');
+  const sb = requireClient();
+
+  if (c.homeId && c.role === 'owner') {
+    const { count, error } = await sb
+      .from('home_members')
+      .select('user_id', { count: 'exact', head: true })
+      .eq('home_id', c.homeId);
+    if (error) throw error;
+    if ((count ?? 0) > 1) throw new Error('owner_has_members');
+    await removeAllFilesUnder(sb, 'attachments', c.homeId);
+  }
+
+  const { data: sessions, error: sessionError } = await sb.from('consult_sessions').select('id').eq('patient_id', c.userId);
+  if (sessionError) throw sessionError;
+  for (const session of sessions ?? []) {
+    await removeAllFilesUnder(sb, 'consult-files', String(session.id));
+  }
+
+  const { error } = await sb.rpc('delete_my_account');
+  if (error) throw error;
+
+  // บัญชีถูกลบแล้ว: หยุดซิงก์ ออกจากระบบเฉพาะเครื่องนี้ และล้างข้อมูลที่ค้างในเครื่อง
+  stopRealtime();
+  stopPolling();
+  setSyncHandler(null);
+  ctx = null;
+  await sb.auth.signOut({ scope: 'local' }).catch(() => undefined);
+  wipeEverythingLocal();
+  window.location.replace('/login');
+}
+
+/** ล้างข้อมูลทุกอย่างของแอปในเครื่องนี้ (localStorage และไฟล์แนบในเครื่อง) ใช้ตอนลบบัญชี */
+export function wipeEverythingLocal(): void {
+  wipeLocal();
+  for (const db of [FILES_DB, 'growa_consult_files_v1']) {
+    try {
+      indexedDB.deleteDatabase(db);
+    } catch {
+      // ล้างไฟล์ในเครื่องไม่ได้: ข้ามได้
+    }
+  }
 }
 
 // ---------- ไฟล์แนบ (Supabase Storage) ----------

@@ -9,7 +9,7 @@ self.addEventListener('push', (event) => {
   event.waitUntil(
     self.registration.showNotification(data.title || 'Growa', {
       body: data.body || 'มีเรื่องที่ต้องดูในแอป',
-      icon: '/icon.svg',
+      icon: '/icon-192.png',
       tag: data.tag,
       data: { url: data.url || '/consult/history' },
     })

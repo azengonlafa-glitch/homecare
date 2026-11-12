@@ -9,6 +9,7 @@ import {
   type PushSubscriptionRow,
   type SendResult,
 } from '../functions/med-dose-reminders/doses';
+import { FORM_OPTIONS, doseWords } from '../../src/lib/meds';
 
 // 08:05 น. ไทย วันที่ 2026-11-11 (พุธ) = 01:05 UTC
 const AT_0805 = new Date('2026-11-11T01:05:00Z');
@@ -48,7 +49,7 @@ describe('isScheduledOn', () => {
 
 describe('dueDoseKeys', () => {
   it('เตือนเมื่อถึงเวลา (ค่ากลางเช้า 08:00) และยังไม่ได้บันทึก', () => {
-    expect(dueDoseKeys(doc([med()]), AT_0805)).toEqual([{ key: '2026-11-11:morning', period: 'morning' }]);
+    expect(dueDoseKeys(doc([med()]), AT_0805)).toEqual([{ key: '2026-11-11:morning', period: 'morning', oral: true }]);
   });
   it('ยังไม่ถึงเวลา หรือเลยหน้าต่างส่งมานานแล้ว ไม่เตือน', () => {
     expect(dueDoseKeys(doc([med()]), new Date('2026-11-11T00:55:00Z'))).toEqual([]); // 07:55
@@ -69,11 +70,46 @@ describe('dueDoseKeys', () => {
   });
 });
 
+describe('รายการ "ยากิน" ฝั่งเซิร์ฟเวอร์ต้องตรงกับฝั่งแอป', () => {
+  it('ทุกรูปแบบยาใน FORM_OPTIONS: เซิร์ฟเวอร์ถือเป็นยากินเมื่อแอปใช้คำว่า "กิน" (พอกิน…อีก)', () => {
+    for (const { value } of FORM_OPTIONS) {
+      const clientOral = doseWords(value).use === 'กิน';
+      const serverOral = dueDoseKeys(doc([med({ form: value })]), AT_0805)[0].oral;
+      expect(serverOral, `รูปแบบ ${value}`).toBe(clientOral);
+    }
+  });
+});
+
 describe('ข้อความแจ้งเตือน', () => {
   it('ไม่มีชื่อยา เพราะอาจขึ้นบนหน้าจอล็อก', () => {
     const p = JSON.parse(dosePayload('2026-11-11:morning'));
     expect(p.url).toBe('/meds');
     expect(JSON.stringify(p)).not.toMatch(/Metformin|mg/i);
+  });
+
+  it('ยากินทั้งหมด = "กินยา" ถ้ามียาแบบอื่นปน = "ใช้ยา" และไม่ระบุชนิด (ไม่เผยว่าฉีดหรือหยอด)', () => {
+    expect(JSON.parse(dosePayload('k')).title).toBe('Growa: ถึงเวลากินยา');
+    expect(JSON.parse(dosePayload('k', true)).title).toBe('Growa: ถึงเวลากินยา');
+    const other = JSON.parse(dosePayload('k', false));
+    expect(other.title).toBe('Growa: ถึงเวลาใช้ยา');
+    expect(JSON.stringify(other)).not.toMatch(/ฉีด|หยอด|ทา|พ่น|insulin/i);
+  });
+
+  it('เลือกคำจากรูปแบบยาในมื้อนั้น', () => {
+    const oralOnly = dueDoseKeys(doc([med({ form: 'tablet' }), med({ id: 'm2', form: 'liquid' })]), AT_0805);
+    expect(oralOnly).toEqual([{ key: '2026-11-11:morning', period: 'morning', oral: true }]);
+    // ไม่ระบุรูปแบบ (ข้อมูลเก่า) = ยากิน
+    expect(dueDoseKeys(doc([med()]), AT_0805)[0].oral).toBe(true);
+    // ยาผง เม็ดฟู่ วิตามิน สมุนไพร นับเป็นยากิน แต่ยาอมและยาอมใต้ลิ้นไม่ใช่ (ตรงกับ WORD_TABLE ฝั่งแอป)
+    for (const form of ['powder', 'effervescent', 'supplement', 'herbal']) {
+      expect(dueDoseKeys(doc([med({ form })]), AT_0805)[0].oral).toBe(true);
+    }
+    for (const form of ['lozenge', 'sublingual', 'eye', 'patch', 'inhaler', 'suppository', 'pen']) {
+      expect(dueDoseKeys(doc([med({ form })]), AT_0805)[0].oral).toBe(false);
+    }
+    // มียาหยอดปนแม้เพียงตัวเดียว = ใช้ยา ไม่ว่าลำดับไหน
+    expect(dueDoseKeys(doc([med({ form: 'tablet' }), med({ id: 'm2', form: 'drops' })]), AT_0805)[0].oral).toBe(false);
+    expect(dueDoseKeys(doc([med({ form: 'drops' }), med({ id: 'm2', form: 'tablet' })]), AT_0805)[0].oral).toBe(false);
   });
 });
 
