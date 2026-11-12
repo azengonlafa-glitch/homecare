@@ -14,7 +14,7 @@ interface TopBarProps {
 
 /** แถบบน: ขนาดใหญ่เต็มตา ฟอนต์อ่านง่าย ตอบสนองทั้งจอมือถือและจอคอม */
 export const TopBar: React.FC<TopBarProps> = ({ user, photo, onLogout }) => (
-  <header className="sticky top-0 z-40 h-20 [@media(max-height:500px)]:static [@media(max-height:500px)]:h-16 border-b border-[#EADBCC]/70 bg-[#FFFDF7]/75 backdrop-blur-md">
+  <header className="sticky top-0 z-40 h-20 [@media(max-height:500px)]:static [@media(max-height:500px)]:h-16 border-b border-[#EADBCC]/70 bg-[#FFFDF7]/75 backdrop-blur-md lg:border-b-0 lg:bg-transparent lg:bg-gradient-to-b lg:from-[#FFFDF7]/70 lg:to-[#FFFDF7]/0 lg:backdrop-blur-none">
     <div className="h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-2 sm:gap-4">
       <div className="lg:hidden min-w-0 flex-1">
         <HomeHeader variant="topbar" />
