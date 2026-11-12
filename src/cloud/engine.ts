@@ -763,6 +763,7 @@ export function explainError(err: unknown): string {
   const table: [RegExp, string][] = [
     [/invalid_code/, 'ไม่พบรหัสเชิญนี้ ตรวจสอบรหัสอีกครั้ง'],
     [/already_in_home/, 'บัญชีนี้อยู่ในบ้านแล้ว'],
+    [/too_many_attempts/, 'ใส่รหัสเชิญผิดหลายครั้งแล้ว รอ 15 นาทีแล้วลองใหม่ หรือขอรหัสใหม่จากผู้ดูแลหลักของบ้าน'],
     [/owner_cannot_leave/, 'ผู้ดูแลหลักออกจากกลุ่มบ้านเองไม่ได้ ต้องมอบบทบาทให้คนอื่นหรือลบบ้านก่อน'],
     [/forbidden/, 'คุณไม่มีสิทธิ์ทำรายการนี้'],
     [/not_authenticated/, 'หมดเวลาเข้าสู่ระบบแล้ว เข้าสู่ระบบอีกครั้งแล้วลองใหม่'],
@@ -839,6 +840,8 @@ export async function joinHome(code: string, relation: string): Promise<void> {
   if (!c) throw new Error('not_authenticated');
   const { data, error } = await requireClient().rpc('join_home', { p_code: code, p_relation: relation });
   if (error) throw error;
+  // ตั้งแต่ hardening.sql: รหัสผิดคืนค่า null แทนการโยนข้อผิดพลาด (เพื่อนับจำนวนครั้งที่ลองผิดได้)
+  if (!data) throw new Error('invalid_code');
   c.homeId = data as string;
   c.role = 'member';
   await afterHomeChange();

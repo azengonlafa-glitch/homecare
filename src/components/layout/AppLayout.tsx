@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
@@ -6,6 +6,7 @@ import { MobileNav } from './MobileNav';
 import { MENU_PATH, NAV_ITEMS } from './navItems';
 import { ToastProvider } from '../ui/Toast';
 import { CanvasDecor } from '../ui/Decor';
+import { PageLoading } from '../ui/PageLoading';
 import { SETTINGS_CHANGED_EVENT, loadSettings } from '../../lib/settings';
 import { cloudEnabled } from '../../cloud/client';
 import { signOutAll } from '../../cloud/engine';
@@ -102,7 +103,7 @@ export const AppLayout: React.FC = () => {
           <main id="main-content" className="flex-1 w-full max-w-7xl mx-auto p-4 sm:px-6 sm:pt-6 lg:px-8 lg:pt-8 pb-36 [@media(max-height:500px)]:pb-24 lg:pb-8">
             {/* เปลี่ยนหน้าเมื่อไรเนื้อหาจะค่อย ๆ เลื่อนขึ้นมาเบา ๆ */}
             <div key={location.pathname} className="anim-page">
-              <Outlet />
+              <Suspense fallback={<PageLoading />}><Outlet /></Suspense>
             </div>
           </main>
         </div>

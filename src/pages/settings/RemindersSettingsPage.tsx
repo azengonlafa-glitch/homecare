@@ -405,7 +405,7 @@ export const RemindersSettingsPage: React.FC = () => {
                     </p>
                   </div>
 
-                  <div className="flex flex-wrap gap-1.5 shrink-0">
+                  <div className="flex flex-wrap gap-1.5 min-w-0 max-w-full">
                     {[15, 30, 45, 60].map((mins) => (
                       <button
                         key={mins}
