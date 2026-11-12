@@ -57,7 +57,7 @@ export const ReviewConsentPage: React.FC = () => {
 
   if (loading && !data) return <LoadingCard label="กำลังรวมข้อมูลสุขภาพของคุณ..." />;
   if (error) return <ErrorCard message={error} onRetry={reload} />;
-  if (!data?.provider) return <ErrorCard message="ไม่พบผู้ให้บริการที่เลือก กรุณากลับไปเลือกใหม่" />;
+  if (!data?.provider) return <ErrorCard message="ไม่พบร้านยาหรือคลินิกที่เลือก กรุณากลับไปเลือกใหม่" />;
 
   const provider = data.provider;
   const docOutdated = docVersion !== CONSENT_DOCUMENT_VERSION;

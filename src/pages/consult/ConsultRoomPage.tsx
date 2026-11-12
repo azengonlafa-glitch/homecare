@@ -26,7 +26,7 @@ function addAppointmentToCalendar(sessionId: string, iso: string): boolean {
   const user = currentJournalUser();
   const event: CalendarEvent = {
     id,
-    title: 'นัดปรึกษาผู้เชี่ยวชาญ',
+    title: 'นัดปรึกษาเภสัชกรหรือคลินิก',
     description: '',
     important: false,
     tags: [],
@@ -73,7 +73,7 @@ export const ConsultRoomPage: React.FC = () => {
 
   const { session, provider, note, review } = data.bundle;
   const open = session.status === 'requested' || session.status === 'active';
-  const providerName = provider?.displayName ?? 'ผู้ให้บริการ';
+  const providerName = provider?.displayName ?? 'ร้านยาหรือคลินิก';
 
   const cancel = async () => {
     try {
@@ -130,7 +130,7 @@ export const ConsultRoomPage: React.FC = () => {
               เพื่อทดลองตอบ
             </>
           ) : (
-            'ส่งข้อมูลแล้ว กำลังรอผู้ให้บริการรับเรื่อง'
+            'ส่งข้อมูลแล้ว กำลังรอร้านยาหรือคลินิกรับเรื่อง'
           )}
         </p>
       )}
@@ -172,7 +172,7 @@ export const ConsultRoomPage: React.FC = () => {
       <ConfirmDialog
         open={confirmCancel}
         title="ยกเลิกการปรึกษานี้?"
-        message="ผู้ให้บริการจะไม่สามารถตอบในห้องนี้ได้อีก"
+        message="ร้านยาหรือคลินิกจะไม่สามารถตอบในห้องนี้ได้อีก"
         confirmLabel="ยกเลิกการปรึกษา"
         onConfirm={() => void cancel()}
         onCancel={() => setConfirmCancel(false)}

@@ -16,7 +16,7 @@ import type { Trend } from '../../consult/types';
 
 const toggle = (list: string[], v: string) => (list.includes(v) ? list.filter((x) => x !== v) : [...list, v]);
 
-/** Module 5: ผู้ใช้อัปเดตอาการตามนัด เทียบกับครั้งก่อน แล้วส่งให้ผู้ให้บริการ */
+/** Module 5: ผู้ใช้อัปเดตอาการตามนัด เทียบกับครั้งก่อน แล้วส่งให้ร้านยาหรือคลินิก */
 export const FollowUpPage: React.FC = () => {
   const { id = '' } = useParams();
   const navigate = useNavigate();
@@ -52,7 +52,7 @@ export const FollowUpPage: React.FC = () => {
     try {
       const backend = await getBackend();
       await backend.respondFollowUp(id, { severity, feelings, trend, note: note.trim() });
-      toast.show('ส่งข้อมูลให้ผู้ให้บริการแล้ว');
+      toast.show('ส่งข้อมูลให้ร้านยาหรือคลินิกแล้ว');
       navigate('/consult/history', { replace: true });
     } catch (err) {
       toast.show(consultErrorText(err), { tone: 'error' });
@@ -102,7 +102,7 @@ export const FollowUpPage: React.FC = () => {
           <TextAreaField id="fu-note" label="เล่าเพิ่มเติม" labelSuffix="(ไม่บังคับ)" rows={3} maxLength={2000} value={note} onChange={(e) => setNote(e.target.value)} />
           <Button fullWidth disabled={busy} onClick={() => void submit()}>
             {busy ? <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" /> : <Send className="w-5 h-5" aria-hidden="true" />}
-            ส่งให้ผู้ให้บริการ
+            ส่งให้ร้านยาหรือคลินิก
           </Button>
       </Card>
     </div>

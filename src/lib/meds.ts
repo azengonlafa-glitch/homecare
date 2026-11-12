@@ -11,15 +11,32 @@ export const MEDS_CHANGED_EVENT = 'growa-meds-changed';
 export type DosePeriod = 'morning' | 'noon' | 'evening' | 'bedtime';
 export type MealTiming = 'before' | 'after' | 'with' | 'any';
 export type MedForm =
+  // ยากิน/อม
   | 'tablet'
   | 'capsule'
   | 'liquid'
+  | 'powder'
+  | 'effervescent'
+  | 'lozenge'
+  | 'sublingual'
+  | 'supplement'
+  | 'herbal'
+  // ยาฉีดและอุปกรณ์
   | 'injection'
+  | 'pen'
   | 'needle'
-  | 'testkit'
+  // ใช้ภายนอก
   | 'topical'
+  | 'patch'
+  // หยอด พ่น สูด
   | 'drops'
+  | 'eye'
+  | 'ear'
   | 'spray'
+  | 'inhaler'
+  // อื่น ๆ
+  | 'suppository'
+  | 'testkit'
   | 'other';
 export type DoseStatus = 'taken' | 'missed' | 'skipped';
 
@@ -74,8 +91,6 @@ export interface Medication {
   pillPhoto: Attachment | null;
   labelPhoto: Attachment | null;
   note: string;
-  /** เวลาที่กด “ขอเติมยา” ล่าสุด */
-  refillRequestedAt: string | null;
   createdAt: string;
 }
 
@@ -121,17 +136,44 @@ export const MEAL_OPTIONS: { value: MealTiming; label: string }[] = [
   { value: 'any', label: 'ไม่ระบุ' },
 ];
 
-export const FORM_OPTIONS: { value: MedForm; label: string; unit: string }[] = [
-  { value: 'tablet', label: 'ยาเม็ด', unit: 'เม็ด' },
-  { value: 'capsule', label: 'แคปซูล', unit: 'แคปซูล' },
-  { value: 'liquid', label: 'ยาน้ำ', unit: 'ช้อนชา' },
-  { value: 'injection', label: 'ยาฉีด', unit: 'ยูนิต' },
-  { value: 'needle', label: 'เข็ม/อุปกรณ์ฉีดยา', unit: 'เข็ม' },
-  { value: 'testkit', label: 'ชุดตรวจ/แผ่นตรวจ', unit: 'แผ่น' },
-  { value: 'topical', label: 'ยาทา/ครีม', unit: 'ครั้ง' },
-  { value: 'drops', label: 'ยาหยอด', unit: 'หยด' },
-  { value: 'spray', label: 'ยาพ่น', unit: 'พ่น' },
-  { value: 'other', label: 'อื่น ๆ', unit: 'ชิ้น' },
+export type FormGroup = 'oral' | 'inject' | 'external' | 'drop' | 'other';
+
+/** หมวดของรูปแบบยา ใช้จัดกลุ่มปุ่มเลือกในฟอร์มเพิ่มยา */
+export const FORM_GROUPS: { id: FormGroup; label: string }[] = [
+  { id: 'oral', label: 'ยากินและยาอม' },
+  { id: 'inject', label: 'ยาฉีดและอุปกรณ์' },
+  { id: 'external', label: 'ยาใช้ภายนอก' },
+  { id: 'drop', label: 'ยาหยอด พ่น สูด' },
+  { id: 'other', label: 'อื่น ๆ' },
+];
+
+/**
+ * รูปแบบยาทั้งหมด ป้ายชื่อ (label) ต้องไม่ซ้ำและห้ามเปลี่ยนป้ายเดิม
+ * เพราะยาของสมาชิกคนอื่นเก็บรูปแบบเป็นข้อความป้ายแล้วแปลงกลับด้วยการเทียบป้าย (ดู medFromMember)
+ */
+export const FORM_OPTIONS: { value: MedForm; label: string; unit: string; group: FormGroup }[] = [
+  { value: 'tablet', label: 'ยาเม็ด', unit: 'เม็ด', group: 'oral' },
+  { value: 'capsule', label: 'แคปซูล', unit: 'แคปซูล', group: 'oral' },
+  { value: 'liquid', label: 'ยาน้ำ', unit: 'ช้อนชา', group: 'oral' },
+  { value: 'powder', label: 'ยาผง/ซอง', unit: 'ซอง', group: 'oral' },
+  { value: 'effervescent', label: 'เม็ดฟู่/ละลายน้ำ', unit: 'เม็ด', group: 'oral' },
+  { value: 'lozenge', label: 'ยาอม', unit: 'เม็ด', group: 'oral' },
+  { value: 'sublingual', label: 'ยาอมใต้ลิ้น', unit: 'เม็ด', group: 'oral' },
+  { value: 'supplement', label: 'วิตามิน/อาหารเสริม', unit: 'เม็ด', group: 'oral' },
+  { value: 'herbal', label: 'ยาสมุนไพร', unit: 'เม็ด', group: 'oral' },
+  { value: 'injection', label: 'ยาฉีด', unit: 'ยูนิต', group: 'inject' },
+  { value: 'pen', label: 'ปากกาฉีดยา', unit: 'ยูนิต', group: 'inject' },
+  { value: 'needle', label: 'เข็ม/อุปกรณ์ฉีดยา', unit: 'เข็ม', group: 'inject' },
+  { value: 'topical', label: 'ยาทา/ครีม', unit: 'ครั้ง', group: 'external' },
+  { value: 'patch', label: 'แผ่นแปะ', unit: 'แผ่น', group: 'external' },
+  { value: 'drops', label: 'ยาหยอด', unit: 'หยด', group: 'drop' },
+  { value: 'eye', label: 'ยาหยอดตา', unit: 'หยด', group: 'drop' },
+  { value: 'ear', label: 'ยาหยอดหู', unit: 'หยด', group: 'drop' },
+  { value: 'spray', label: 'ยาพ่น', unit: 'พ่น', group: 'drop' },
+  { value: 'inhaler', label: 'ยาสูดพ่น', unit: 'ครั้ง', group: 'drop' },
+  { value: 'suppository', label: 'ยาเหน็บ', unit: 'เม็ด', group: 'other' },
+  { value: 'testkit', label: 'ชุดตรวจ/แผ่นตรวจ', unit: 'แผ่น', group: 'other' },
+  { value: 'other', label: 'อื่น ๆ', unit: 'ชิ้น', group: 'other' },
 ];
 
 export const formatMedForm = (m: { form: MedForm; customForm?: string }): string => {
@@ -159,21 +201,108 @@ export const UNIT_OPTIONS = [
   'โดส',
 ].map((u) => ({ value: u, label: u }));
 
-export const DOSE_STATUS_LABEL: Record<DoseStatus, string> = {
-  taken: 'กินแล้ว',
-  missed: 'ไม่ได้กิน',
-  skipped: 'งดตามแพทย์สั่ง',
+// ---------- คำพูดตามรูปแบบยา ----------
+// ยาเม็ด/แคปซูล/ยาน้ำ = "กิน", ยาฉีด = "ฉีด", ยาหยอด = "หยอด", ยาทา = "ทา", ยาพ่น = "พ่น",
+// ชุดตรวจ = "ตรวจ", เข็ม/อุปกรณ์ และอื่น ๆ = "ใช้" ทุกจุดในแอป (ตาราง รายงาน แจ้งเตือน) ต้องเรียกจากตรงนี้ให้คำตรงกัน
+
+export interface DoseWords {
+  /** กริยา: กิน / ฉีด / หยอด / ทา / พ่น / ตรวจ / ใช้ */
+  verb: string;
+  /** วลีต่อท้ายคำนำได้: กินยา / ฉีดยา / หยอดยา / ทายา / พ่นยา / ตรวจ / ใช้อุปกรณ์ / ใช้ยา */
+  phrase: string;
+  /** ใช้กับ "พอ…อีก X วัน": ยากินใช้ "กิน" นอกนั้นใช้ "ใช้" */
+  use: string;
+  /** กินแล้ว / ฉีดแล้ว ... */
+  done: string;
+  /** ไม่กิน / ไม่ฉีด ... (ปุ่ม) */
+  skip: string;
+  /** ไม่ได้กิน / ไม่ได้ฉีด ... */
+  notDone: string;
+  /** ลืมกิน / ลืมฉีด ... */
+  forgot: string;
+  /** กินช้า / ฉีดช้า ... */
+  late: string;
+}
+
+/** oral = กลืน/ดื่ม (ใช้ "พอกินอีก…" และข้อความหน้าจอล็อกฝั่งเซิร์ฟเวอร์ ต้องตรงกับ ORAL_FORMS ใน supabase/functions/med-dose-reminders/doses.ts) */
+const WORD_TABLE: Record<MedForm, { verb: string; phrase: string; oral: boolean }> = {
+  tablet: { verb: 'กิน', phrase: 'กินยา', oral: true },
+  capsule: { verb: 'กิน', phrase: 'กินยา', oral: true },
+  liquid: { verb: 'กิน', phrase: 'กินยา', oral: true },
+  powder: { verb: 'กิน', phrase: 'กินยา', oral: true },
+  effervescent: { verb: 'กิน', phrase: 'กินยา', oral: true },
+  lozenge: { verb: 'อม', phrase: 'อมยา', oral: false },
+  sublingual: { verb: 'อม', phrase: 'อมยา', oral: false },
+  supplement: { verb: 'กิน', phrase: 'กินวิตามิน', oral: true },
+  herbal: { verb: 'กิน', phrase: 'กินยาสมุนไพร', oral: true },
+  injection: { verb: 'ฉีด', phrase: 'ฉีดยา', oral: false },
+  pen: { verb: 'ฉีด', phrase: 'ฉีดยา', oral: false },
+  needle: { verb: 'ใช้', phrase: 'ใช้อุปกรณ์', oral: false },
+  topical: { verb: 'ทา', phrase: 'ทายา', oral: false },
+  patch: { verb: 'แปะ', phrase: 'แปะยา', oral: false },
+  drops: { verb: 'หยอด', phrase: 'หยอดยา', oral: false },
+  eye: { verb: 'หยอด', phrase: 'หยอดตา', oral: false },
+  ear: { verb: 'หยอด', phrase: 'หยอดหู', oral: false },
+  spray: { verb: 'พ่น', phrase: 'พ่นยา', oral: false },
+  inhaler: { verb: 'สูด', phrase: 'สูดยา', oral: false },
+  suppository: { verb: 'เหน็บ', phrase: 'เหน็บยา', oral: false },
+  testkit: { verb: 'ตรวจ', phrase: 'ตรวจ', oral: false },
+  other: { verb: 'ใช้', phrase: 'ใช้ยา', oral: false },
 };
 
-/** เหตุผลที่ไม่กินยา: หมอสั่งให้งด = ไม่นับว่าพลาด ที่เหลือบันทึกเป็นพลาดลงรายงาน */
-export const SKIP_REASONS: { value: string; label: string; status: 'missed' | 'skipped' }[] = [
-  { value: 'doctor', label: 'หมอสั่งให้งด', status: 'skipped' },
-  { value: 'forgot', label: 'ลืมกิน', status: 'missed' },
-  { value: 'unwell', label: 'ไม่สบาย กินไม่ได้', status: 'missed' },
-  { value: 'sideeffect', label: 'มีอาการข้างเคียง', status: 'missed' },
-  { value: 'outofstock', label: 'ยาหมด', status: 'missed' },
-  { value: 'other', label: 'อื่น ๆ', status: 'missed' },
-];
+/** คำกริยาและวลีของยารูปแบบนี้ (ไม่ทราบรูปแบบ = ยากิน) */
+export function doseWords(form?: MedForm | null): DoseWords {
+  const w = WORD_TABLE[form ?? 'tablet'] ?? WORD_TABLE.tablet;
+  return {
+    verb: w.verb,
+    phrase: w.phrase,
+    use: w.oral ? 'กิน' : 'ใช้',
+    done: `${w.verb}แล้ว`,
+    skip: `ไม่${w.verb}`,
+    notDone: `ไม่ได้${w.verb}`,
+    forgot: `ลืม${w.verb}`,
+    late: `${w.verb}ช้า`,
+  };
+}
+
+/**
+ * คำสำหรับสรุปรวมหลายรายการ: ถ้าทุกรายการใช้กริยาเดียวกัน (เช่นยากินทั้งหมด) ใช้คำนั้น
+ * ถ้าปนกัน (กิน+ฉีด+หยอด) ใช้คำกลาง "ใช้ยา"
+ */
+export function commonDoseWords(forms: (MedForm | null | undefined)[]): DoseWords {
+  if (forms.length === 0) return doseWords('tablet');
+  const all = forms.map((f) => doseWords(f));
+  if (new Set(all.map((w) => w.verb)).size > 1) return doseWords('other');
+  // กริยาเดียวกัน แต่วลีต่างกัน (เช่น วิตามิน + ยาเม็ด) ใช้วลีกลาง เช่น "กินยา" ไม่ใช่ "กินวิตามิน"
+  if (new Set(all.map((w) => w.phrase)).size === 1) return all[0];
+  const verb = all[0].verb;
+  return { ...all[0], phrase: verb === 'ใช้' ? 'ใช้ยา' : `${verb}ยา` };
+}
+
+/** ป้ายสถานะของการบันทึก: กินแล้ว / ไม่ได้กิน / งดตามแพทย์สั่ง (ตามรูปแบบยา) */
+export const doseStatusLabel = (status: DoseStatus, form?: MedForm | null): string => {
+  const w = doseWords(form);
+  return status === 'taken' ? w.done : status === 'missed' ? w.notDone : 'งดตามแพทย์สั่ง';
+};
+
+export interface SkipReason {
+  value: string;
+  label: string;
+  status: 'missed' | 'skipped';
+}
+
+/** เหตุผลที่ไม่ทำตามมื้อ: หมอสั่งให้งด = ไม่นับว่าพลาด ที่เหลือบันทึกเป็นพลาดลงรายงาน */
+export const skipReasonsFor = (form?: MedForm | null): SkipReason[] => {
+  const w = doseWords(form);
+  return [
+    { value: 'doctor', label: 'หมอสั่งให้งด', status: 'skipped' },
+    { value: 'forgot', label: w.forgot, status: 'missed' },
+    { value: 'unwell', label: `ไม่สบาย ${w.verb}ไม่ได้`, status: 'missed' },
+    { value: 'sideeffect', label: 'มีอาการข้างเคียง', status: 'missed' },
+    { value: 'outofstock', label: 'ยาหมด', status: 'missed' },
+    { value: 'other', label: 'อื่น ๆ', status: 'missed' },
+  ];
+};
 
 export const DEFAULT_REMINDER_REPEAT_MIN = 10;
 export const DEFAULT_EXPIRY_WARN_DAYS = 30;
@@ -565,7 +694,6 @@ export function normalizeMed(raw: Partial<Medication> & { id: string; name: stri
     pillPhoto: raw.pillPhoto ?? null,
     labelPhoto: raw.labelPhoto ?? null,
     note: raw.note ?? '',
-    refillRequestedAt: raw.refillRequestedAt ?? null,
     createdAt: created,
   };
 }

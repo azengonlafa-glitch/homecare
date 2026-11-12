@@ -4,6 +4,7 @@ import {
   DEFAULT_EXPIRY_WARN_DAYS,
   daysLeft,
   daysToExpiry,
+  doseWords,
   formatQty,
   stockLevel,
   thaiDate,
@@ -25,9 +26,9 @@ const LEVEL_ICON: Record<StockLevel, React.ReactNode> = {
 };
 
 type StockInput = Pick<Medication, 'perDose' | 'periods' | 'remaining' | 'lowStockDays'> &
-  Partial<Pick<Medication, 'unit'>>;
+  Partial<Pick<Medication, 'unit' | 'form'>>;
 
-/** ป้าย “พอกินอีก X วัน” สีเขียว/เหลือง/แดง (มีข้อความและไอคอนกำกับ ไม่ใช้สีอย่างเดียว) */
+/** ป้าย “พอกิน/พอใช้อีก X วัน” (ตามรูปแบบยา) สีเขียว/เหลือง/แดง (มีข้อความและไอคอนกำกับ ไม่ใช้สีอย่างเดียว) */
 export const StockBadge: React.FC<{ med: StockInput; className?: string }> = ({ med, className }) => {
   const level = stockLevel(med);
   const days = daysLeft(med);
@@ -38,7 +39,7 @@ export const StockBadge: React.FC<{ med: StockInput; className?: string }> = ({ 
         ? `เหลือ ${formatQty(med.remaining)}${med.unit ? ` ${med.unit}` : ''}`
         : days === 0
           ? 'เหลือไม่ถึง 1 วัน'
-          : `พอกินอีก ${days} วัน${level === 'low' ? ' · ใกล้หมด' : level === 'critical' ? ' · ใกล้หมดมาก' : ''}`;
+          : `พอ${doseWords(med.form).use}อีก ${days} วัน${level === 'low' ? ' · ใกล้หมด' : level === 'critical' ? ' · ใกล้หมดมาก' : ''}`;
 
   return (
     <span

@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronDown, ChevronLeft, ChevronRight, Flag, Plus, Search, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Flag, Plus, Search, X } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { PageHeader } from '../components/ui/PageHeader';
+import { SelectField } from '../components/ui/SelectField';
 import { ConfirmDialog } from '../components/settings/ConfirmDialog';
 import { DayPanel } from '../components/calendar/DayPanel';
 import { EventFormModal, type EventFormData } from '../components/calendar/EventFormModal';
@@ -293,9 +294,9 @@ export const CalendarPage: React.FC = () => {
               isToday
                 ? 'bg-purple-700 text-white ring-2 ring-purple-200 shadow-sm'
                 : !inMonth
-                  ? 'text-slate-400 font-medium'
+                  ? 'text-slate-600 font-medium'
                   : date.getDay() === 0
-                    ? 'text-red-600'
+                    ? 'text-red-700'
                     : 'text-slate-800'
             )}
           >
@@ -375,11 +376,11 @@ export const CalendarPage: React.FC = () => {
               <input
                 type="search"
                 aria-label="ค้นหากิจกรรม"
-                placeholder="ค้นหากิจกรรม แท็ก หรือสถานที่"
+                placeholder="ค้นหากิจกรรม หรือสถานที่"
                 autoComplete="off"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                className="w-full min-h-[48px] pl-12 pr-11 rounded-full border border-slate-300 bg-white text-base text-slate-900 placeholder:text-slate-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-600 [&::-webkit-search-cancel-button]:hidden"
+                className="w-full min-h-[48px] pl-14 pr-12 rounded-full border border-slate-300 bg-white text-base text-slate-900 placeholder:text-slate-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-600 [&::-webkit-search-cancel-button]:hidden"
               />
               {query && (
                 <button
@@ -393,21 +394,15 @@ export const CalendarPage: React.FC = () => {
               )}
             </div>
             <div className="relative w-full sm:w-auto shrink-0">
-              <select
-                aria-label="กรองกิจกรรม"
+              <SelectField
+                id="calendar-filter"
+                label="กรองกิจกรรม"
+                hideLabel
+                variant="pill"
                 value={filter}
-                onChange={(e) => setFilter(e.target.value as EventFilter)}
-                className="appearance-none w-full sm:w-auto min-h-[48px] pl-5 pr-11 rounded-full bg-white border border-purple-200 text-base font-bold text-purple-900 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-600"
-              >
-                {FILTER_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown
-                className="w-4 h-4 text-purple-800 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none"
-                aria-hidden="true"
+                onChange={(val) => setFilter(val as EventFilter)}
+                options={FILTER_OPTIONS}
+                className="w-full sm:w-auto"
               />
             </div>
           </div>
@@ -533,7 +528,7 @@ export const CalendarPage: React.FC = () => {
                         abbr={day.full}
                         className={cn(
                           'py-2.5 text-sm sm:text-base font-extrabold border-b-2 border-[#E4D9C2]',
-                          i === 0 ? 'text-red-600' : 'text-slate-800'
+                          i === 0 ? 'text-red-700' : 'text-slate-800'
                         )}
                       >
                         {day.short}

@@ -8,14 +8,19 @@ import { useSettings } from '../../lib/useSettings';
 import { useNavBadges } from '../../lib/navBadges';
 
 const BADGE_CLASS =
-  'anim-pop absolute -top-1 -right-1 inline-flex items-center justify-center min-w-[22px] h-[22px] px-1 rounded-full bg-sun text-slate-900 text-xs font-extrabold ring-2 ring-white';
+  'badge-beat absolute -top-1 -right-1 inline-flex items-center justify-center min-w-[22px] h-[22px] px-1 rounded-full bg-sun text-slate-900 text-xs font-extrabold ring-2 ring-white';
+
+/** ปุ่มเมนูล่าง: ไอคอนบน ชื่อเมนูล่าง (เดิมเป็นไอคอนล้วน ผู้ใช้ต้องเดาว่าอยู่หน้าไหน) */
+const NAV_TILE =
+  'nav-item relative flex min-h-[4.5rem] w-full max-w-[5rem] flex-col items-center justify-center gap-0.5 rounded-[1.35rem] px-1 py-1.5 [@media(max-height:500px)]:min-h-[3rem] [@media(max-height:500px)]:max-w-[9rem] [@media(max-height:500px)]:flex-row [@media(max-height:500px)]:gap-2 [@media(max-height:500px)]:py-1';
+const NAV_LABEL = 'block max-w-full truncate text-xs font-bold leading-tight text-slate-900';
 
 /**
  * เมนูล่างสำหรับมือถือและแท็บเล็ต (ซ่อนเมื่อจอกว้าง lg: 1024px ขึ้นไป ซึ่งใช้ Sidebar ซ้ายแทน)
- * - ประหยัดพื้นที่: มีเฉพาะโหมดสำคัญ (บันทึกอาการ ปฏิทิน ยาและการดูแล) กับปุ่ม "โหมดทั้งหมด"
+ * - ประหยัดพื้นที่: มีเฉพาะโหมดสำคัญ (บันทึกอาการ ปฏิทิน สมาชิก ยาและการดูแล) กับปุ่ม "เมนู"
  *   โหมดอื่นเข้าทางหน้ารวมโหมด (/menu)
  * - แถบสีขาวลอยเหนือขอบจอ มุมโค้งเต็ม (pill) มีเงา
- * - แต่ละเมนูเป็นวงกลม ไอคอนล้วน (ชื่อเมนูอ่านโดย screen reader ผ่าน aria-label)
+ * - แต่ละเมนูมีไอคอนและชื่อสั้นใต้ไอคอน (ชื่อที่เห็นเป็นชื่อเดียวกับที่ screen reader อ่าน)
  * - ป้ายแจ้งเตือนจำนวนการอัพเดตสีเหลืองที่มุมบนขวาของไอคอน (ปุ่มโหมดทั้งหมดรวมจำนวนของโหมดที่ซ่อนอยู่)
  */
 export const MobileNav: React.FC = () => {
@@ -37,7 +42,7 @@ export const MobileNav: React.FC = () => {
       aria-label="เมนูหลักบนมือถือ"
       className="lg:hidden fixed bottom-0 left-0 right-0 z-30 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pointer-events-none"
     >
-      <ul className="mobile-paper pointer-events-auto mx-auto flex w-full max-w-sm items-center gap-1 rounded-[1.75rem] p-2">
+      <ul className="mobile-paper pointer-events-auto mx-auto flex w-full max-w-md items-center gap-1 rounded-[1.75rem] p-2 [@media(max-height:500px)]:max-w-xl [@media(max-height:500px)]:p-1.5">
         {primary.map(({ to, label, mobileLabel, art, end }) => {
           const count = badges[to] ?? 0;
           return (
@@ -45,16 +50,12 @@ export const MobileNav: React.FC = () => {
               <NavLink
                 to={to}
                 end={end}
-                aria-label={mobileLabel ?? label}
                 className={({ isActive }) =>
-                  cn(
-                    'nav-item relative flex aspect-square w-full max-w-[3.75rem] items-center justify-center rounded-[1.35rem]',
-                    ART_STYLE[art].tile,
-                    isActive && 'nav-item-active ring-[3px] ring-[color:var(--accent)]'
-                  )
+                  cn(NAV_TILE, ART_STYLE[art].tile, isActive && 'nav-item-active ring-[3px] ring-[color:var(--accent)]')
                 }
               >
-                <ModeIcon name={art} className="h-9 w-9" />
+                <ModeIcon name={art} className="h-8 w-8 [@media(max-height:500px)]:h-7 [@media(max-height:500px)]:w-7" />
+                <span className={NAV_LABEL}>{mobileLabel ?? label}</span>
                 {count > 0 && (
                   <span aria-label={`${count} รายการใหม่`} className={BADGE_CLASS}>
                     {count > 9 ? '9+' : count}
@@ -69,14 +70,10 @@ export const MobileNav: React.FC = () => {
         <li className="flex flex-1 min-w-0 justify-center">
           <NavLink
             to={MENU_PATH}
-            aria-label="โหมดทั้งหมด"
-            className={cn(
-              'nav-item relative flex aspect-square w-full max-w-[3.75rem] items-center justify-center rounded-[1.35rem]',
-              ART_STYLE.menu.tile,
-              menuActive && 'nav-item-active ring-[3px] ring-[color:var(--accent)]'
-            )}
+            className={cn(NAV_TILE, ART_STYLE.menu.tile, menuActive && 'nav-item-active ring-[3px] ring-[color:var(--accent)]')}
           >
-            <ModeIcon name="menu" className="h-9 w-9" />
+            <ModeIcon name="menu" className="h-8 w-8 [@media(max-height:500px)]:h-7 [@media(max-height:500px)]:w-7" />
+            <span className={NAV_LABEL}>เมนู</span>
             {othersCount > 0 && (
               <span aria-label={`${othersCount} รายการใหม่ในโหมดอื่น`} className={BADGE_CLASS}>
                 {othersCount > 9 ? '9+' : othersCount}

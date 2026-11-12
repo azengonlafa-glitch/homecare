@@ -188,23 +188,23 @@ export const LoginPage: React.FC<LoginPageProps> = ({ defaultTab }) => {
             }
           />
 
-          <div className="flex justify-end -mt-1">
+          <div className="flex justify-end -mt-3">
             <button
               type="button"
               onClick={handleForgot}
-              className="text-xs sm:text-sm font-bold text-slate-600 hover:text-emerald-700 transition-colors cursor-pointer"
+              className="inline-flex min-h-[44px] items-center px-2 text-sm font-bold text-slate-700 underline underline-offset-2 hover:text-emerald-700 transition-colors cursor-pointer"
             >
               ลืมรหัสผ่าน?
             </button>
           </div>
 
           {error && (
-            <p role="alert" className="text-xs sm:text-sm font-bold text-red-600">
+            <p role="alert" className="text-sm font-bold text-red-700">
               {error}
             </p>
           )}
           {notice && (
-            <p role="status" className="text-xs sm:text-sm font-bold text-emerald-600">
+            <p role="status" className="text-sm font-bold text-emerald-700">
               {notice}
             </p>
           )}
@@ -224,12 +224,12 @@ export const LoginPage: React.FC<LoginPageProps> = ({ defaultTab }) => {
             providers={cloudEnabled ? ['google'] : ['google', 'apple']}
           />
 
-          <p className="text-center text-xs sm:text-sm lg:text-base text-slate-600 pt-1">
+          <p className="flex flex-wrap items-center justify-center text-sm lg:text-base text-slate-700 pt-1">
             ยังไม่มีบัญชี?{' '}
             <button
               type="button"
               onClick={() => handleTabChange('signup')}
-              className="font-black text-emerald-700 hover:text-emerald-800 underline underline-offset-2 cursor-pointer"
+              className="inline-flex min-h-[44px] items-center px-1.5 font-black text-emerald-800 hover:text-emerald-900 underline underline-offset-2 cursor-pointer"
             >
               สมัครสมาชิกฟรี
             </button>
@@ -283,25 +283,34 @@ export const LoginPage: React.FC<LoginPageProps> = ({ defaultTab }) => {
             }
           />
 
-          <label className="flex items-start gap-2.5 cursor-pointer pt-1">
+          <label className="flex min-h-[48px] items-center gap-3 cursor-pointer pt-1">
             <input
               type="checkbox"
               checked={agreeTerms}
               onChange={(e) => setAgreeTerms(e.target.checked)}
-              className="mt-0.5 h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+              className="h-6 w-6 shrink-0 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
             />
-            <span className="text-xs sm:text-sm text-slate-600 font-medium leading-relaxed">
-              ยอมรับข้อกำหนดการใช้งานและนโยบายความเป็นส่วนตัว
+            <span className="text-sm text-slate-700 font-medium leading-relaxed">
+              ยอมรับข้อกำหนดการใช้งานและ{' '}
+              <a
+                href="/privacy-policy"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="font-bold text-emerald-800 underline underline-offset-2"
+              >
+                นโยบายความเป็นส่วนตัว
+              </a>
             </span>
           </label>
 
           {error && (
-            <p role="alert" className="text-xs sm:text-sm font-bold text-red-600">
+            <p role="alert" className="text-sm font-bold text-red-700">
               {error}
             </p>
           )}
           {notice && (
-            <p role="status" className="text-xs sm:text-sm font-bold text-emerald-600">
+            <p role="status" className="text-sm font-bold text-emerald-700">
               {notice}
             </p>
           )}
@@ -321,12 +330,12 @@ export const LoginPage: React.FC<LoginPageProps> = ({ defaultTab }) => {
             providers={cloudEnabled ? ['google'] : ['google', 'apple']}
           />
 
-          <p className="text-center text-xs sm:text-sm lg:text-base text-slate-600 pt-1">
+          <p className="flex flex-wrap items-center justify-center text-sm lg:text-base text-slate-700 pt-1">
             มีบัญชีอยู่แล้ว?{' '}
             <button
               type="button"
               onClick={() => handleTabChange('login')}
-              className="font-black text-emerald-700 hover:text-emerald-800 underline underline-offset-2 cursor-pointer"
+              className="inline-flex min-h-[44px] items-center px-1.5 font-black text-emerald-800 hover:text-emerald-900 underline underline-offset-2 cursor-pointer"
             >
               เข้าสู่ระบบ
             </button>

@@ -8,6 +8,7 @@ import { Chip, FieldGroup, SingleChoiceChips } from '../../components/ui/ChoiceC
 import { PageHeader } from '../../components/ui/PageHeader';
 import { TextAreaField } from '../../components/ui/TextAreaField';
 import { TextField } from '../../components/ui/TextField';
+import { DateField } from '../../components/ui/DatePicker';
 import { useToast } from '../../components/ui/Toast';
 import { SeverityScale, Stepper } from '../../components/consult/ConsultUI';
 import { findMissing, structureText } from '../../consult/assistant';
@@ -349,7 +350,7 @@ export const CheckinPage: React.FC = () => {
               <TextField id="ci-location" label="เป็นที่ตรงไหน" labelSuffix="(ไม่บังคับ)" placeholder="เช่น ขมับซ้าย ท้องด้านขวาล่าง" value={answers.location} onChange={(e) => update({ location: e.target.value })} />
               <SingleChoiceChips id="ci-pattern" label="ลักษณะการเป็น" options={PATTERNS} value={answers.pattern} onChange={(v) => update({ pattern: v })} />
               <SingleChoiceChips id="ci-duration" label="เป็นมานานแค่ไหน" options={DURATIONS} value={DURATIONS.some((d) => d.value === answers.duration) ? answers.duration : ''} hint={answers.duration && !DURATIONS.some((d) => d.value === answers.duration) ? `ตอนนี้: ${answers.duration}` : undefined} onChange={(v) => update({ duration: v })} />
-              <TextField id="ci-started" type="date" label="เริ่มเป็นเมื่อไร" labelSuffix="(ไม่บังคับ)" max={todayKey()} value={answers.startedOn} error={errors['ci-started']} onChange={(e) => { update({ startedOn: e.target.value }); clear('ci-started'); }} />
+              <DateField id="ci-started" label="เริ่มเป็นเมื่อไร" labelSuffix="(ไม่บังคับ)" max={todayKey()} value={answers.startedOn} error={errors['ci-started']} onChange={(val) => { update({ startedOn: val }); clear('ci-started'); }} />
               <FieldGroup label="อาการดีขึ้นหรือแย่ลง">
                 <div className="flex flex-wrap gap-2">
                   {(Object.keys(TREND_LABEL) as Exclude<Trend, ''>[]).map((t) => (
@@ -415,7 +416,7 @@ export const CheckinPage: React.FC = () => {
                 return <TextField key={q.id} id={id} label={q.label} labelSuffix="(จำเป็น)" hint="เลือกจากตู้ยาหรือพิมพ์ชื่อยา" suggestions={medNames} value={(value as string) ?? ''} error={errors[id]} onChange={(e) => setAnswer(q.id, e.target.value)} />;
               }
               if (q.kind === 'date') {
-                return <TextField key={q.id} id={id} type="date" label={q.label} labelSuffix="(ไม่บังคับ)" max={todayKey()} value={(value as string) ?? ''} error={errors[id]} onChange={(e) => setAnswer(q.id, e.target.value)} />;
+                return <DateField key={q.id} id={id} label={q.label} labelSuffix="(ไม่บังคับ)" max={todayKey()} value={(value as string) ?? ''} error={errors[id]} onChange={(val) => setAnswer(q.id, val)} />;
               }
               if (q.kind === 'single') {
                 return (
@@ -483,7 +484,7 @@ export const CheckinPage: React.FC = () => {
                 <div className="rounded-2xl border border-dashed border-purple-300 bg-purple-50/60 p-4">
                   <p className="flex items-center gap-2 text-base font-bold text-purple-900">
                     <Bot className="w-5 h-5 shrink-0" aria-hidden="true" />
-                    ระบบตรวจพบว่ายังขาด (ไม่บังคับ ช่วยให้ผู้ให้บริการตอบได้ตรงขึ้น)
+                    ระบบตรวจพบว่ายังขาด (ไม่บังคับ ช่วยให้ร้านยาหรือคลินิกตอบได้ตรงขึ้น)
                   </p>
                   <ul className="mt-1 list-disc pl-6 text-base text-slate-800">
                     {missing.map((m) => (

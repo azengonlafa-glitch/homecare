@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { CalendarClock, Loader2, MessageCircle, Phone, Video } from 'lucide-react';
 import { Button } from '../ui/Button';
-import { TextField } from '../ui/TextField';
+import { DateTimeField } from '../ui/DatePicker';
 import { useToast } from '../ui/Toast';
 import { CONSULT_CHANGED_EVENT, consultErrorText, getBackend } from '../../consult/backend';
 import { formatDuration, isChannelAvailable } from '../../consult/calls';
@@ -133,7 +133,7 @@ export const ContactPanel: React.FC<ContactPanelProps> = ({ sessionId, as, chann
 
       {canSend && mode === 'appointment' && (
         <form noValidate onSubmit={(e) => void saveAppointment(e)} className="rounded-3xl border border-slate-200 bg-white p-4 sm:p-5 space-y-3">
-          <TextField id={`appt-${as}`} type="datetime-local" label="วันและเวลาที่สะดวก" value={when} error={whenError} onChange={(e) => setWhen(e.target.value)} />
+          <DateTimeField id={`appt-${as}`} label="วันและเวลาที่สะดวก" value={when} error={whenError} onChange={setWhen} />
           <Button type="submit" fullWidth disabled={busy}>
             {busy ? <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" /> : <CalendarClock className="w-5 h-5" aria-hidden="true" />}
             {as === 'staff' ? 'เสนอเวลานัด' : 'ส่งคำขอนัดหมาย'}

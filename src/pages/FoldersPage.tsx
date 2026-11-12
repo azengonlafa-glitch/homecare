@@ -5,7 +5,7 @@ import { FolderIcon } from '../components/folders/FolderIcon';
 import { FolderFormModal } from '../components/folders/FolderFormModal';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
-import { Mascot } from '../components/ui/Mascot';
+import { Dino } from '../components/ui/Dino';
 import { PageHeader } from '../components/ui/PageHeader';
 import { useToast } from '../components/ui/Toast';
 import { MAX_FOLDERS, STARTER_FOLDERS, colorOf, createFolderIn, saveFolders, totalDocs, useFolders, type FolderColor } from '../lib/folders';
@@ -27,7 +27,7 @@ export const FoldersPage: React.FC = () => {
       toast.show(`สร้างโฟลเดอร์ ${folder.name} แล้ว`);
       navigate(`/folders/${folder.id}`);
     } catch (err) {
-      toast.show(err instanceof Error ? err.message : 'สร้างโฟลเดอร์ไม่สำเร็จ', { tone: 'error' });
+      toast.show(err instanceof Error ? err.message : 'สร้างโฟลเดอร์ไม่สำเร็จ ลองอีกครั้ง', { tone: 'error' });
     }
   };
 
@@ -38,7 +38,7 @@ export const FoldersPage: React.FC = () => {
       saveFolders(next);
       toast.show(`สร้างโฟลเดอร์ ${STARTER_FOLDERS.length} โฟลเดอร์แล้ว`);
     } catch (err) {
-      toast.show(err instanceof Error ? err.message : 'สร้างโฟลเดอร์ไม่สำเร็จ', { tone: 'error' });
+      toast.show(err instanceof Error ? err.message : 'สร้างโฟลเดอร์ไม่สำเร็จ ลองอีกครั้ง', { tone: 'error' });
     }
   };
 
@@ -58,12 +58,12 @@ export const FoldersPage: React.FC = () => {
 
       <p className="flex items-start gap-2 rounded-[1.5rem] bg-mint-soft p-4 text-base font-medium text-slate-800">
         <ShieldCheck className="mt-0.5 h-6 w-6 shrink-0 text-emerald-700" aria-hidden="true" />
-        โฟลเดอร์เป็นของบัญชีคุณ ไม่แสดงให้คนในบ้านเห็นในแอป และจะส่งให้ผู้เชี่ยวชาญเฉพาะไฟล์ที่คุณเลือกเองเท่านั้น
+        โฟลเดอร์เป็นของบัญชีคุณ ไม่แสดงให้คนในบ้านเห็นในแอป และจะส่งให้เภสัชกรหรือคลินิกเฉพาะไฟล์ที่คุณเลือกเองเท่านั้น
       </p>
 
       {state.folders.length === 0 ? (
         <Card className="space-y-5 py-10 text-center">
-          <Mascot kind="cloud" mood="sleepy" className="mx-auto h-28 w-28" />
+          <Dino pose="sleep" bob className="mx-auto h-28 w-32" />
           <div className="space-y-1">
             <h2 className="text-xl font-semibold text-slate-900">ยังไม่มีโฟลเดอร์</h2>
             <p className="mx-auto max-w-md text-base text-slate-700">เริ่มจากโฟลเดอร์สำเร็จรูป 4 ใบ หรือสร้างโฟลเดอร์ของคุณเองก็ได้</p>

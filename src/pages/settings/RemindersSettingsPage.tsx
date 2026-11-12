@@ -6,7 +6,7 @@ import { PageLayout } from '../../components/settings/PageLayout';
 import { SwitchRow } from '../../components/settings/SwitchRow';
 import { useToast } from '../../components/ui/Toast';
 import { cn } from '../../lib/cn';
-import { playNotifySound } from '../../lib/sound';
+import { playNotifySound, playUiSound } from '../../lib/sound';
 import { PushCard } from '../../components/consult/PushCard';
 import {
   LOW_STOCK_DAY_OPTIONS,
@@ -17,6 +17,7 @@ import {
   type LowStockDays,
   type ReminderSettings,
 } from '../../lib/settings';
+import { commonDoseWords, loadMeds } from '../../lib/meds';
 import {
   loadRoutingConfigs,
   saveRoutingConfigs,
@@ -41,6 +42,8 @@ export const RemindersSettingsPage: React.FC = () => {
   const [routingConfigs, setRoutingConfigs] = useState(() => loadRoutingConfigs(settings.members));
   const [selectedMemberId, setSelectedMemberId] = useState(() => settings.members[0]?.id ?? '');
   const toast = useToast();
+  // คำกริยาตามยาที่ใช้อยู่ (ยากินทั้งหมด = กิน, มียาแบบอื่นปน = ใช้) ให้ตรงกับหน้ายาและข้อความแจ้งเตือน
+  const [cw] = useState(() => commonDoseWords(loadMeds().meds.filter((m) => m.active).map((m) => m.form)));
 
   const update = (patch: Partial<ReminderSettings>) => {
     const next = saveSettings({ ...settings, reminders: { ...settings.reminders, ...patch } });
@@ -107,7 +110,7 @@ export const RemindersSettingsPage: React.FC = () => {
               <SwitchRow
                 className="rounded-none px-5 py-4"
                 label="ช่วงกินยา"
-                description="เตือนเมื่อถึงเวลากินยาตามที่ตั้งไว้"
+                description={`เตือนเมื่อถึงเวลา${cw.phrase}ตามที่ตั้งไว้`}
                 checked={reminders.doseWindow}
                 onChange={(checked) => update({ doseWindow: checked })}
               />
@@ -155,12 +158,12 @@ export const RemindersSettingsPage: React.FC = () => {
           <Card className="shadow-xs">
             <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-slate-900">
               <Clock className="w-5 h-5 text-purple-700" aria-hidden="true" />
-              <span>การเตือนซ้ำเมื่อยังไม่กินยา</span>
+              <span>การเตือนซ้ำเมื่อยังไม่{cw.phrase}</span>
             </h2>
 
             <FieldGroup
               label="เตือนซ้ำได้กี่ครั้ง"
-              hint="ถ้ายังไม่กด “กินแล้ว” แอปจะเตือนซ้ำตามจำนวนครั้งที่ตั้งไว้"
+              hint={`ถ้ายังไม่กด “${cw.done}” แอปจะเตือนซ้ำตามจำนวนครั้งที่ตั้งไว้`}
             >
               <div className="flex items-center gap-4 mt-2">
                 <button
@@ -211,6 +214,18 @@ export const RemindersSettingsPage: React.FC = () => {
                 if (checked) playNotifySound();
               }}
             />
+            <div data-sound="off" className="border-t-2 border-dashed border-slate-200">
+              <SwitchRow
+                className="px-0 py-1"
+                label="เสียงเอฟเฟกต์"
+                description="เสียงเบา ๆ ตอนกดปุ่ม เปิดปิดสวิตช์ เปิดหน้าต่าง และบันทึกสำเร็จ"
+                checked={reminders.uiSound}
+                onChange={(checked) => {
+                  update({ uiSound: checked });
+                  if (checked) playUiSound('toggleOn', true);
+                }}
+              />
+            </div>
           </Card>
 
           {/* แจ้งคนในบ้านเมื่อยังไม่กินยาถึงครั้งที่ 2 */}
@@ -218,7 +233,7 @@ export const RemindersSettingsPage: React.FC = () => {
             <SwitchRow
               className="px-0 py-1"
               label="แจ้งคนในบ้านด้วย"
-              description="ถ้ายังไม่กินยาจนถึงการเตือนครั้งที่ 2 การแจ้งเตือนจะส่งไปหาทุกคนในบ้านทันที เพื่อให้คนในบ้านช่วยดูแล"
+              description={`ถ้ายังไม่${cw.phrase}จนถึงการเตือนครั้งที่ 2 การแจ้งเตือนจะส่งไปหาทุกคนในบ้านทันที เพื่อให้คนในบ้านช่วยดูแล`}
               checked={reminders.escalateToFamily}
               onChange={(checked) => update({ escalateToFamily: checked })}
             />
@@ -228,11 +243,11 @@ export const RemindersSettingsPage: React.FC = () => {
         {/* ส่วนที่ 2.3 การตั้งค่าผู้รับการแจ้งเตือน (Notification Recipients & Routing) */}
         <div className="lg:col-span-12 space-y-4 pt-4 border-t border-slate-200">
           <Card className="shadow-xs space-y-5">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <div>
+            <div className="space-y-3">
+              <div className="min-w-0">
                 <h2 className="flex items-center gap-2 text-lg sm:text-xl font-bold text-slate-900">
-                  <UserCheck className="w-5 h-5 text-purple-700" aria-hidden="true" />
-                  <span>2.3 การตั้งค่าผู้รับการแจ้งเตือน (Recipient & Notification Routing)</span>
+                  <UserCheck className="w-5 h-5 shrink-0 text-purple-700" aria-hidden="true" />
+                  <span>ผู้รับการแจ้งเตือน</span>
                 </h2>
                 <p className="text-sm text-slate-600 mt-0.5">
                   กำหนดบทบาทและเลือกประเภทการแจ้งเตือนที่สมาชิกแต่ละคนจะได้รับในบ้าน
@@ -240,7 +255,7 @@ export const RemindersSettingsPage: React.FC = () => {
               </div>
 
               {/* เลือกสมาชิกเพื่อกำหนดค่า */}
-              <div className="flex flex-wrap items-center gap-1.5">
+              <div className="flex flex-wrap items-center gap-2">
                 {settings.members.map((m) => (
                   <button
                     key={m.id}
@@ -356,7 +371,7 @@ export const RemindersSettingsPage: React.FC = () => {
                     <p className="text-sm font-bold text-slate-800">4. การแจ้งเตือนระบบ</p>
                     <div className="flex flex-wrap gap-1.5">
                       {[
-                        { v: 'all', l: 'ทั้งหมด (สั่งยา, ซิงก์ข้อมูล)' },
+                        { v: 'all', l: 'ทั้งหมด (ซิงก์ข้อมูล)' },
                         { v: 'important_only', l: 'เฉพาะสำคัญ' },
                         { v: 'none', l: 'ไม่รับ' },
                       ].map((opt) => (
@@ -379,11 +394,11 @@ export const RemindersSettingsPage: React.FC = () => {
                 </div>
 
                 {/* ตั้งเวลาหน่วงก่อนแจ้งผู้ดูแล (Escalation Delay) */}
-                <div className="pt-2 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
-                      <ShieldAlert className="w-4 h-4 text-purple-700" />
-                      <span>ตั้งเวลาหน่วงก่อนส่งต่อการแจ้งเตือนหาผู้ดูแล (Escalation Delay)</span>
+                <div className="pt-2 border-t border-slate-200 fit-row justify-between">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-bold text-slate-900 flex items-start gap-1.5">
+                      <ShieldAlert className="w-4 h-4 mt-0.5 shrink-0 text-purple-700" />
+                      <span>ตั้งเวลาหน่วงก่อนส่งต่อการแจ้งเตือนหาผู้ดูแล</span>
                     </p>
                     <p className="text-xs text-slate-600 mt-0.5">
                       หากยังไม่ได้รับการยืนยันการรับประทานยา จะรอเวลานี้ก่อนแจ้งเตือนผู้ดูแลหลัก

@@ -1,8 +1,29 @@
 import React from 'react';
-import { Pill, Syringe, Droplets, Wind, FlaskConical, Layers, Package2, Circle, TestTube2 } from 'lucide-react';
+import {
+  Bandage,
+  Candy,
+  Circle,
+  CircleDot,
+  Citrus,
+  Droplets,
+  Ear,
+  Eye,
+  FlaskConical,
+  GlassWater,
+  Layers,
+  Leaf,
+  Package,
+  Package2,
+  PenLine,
+  Pill,
+  Syringe,
+  TestTube2,
+  Wind,
+} from 'lucide-react';
 import { ExpiryBadge, StockBadge } from './StockBadge';
 import {
   PERIOD_LABEL,
+  doseWords,
   formatMedForm,
   formatQty,
   stockLevel,
@@ -16,7 +37,6 @@ interface MedCabinetProps {
   meds: Medication[];
   onOpen: (med: Medication) => void;
   onEdit: (med: Medication) => void;
-  onRefill: (med: Medication) => void;
 }
 
 /** ไอคอนประจำรูปแบบยา */
@@ -24,39 +44,75 @@ const FORM_ICON: Record<MedForm, React.FC<{ className?: string }>> = {
   tablet: Pill,
   capsule: Layers,
   liquid: Droplets,
+  powder: Package,
+  effervescent: GlassWater,
+  lozenge: Candy,
+  sublingual: Pill,
+  supplement: Citrus,
+  herbal: Leaf,
   injection: Syringe,
+  pen: PenLine,
   needle: Syringe,
-  testkit: TestTube2,
   topical: FlaskConical,
+  patch: Bandage,
   drops: Droplets,
+  eye: Eye,
+  ear: Ear,
   spray: Wind,
+  inhaler: Wind,
+  suppository: CircleDot,
+  testkit: TestTube2,
   other: Package2,
 };
 
 /** สีพื้นการ์ดตามรูปแบบยา */
 const FORM_BG: Record<MedForm, string> = {
   tablet:    'bg-purple-50',
-  capsule:   'bg-blue-50',
+  capsule:   'bg-sky-soft',
   liquid:    'bg-cyan-50',
+  powder:    'bg-orange-50',
+  effervescent: 'bg-cyan-50',
+  lozenge:   'bg-pink-50',
+  sublingual: 'bg-purple-50',
+  supplement: 'bg-amber-50',
+  herbal:    'bg-lime-50',
   injection: 'bg-rose-50',
+  pen:       'bg-rose-50',
   needle:    'bg-pink-50',
-  testkit:   'bg-teal-50',
   topical:   'bg-green-50',
+  patch:     'bg-orange-50',
   drops:     'bg-sky-50',
-  spray:     'bg-indigo-50',
+  eye:       'bg-sky-50',
+  ear:       'bg-indigo-50',
+  spray:     'bg-mint-soft',
+  inhaler:   'bg-teal-50',
+  suppository: 'bg-fuchsia-50',
+  testkit:   'bg-teal-50',
   other:     'bg-amber-50',
 };
 
 const FORM_ICON_COLOR: Record<MedForm, string> = {
   tablet:    'text-purple-500',
-  capsule:   'text-blue-500',
+  capsule:   'text-sky-600',
   liquid:    'text-cyan-500',
+  powder:    'text-orange-500',
+  effervescent: 'text-cyan-600',
+  lozenge:   'text-pink-500',
+  sublingual: 'text-purple-500',
+  supplement: 'text-amber-600',
+  herbal:    'text-lime-600',
   injection: 'text-rose-500',
+  pen:       'text-rose-600',
   needle:    'text-pink-500',
-  testkit:   'text-teal-500',
   topical:   'text-green-500',
+  patch:     'text-orange-500',
   drops:     'text-sky-500',
-  spray:     'text-indigo-500',
+  eye:       'text-sky-600',
+  ear:       'text-indigo-500',
+  spray:     'text-teal-600',
+  inhaler:   'text-teal-500',
+  suppository: 'text-fuchsia-500',
+  testkit:   'text-teal-500',
   other:     'text-amber-500',
 };
 
@@ -66,7 +122,7 @@ const MedGridCard: React.FC<{ med: Medication; onOpen: (m: Medication) => void }
   const Icon = FORM_ICON[med.form] ?? Circle;
   const formLabel = formatMedForm(med);
   const timesText = med.asNeeded
-    ? 'กินเมื่อจำเป็น (ไม่มีตารางประจำ)'
+    ? `${doseWords(med.form).verb}เมื่อจำเป็น (ไม่มีตารางประจำ)`
     : med.periods.map((p) => `${PERIOD_LABEL[p]}${med.times[p] ? ` ${med.times[p]}` : ''}`).join(' · ');
 
   return (
@@ -143,7 +199,7 @@ export const MedCabinet: React.FC<MedCabinetProps> = ({ meds, onOpen }) => {
           <div className="flex items-center justify-between gap-3 mb-3">
             <h2 className="text-base font-bold text-slate-700">
               กำลังใช้อยู่
-              <span className="ml-2 text-sm font-medium text-slate-400">· {active.length} รายการ</span>
+              <span className="ml-2 text-sm font-medium text-slate-600">· {active.length} รายการ</span>
             </h2>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
@@ -158,7 +214,7 @@ export const MedCabinet: React.FC<MedCabinetProps> = ({ meds, onOpen }) => {
         <section>
           <h2 className="text-base font-bold text-slate-500 mb-3">
             หยุดใช้แล้ว
-            <span className="ml-2 text-sm font-medium text-slate-400">· {stopped.length} รายการ</span>
+            <span className="ml-2 text-sm font-medium text-slate-600">· {stopped.length} รายการ</span>
           </h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
             {stopped.map((med) => (

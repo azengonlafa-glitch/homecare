@@ -66,23 +66,23 @@ export const QueueDrawer: React.FC<{ selectedId: string }> = ({ selectedId }) =>
 
       {open &&
         createPortal(
-          <div className="anim-fade fixed inset-0 z-[60] flex justify-end bg-slate-900/40" onMouseDown={(e) => e.target === e.currentTarget && setOpen(false)}>
+          <div className="modal-backdrop fixed inset-0 z-[60] flex justify-end" onMouseDown={(e) => e.target === e.currentTarget && setOpen(false)}>
             <div
               ref={panelRef}
               role="dialog"
               aria-modal="true"
               aria-label="คิวปรึกษา"
               onKeyDown={onKeyDown}
-              className="anim-slide-right flex h-full w-full max-w-md flex-col bg-slate-50 shadow-2xl"
+              className="anim-slide-right modal-paper relative flex h-full w-full max-w-md flex-col rounded-l-[2rem]"
             >
-              <div className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3">
+              <div className="flex shrink-0 items-center justify-between gap-3 border-b-2 border-dashed border-slate-200 px-5 py-4">
                 <p className="text-lg font-bold text-slate-900">คิวปรึกษา</p>
                 <button
                   type="button"
                   data-drawer-close="true"
                   onClick={() => setOpen(false)}
                   aria-label="ปิดแผงคิว"
-                  className="inline-flex h-12 w-12 cursor-pointer items-center justify-center rounded-full bg-purple-50 text-purple-800 hover:bg-purple-100"
+                  className="inline-flex h-12 w-12 cursor-pointer items-center justify-center rounded-full bg-white/80 ring-1 ring-slate-200 text-slate-700 hover:bg-white"
                 >
                   <X className="h-6 w-6" aria-hidden="true" />
                 </button>

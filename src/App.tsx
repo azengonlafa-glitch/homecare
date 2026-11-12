@@ -23,6 +23,8 @@ import { PrivacySettingsPage } from './pages/settings/PrivacySettingsPage';
 import { ProfileSettingsPage } from './pages/settings/ProfileSettingsPage';
 import { RemindersSettingsPage } from './pages/settings/RemindersSettingsPage';
 import { FontSizeSettingsPage } from './pages/settings/FontSizeSettingsPage';
+import { DataSettingsPage } from './pages/settings/DataSettingsPage';
+import { PrivacyPolicyPage } from './pages/PrivacyPolicyPage';
 
 import { ConsultShell } from './pages/consult/ConsultShell';
 import { ConsultHomePage } from './pages/consult/ConsultHomePage';
@@ -50,6 +52,16 @@ const DefaultRouteRedirect: React.FC = () => {
   return <Navigate to={target} replace />;
 };
 
+/** ที่อยู่ที่ไม่มีจริง: ลืมที่อยู่นี้ไม่ให้เป็น "หน้าล่าสุด" แล้วไปหน้าบันทึกอาการ */
+const NotFoundRedirect: React.FC = () => {
+  try {
+    localStorage.removeItem('growa_last_visited_path');
+  } catch {
+    // ข้ามได้
+  }
+  return <Navigate to="/journal" replace />;
+};
+
 export const App: React.FC = () => {
   return (
     <ErrorBoundary>
@@ -58,6 +70,8 @@ export const App: React.FC = () => {
         {/* เข้าสู่ระบบและสมัครสมาชิก */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignUpPage />} />
+        {/* นโยบายความเป็นส่วนตัว: อ่านได้โดยไม่ต้องล็อกอิน */}
+        <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
 
         {/* หลังเข้าสู่ระบบ: เข้าร่วมบ้านด้วยรหัสเชิญ หรือสร้างบ้านใหม่ */}
         <Route path="/setup" element={<RequireAuth><HomeSetupPage /></RequireAuth>} />
@@ -112,8 +126,13 @@ export const App: React.FC = () => {
             <Route path="room/:id" element={<ConsultRoomPage />} />
             <Route path="history" element={<ConsultHistoryPage />} />
             <Route path="followup/:id" element={<FollowUpPage />} />
+            {/* พิมพ์ที่อยู่ผิดบ่อย: พาไปหน้าทีมงาน/แอดมินที่ถูกต้อง */}
+            <Route path="pharmacist/*" element={<Navigate to="/pharmacist" replace />} />
+            <Route path="admin/*" element={<Navigate to="/admin" replace />} />
           </Route>
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="pharmacy/*" element={<Navigate to="/pharmacist" replace />} />
+          {/* ที่อยู่ที่ไม่มีจริง: ไปหน้าบันทึกอาการตรง ๆ (ไม่ผ่าน "/" เพราะ "/" พากลับไปหน้าล่าสุด ซึ่งอาจเป็นที่อยู่ผิดนี้เอง แล้ววนไม่จบ) */}
+          <Route path="*" element={<NotFoundRedirect />} />
         </Route>
 
         {/* หน้าตั้งค่าและหน้าย่อย (ใช้เลย์เอาต์เดียวกับระบบหลัก) */}
@@ -130,6 +149,7 @@ export const App: React.FC = () => {
           <Route path="reminders" element={<RemindersSettingsPage />} />
           <Route path="privacy" element={<PrivacySettingsPage />} />
           <Route path="font-size" element={<FontSizeSettingsPage />} />
+          <Route path="data" element={<DataSettingsPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

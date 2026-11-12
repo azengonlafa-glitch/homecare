@@ -4,16 +4,18 @@ import { Card } from '../ui/Card';
 import { StockBadge } from './StockBadge';
 import { MedPhoto } from './MedPhoto';
 import {
-  DOSE_STATUS_LABEL,
   LATE_THRESHOLD_MIN,
   PERIODS,
-  SKIP_REASONS,
+  commonDoseWords,
   currentPeriod,
+  doseStatusLabel,
+  doseWords,
   findLog,
   instructionText,
   isOverdue,
   isScheduledOn,
   periodTime,
+  skipReasonsFor,
   stockLevel,
   todayKey,
   type DoseLog,
@@ -41,22 +43,25 @@ const STATUS_CHIP: Record<DoseStatus | 'none', string> = {
 const timeLabel = (iso: string) =>
   `${new Date(iso).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', hour12: false })} น.`;
 
-/** กล่องถามเหตุผลเมื่อกด "ไม่กิน" */
+/** กล่องถามเหตุผลเมื่อกด "ไม่กิน" (คำตามรูปแบบยา เช่น ไม่ฉีด ไม่หยอด) */
 const SkipReasonPanel: React.FC<{
+  med: Medication;
   onConfirm: (status: 'missed' | 'skipped', reason: string) => void;
   onCancel: () => void;
-}> = ({ onConfirm, onCancel }) => {
+}> = ({ med, onConfirm, onCancel }) => {
   const [key, setKey] = useState('');
   const [text, setText] = useState('');
-  const chosen = SKIP_REASONS.find((r) => r.value === key);
+  const w = doseWords(med.form);
+  const reasons = skipReasonsFor(med.form);
+  const chosen = reasons.find((r) => r.value === key);
   const needsText = key === 'other';
   const canSave = !!chosen && (!needsText || text.trim().length > 0);
 
   return (
     <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50/60 p-4 space-y-3">
-      <p className="text-base font-bold text-slate-900">ทำไมถึงไม่ได้กินมื้อนี้?</p>
-      <div className="flex flex-wrap gap-2" role="group" aria-label="เหตุผลที่ไม่ได้กินยา">
-        {SKIP_REASONS.map((r) => (
+      <p className="text-base font-bold text-slate-900">ทำไมถึง{w.notDone}มื้อนี้?</p>
+      <div className="flex flex-wrap gap-2" role="group" aria-label={`เหตุผลที่${w.notDone}`}>
+        {reasons.map((r) => (
           <button
             key={r.value}
             type="button"
@@ -92,7 +97,7 @@ const SkipReasonPanel: React.FC<{
           <p className="text-sm text-slate-600">
             {chosen.status === 'skipped'
               ? 'หมอสั่งให้งดจะไม่นับว่าพลาด'
-              : 'มื้อนี้จะถูกบันทึกเป็นไม่ได้กินลงในรายงาน'}
+              : `มื้อนี้จะถูกบันทึกเป็น${w.notDone}ลงในรายงาน`}
           </p>
         </div>
       )}
@@ -133,7 +138,8 @@ const DoseItem: React.FC<{
   const [asking, setAsking] = useState(false);
   const status = log?.status;
   const overdue = !status && isOverdue(med, period);
-  const chipText = status ? DOSE_STATUS_LABEL[status] : overdue ? 'เลยเวลาแล้ว' : 'ยังไม่ได้บันทึก';
+  const w = doseWords(med.form);
+  const chipText = status ? doseStatusLabel(status, med.form) : overdue ? 'เลยเวลาแล้ว' : 'ยังไม่ได้บันทึก';
   const level = stockLevel(med);
   const exact = med.times[period];
   const time = periodTime(med, period);
@@ -148,19 +154,19 @@ const DoseItem: React.FC<{
       <div className="flex items-start gap-3">
         <MedPhoto
           med={med}
-          className="h-16 w-16 shrink-0 rounded-2xl bg-purple-50 overflow-hidden"
+          className="h-14 w-14 sm:h-16 sm:w-16 shrink-0 rounded-2xl bg-purple-50 overflow-hidden"
           fallback={null}
         />
         <div className="min-w-0 flex-1">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              {exact && <p className="text-2xl font-bold text-emerald-700 tabular-nums">{exact} น.</p>}
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 sm:gap-3">
+            <div className="min-w-0 flex-1">
+              {exact && <p className="text-xl sm:text-2xl font-bold text-emerald-700 tabular-nums">{exact} น.</p>}
               <p className="text-lg sm:text-xl font-bold text-slate-900 break-words">{med.name}</p>
-              <p className="mt-0.5 text-base text-slate-600">{instructionText(med)}</p>
+              <p className="mt-0.5 text-sm sm:text-base text-slate-600">{instructionText(med)}</p>
             </div>
             <span
               className={cn(
-                'shrink-0 inline-flex items-center gap-1.5 min-h-[36px] px-3 rounded-full border text-sm sm:text-base font-bold',
+                'self-start sm:self-auto shrink-0 inline-flex items-center gap-1.5 min-h-[32px] sm:min-h-[36px] px-3 rounded-full border text-xs sm:text-sm font-bold whitespace-nowrap',
                 overdue ? 'bg-red-50 border-red-300 text-red-800' : STATUS_CHIP[status ?? 'none']
               )}
             >
@@ -193,7 +199,7 @@ const DoseItem: React.FC<{
               className="inline-flex items-center justify-center gap-2 min-h-[58px] rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xl font-bold shadow-sm transition-colors cursor-pointer"
             >
               <Check className="w-6 h-6" aria-hidden="true" />
-              <span>กิน</span>
+              <span>{w.verb}</span>
             </button>
             <button
               type="button"
@@ -207,10 +213,10 @@ const DoseItem: React.FC<{
               )}
             >
               <X className="w-6 h-6" aria-hidden="true" />
-              <span>ไม่กิน</span>
+              <span>{w.skip}</span>
             </button>
           </div>
-          {asking && <SkipReasonPanel onConfirm={confirmSkip} onCancel={() => setAsking(false)} />}
+          {asking && <SkipReasonPanel med={med} onConfirm={confirmSkip} onCancel={() => setAsking(false)} />}
         </>
       ) : (
         <div className="mt-3 space-y-2">
@@ -220,7 +226,7 @@ const DoseItem: React.FC<{
           {log.status === 'taken' && log.lateMinutes ? (
             <p className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 border border-amber-300 px-3 py-1 text-sm font-bold text-amber-900">
               <Clock className="w-4 h-4" aria-hidden="true" />
-              กินช้ากว่ากำหนด {log.lateMinutes} นาที (เกิน {LATE_THRESHOLD_MIN} นาที บันทึกลงรายงาน)
+              {w.verb}ช้ากว่ากำหนด {log.lateMinutes} นาที (เกิน {LATE_THRESHOLD_MIN} นาที บันทึกลงรายงาน)
             </p>
           ) : null}
           {log.reason && <p className="text-base text-slate-700">เหตุผล: {log.reason}</p>}
@@ -229,7 +235,7 @@ const DoseItem: React.FC<{
           )}
 
           {asking ? (
-            <SkipReasonPanel onConfirm={confirmSkip} onCancel={() => setAsking(false)} />
+            <SkipReasonPanel med={med} onConfirm={confirmSkip} onCancel={() => setAsking(false)} />
           ) : (
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-base text-slate-600">บันทึกผิด? แก้เป็น</span>
@@ -239,7 +245,7 @@ const DoseItem: React.FC<{
                   onClick={() => onSet('taken')}
                   className="inline-flex items-center min-h-[48px] px-5 rounded-xl border border-emerald-300 bg-emerald-50 text-emerald-900 text-base font-bold hover:bg-emerald-100 cursor-pointer"
                 >
-                  กิน
+                  {w.verb}
                 </button>
               )}
               {log.status === 'taken' && (
@@ -248,7 +254,7 @@ const DoseItem: React.FC<{
                   onClick={() => setAsking(true)}
                   className="inline-flex items-center min-h-[48px] px-5 rounded-xl border border-rose-200 bg-rose-50 text-rose-900 text-base font-bold hover:bg-rose-100 cursor-pointer"
                 >
-                  ไม่กิน
+                  {w.skip}
                 </button>
               )}
               <button
@@ -266,7 +272,7 @@ const DoseItem: React.FC<{
   );
 };
 
-/** ตารางกินยาวันนี้: เป็น to-do แยกตามช่วงเวลาของวัน กด กิน / ไม่กิน (ไม่กินต้องบอกเหตุผล) */
+/** ตารางยาวันนี้ (กิน/ฉีด/หยอด ตามรูปแบบยา): เป็น to-do แยกตามช่วงเวลาของวัน กด กิน / ไม่กิน (ไม่กินต้องบอกเหตุผล) */
 export const TodaySchedule: React.FC<TodayScheduleProps> = ({ meds, logs, onSet }) => {
   const date = todayKey();
   const now = currentPeriod();
@@ -280,12 +286,15 @@ export const TodaySchedule: React.FC<TodayScheduleProps> = ({ meds, logs, onSet 
       .sort((a, b) => periodTime(a, p.value).localeCompare(periodTime(b, p.value))),
   })).filter((g) => g.items.length > 0);
 
+  // คำสรุปรวม: ยาในตารางวันนี้ใช้กริยาเดียวกัน (เช่นยากินทั้งหมด) ใช้คำนั้น ถ้าปนกันใช้ "ใช้ยา"
+  const all0 = commonDoseWords(todays.map((m) => m.form));
   if (groups.length === 0) {
+    const none = commonDoseWords(meds.filter((m) => m.active).map((m) => m.form));
     return (
       <Card className="py-12 px-6 text-center">
         <PartyPopper className="w-12 h-12 text-purple-300 mx-auto mb-3" aria-hidden="true" />
-        <p className="text-lg font-bold text-slate-900">วันนี้ไม่มียาที่ต้องกิน</p>
-        <p className="mt-1 text-base text-slate-600">ยาที่ตั้งให้กินบางวัน หรือหยุดใช้แล้ว จะไม่ขึ้นในวันนี้</p>
+        <p className="text-lg font-bold text-slate-900">วันนี้ไม่มียาที่ต้อง{none.verb}</p>
+        <p className="mt-1 text-base text-slate-600">ยาที่ตั้งให้{none.verb}บางวัน หรือหยุดใช้แล้ว จะไม่ขึ้นในวันนี้</p>
       </Card>
     );
   }
@@ -309,7 +318,7 @@ export const TodaySchedule: React.FC<TodayScheduleProps> = ({ meds, logs, onSet 
         </div>
         <div
           role="progressbar"
-          aria-label="ความคืบหน้าการบันทึกการกินยาวันนี้"
+          aria-label={`ความคืบหน้าการบันทึกการ${all0.phrase}วันนี้`}
           aria-valuemin={0}
           aria-valuemax={total}
           aria-valuenow={recorded}
@@ -323,7 +332,7 @@ export const TodaySchedule: React.FC<TodayScheduleProps> = ({ meds, logs, onSet 
         {allDone && (
           <p className="mt-3 flex items-center gap-2 text-base font-bold text-emerald-800">
             <PartyPopper className="w-5 h-5" aria-hidden="true" />
-            บันทึกครบทุกมื้อแล้ว กินแล้ว {taken} จาก {total} มื้อ
+            บันทึกครบทุกมื้อแล้ว {all0.done} {taken} จาก {total} มื้อ
           </p>
         )}
       </Card>

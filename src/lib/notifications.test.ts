@@ -59,6 +59,7 @@ const mockSettings: AppSettings = {
     repeatIntervalMinutes: 10,
     escalateToFamily: true,
     sound: true,
+    uiSound: true,
   },
 };
 
@@ -97,7 +98,6 @@ const sampleMed: Medication = {
   pillPhoto: null,
   labelPhoto: null,
   note: '',
-  refillRequestedAt: null,
   createdAt: '2026-11-01T00:00:00Z',
 };
 
@@ -119,7 +119,7 @@ describe('Health Notifications Engine (ระบบติดตามเหต�
     // 1. ต้องมีการแจ้งเตือน dose_due สำหรับมื้อเช้า
     const doseDue = notifs.find((n) => n.type === 'dose_due' && n.period === 'morning');
     expect(doseDue).toBeDefined();
-    expect(doseDue?.title).toContain('ถึงเวลารับประทานยา');
+    expect(doseDue?.title).toContain('ถึงเวลากินยา');
     expect(doseDue?.medName).toBe('Paracetamol 500mg');
     expect(doseDue?.actionStatus).toBe('pending');
 
@@ -146,7 +146,7 @@ describe('Health Notifications Engine (ระบบติดตามเหต�
     const unconfirmed = notifs.find((n) => n.type === 'dose_unconfirmed' && n.period === 'morning');
     expect(unconfirmed).toBeDefined();
     expect(unconfirmed?.priority).toBe('urgent');
-    expect(unconfirmed?.title).toContain('ยังไม่มีการยืนยันการรับประทานยา');
+    expect(unconfirmed?.title).toContain('ยังไม่ได้กินยา');
     expect(unconfirmed?.escalatedAt).not.toBeNull();
   });
 
@@ -166,7 +166,7 @@ describe('Health Notifications Engine (ระบบติดตามเหต�
 
     const upcoming = notifs.find((n) => n.type === 'dose_upcoming' && n.period === 'noon');
     expect(upcoming).toBeDefined();
-    expect(upcoming?.title).toContain('ใกล้ถึงเวลารับประทานยา');
+    expect(upcoming?.title).toContain('ใกล้ถึงเวลากินยา');
     expect(upcoming?.body).toContain('ในอีก 15 นาที');
   });
 
@@ -493,5 +493,35 @@ describe('Health Notifications Engine (ระบบติดตามเหต�
     const grandmaDose = notifs.find((n) => n.memberId === 'grandma' && n.medName === 'Amlodipine 5mg');
     expect(grandmaDose).toBeDefined();
     expect(grandmaDose?.title).toContain('Amlodipine 5mg (ยายแดง)');
+  });
+});
+
+
+describe('คำในการแจ้งเตือนเปลี่ยนตามรูปแบบยา (กิน / ฉีด / หยอด / ใช้)', () => {
+  const titleFor = (form: Medication['form'], type: 'dose_due' | 'dose_unconfirmed' | 'dose_upcoming', at: Date) => {
+    const med: Medication = { ...sampleMed, form, remaining: 100, lowStockDays: 3 };
+    const notifs = generateHealthNotifications({ now: at, settings: mockSettings, medsState: { meds: [med], logs: [] } });
+    return notifs.find((n) => n.type === type && n.period === 'morning');
+  };
+  const DUE = new Date(2026, 10, 5, 8, 15); // เลยเวลา 08:00 ไป 15 นาที
+  const LATE = new Date(2026, 10, 5, 10, 0);
+  const SOON = new Date(2026, 10, 5, 7, 45);
+
+  it('ยาหยอด: หยอด / ยาฉีด: ฉีด / อื่น ๆ: ใช้', () => {
+    expect(titleFor('drops', 'dose_due', DUE)?.title).toContain('ถึงเวลาหยอดยา');
+    expect(titleFor('injection', 'dose_due', DUE)?.title).toContain('ถึงเวลาฉีดยา');
+    expect(titleFor('other', 'dose_due', DUE)?.title).toContain('ถึงเวลาใช้ยา');
+    expect(titleFor('spray', 'dose_due', DUE)?.title).toContain('ถึงเวลาพ่นยา');
+  });
+
+  it('ยังไม่ยืนยัน และใกล้ถึงเวลา ใช้คำเดียวกัน', () => {
+    expect(titleFor('drops', 'dose_unconfirmed', LATE)?.title).toContain('ยังไม่ได้หยอดยา');
+    expect(titleFor('drops', 'dose_upcoming', SOON)?.title).toContain('ใกล้ถึงเวลาหยอดยา');
+    expect(titleFor('tablet', 'dose_unconfirmed', LATE)?.title).toContain('ยังไม่ได้กินยา');
+  });
+
+  it('ปุ่มยืนยันของแจ้งเตือนใช้กริยาเดียวกัน', () => {
+    expect(titleFor('drops', 'dose_due', DUE)?.actionLabel).toBe('ยืนยันการหยอดยา');
+    expect(titleFor('tablet', 'dose_due', DUE)?.actionLabel).toBe('ยืนยันการกินยา');
   });
 });

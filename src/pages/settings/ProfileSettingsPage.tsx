@@ -139,8 +139,8 @@ export const ProfileSettingsPage: React.FC = () => {
 
   const validate = () => {
     const found: Record<string, string> = {};
-    if (!form.nickname.trim()) found['settings-nickname'] = 'กรอกชื่อเล่นก่อนนะ';
-    if (!form.firstName.trim()) found['profile-first'] = 'กรอกชื่อก่อนนะ';
+    if (!form.nickname.trim()) found['settings-nickname'] = 'กรุณากรอกชื่อเล่น';
+    if (!form.firstName.trim()) found['profile-first'] = 'กรุณากรอกชื่อ';
     const phone = form.phone.replace(/\D/g, '');
     if (form.phone.trim() && !phonePattern.test(phone)) {
       found['profile-phone'] = 'กรอกเบอร์โทร 9–10 หลัก ขึ้นต้นด้วย 0';

@@ -10,7 +10,7 @@ import { Card } from '../../components/ui/Card';
 import { Modal } from '../../components/ui/Modal';
 import { QueueDrawer } from './QueueDrawer';
 import { TextAreaField } from '../../components/ui/TextAreaField';
-import { TextField } from '../../components/ui/TextField';
+import { DateField } from '../../components/ui/DatePicker';
 import { useToast } from '../../components/ui/Toast';
 import { consultErrorText, CONSULT_MODE, getBackend } from '../../consult/backend';
 import { DIRECTION_LABEL, severityDirection } from '../../consult/brief';
@@ -402,7 +402,19 @@ export const PharmacistWorkspacePage: React.FC = () => {
                 <TextAreaField id="note-rec" label="คำแนะนำ" rows={3} {...field('recommendation')} />
                 <TextAreaField id="note-ref" label="การส่งต่อ" rows={2} {...field('referral')} />
                 <TextAreaField id="note-plan" label="แผนติดตาม" rows={2} error={noteErrors['note-plan']} {...field('followUpPlan')} />
-                <TextField id="note-due" type="date" label="วันนัดติดตาม" labelSuffix="(ไม่บังคับ)" min={todayKey()} error={noteErrors['note-due']} {...field('followUpDue')} />
+                <DateField
+                  id="note-due"
+                  label="วันนัดติดตาม"
+                  labelSuffix="(ไม่บังคับ)"
+                  min={todayKey()}
+                  value={note.followUpDue}
+                  disabled={locked}
+                  error={noteErrors['note-due']}
+                  onChange={(val) => {
+                    setNote((n) => ({ ...n, followUpDue: val }));
+                    setDirty(true);
+                  }}
+                />
                 {canWork && !confirmedAt && (
                   <div className="flex flex-col gap-2">
                     <div role="status" className="min-h-[24px] text-base font-semibold text-slate-600">

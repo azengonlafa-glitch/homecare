@@ -31,9 +31,12 @@ import {
 } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
+import { Dino } from '../components/ui/Dino';
 import { Avatar } from '../components/ui/Avatar';
 import { Modal } from '../components/ui/Modal';
 import { TextField } from '../components/ui/TextField';
+import { SelectField } from '../components/ui/SelectField';
+import { DateField } from '../components/ui/DatePicker';
 import { useToast } from '../components/ui/Toast';
 import { cn } from '../lib/cn';
 import {
@@ -49,10 +52,8 @@ import {
   loadMemberRecord,
   saveMemberRecord,
   memberMeds,
-  type GlucoseTiming,
   type MemberMed,
   type MemberRecord,
-  type VitalReading,
 } from '../lib/members';
 import {
   ACCESS_CHANGED_EVENT,
@@ -67,6 +68,8 @@ import {
   MEDS_CHANGED_EVENT,
   PERIOD_LABEL,
   applyDoseStatus,
+  commonDoseWords,
+  doseWords,
   findLog,
   formatMedForm,
   formatQty,
@@ -80,7 +83,10 @@ import {
   type DoseStatus,
   type Medication,
 } from '../lib/meds';
-import { JOURNAL_CHANGED_EVENT, loadPosts, type JournalPost } from '../lib/journal';
+import { JOURNAL_CHANGED_EVENT, SELF_LABEL, loadPosts, type JournalPost } from '../lib/journal';
+import { useDailyRecordComposer } from '../components/journal/DailyRecordComposer';
+import { ProgressOverview, type ProgressTarget } from '../components/health/ProgressOverview';
+import { hasVitals, vitalChips } from '../lib/dailyRecord';
 import { MOOD_TONE, moodMeta } from '../data/journalOptions';
 import { CALENDAR_CHANGED_EVENT, loadEvents, parseKey, type CalendarEvent } from '../lib/calendar';
 import { ONBOARDING_CHANGED_EVENT, loadOnboarding, saveOnboarding } from '../lib/onboarding';
@@ -90,7 +96,8 @@ import { TONE_SOFT } from '../components/health/HealthCharts';
 import { Sparkline, TrendBlock } from '../components/health/TrendChart';
 import { MoodDino } from '../components/journal/MoodDino';
 import { ExtraMetricsHistory } from '../components/health/ExtraMetricsHistory';
-import { EXTRA_METRICS, seriesOf, type ExtraMetric } from '../lib/vitalMetrics';
+import { EXTRA_METRICS, metricValue, seriesOf } from '../lib/vitalMetrics';
+import { LatestByCategory } from '../components/health/LatestByCategory';
 import { MedFormModal, type MedFormData } from '../components/meds/MedFormModal';
 import { MedDetailModal } from '../components/meds/MedDetailModal';
 import { MedPhoto } from '../components/meds/MedPhoto';
@@ -222,7 +229,7 @@ const RequestDialog: React.FC<{
   onSubmit: (message: string) => void;
 }> = ({ memberName, scope, onClose, onSubmit }) => {
   const [message, setMessage] = useState(
-    scope === 'edit' ? `ขออนุญาตจัดตารางยาและช่วยบันทึกสุขภาพให้ ${memberName} นะคะ` : `ขออนุญาตดูข้อมูลสุขภาพของ ${memberName}`
+    scope === 'edit' ? `ขออนุญาตจัดตารางยาและช่วยบันทึกสุขภาพให้ ${memberName}` : `ขออนุญาตดูข้อมูลสุขภาพของ ${memberName}`
   );
 
   return (
@@ -253,266 +260,6 @@ const RequestDialog: React.FC<{
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           placeholder="เช่น ช่วยจัดตารางมื้อเช้าให้ จะได้ไม่ลืม"
-        />
-      </div>
-    </Modal>
-  );
-};
-
-// ---------- หน้าต่างบันทึกค่าสุขภาพ (Vital Signs) ----------
-
-const toLocalInput = (d: Date) => {
-  const p = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
-};
-
-const VitalGroup: React.FC<{
-  icon: React.ComponentType<{ className?: string }>;
-  title: string;
-  children: React.ReactNode;
-}> = ({ icon: Icon, title, children }) => (
-  <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-3.5 space-y-3">
-    <p className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
-      <Icon className="w-4 h-4 text-purple-700" />
-      <span>{title}</span>
-    </p>
-    {children}
-  </div>
-);
-
-const VitalModal: React.FC<{
-  memberName: string;
-  onClose: () => void;
-  onSave: (reading: VitalReading) => void;
-}> = ({ memberName, onClose, onSave }) => {
-  const [when, setWhen] = useState(() => toLocalInput(new Date()));
-  const [sys, setSys] = useState('');
-  const [dia, setDia] = useState('');
-  const [glucose, setGlucose] = useState('');
-  const [timing, setTiming] = useState<GlucoseTiming>('fasting');
-  const [weight, setWeight] = useState('');
-  const [extra, setExtra] = useState<Record<string, string>>({});
-  const [note, setNote] = useState('');
-  const [error, setError] = useState('');
-
-  const setField = (setter: (v: string) => void) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    setter(e.target.value);
-    setError('');
-  };
-  const setExtraField = (field: string, value: string) => {
-    setExtra((prev) => ({ ...prev, [field]: value }));
-    setError('');
-  };
-
-  const handleSave = () => {
-    const parse = (v: string) => (v.trim() ? Number(v) : undefined);
-    const s = parse(sys);
-    const d = parse(dia);
-    const g = parse(glucose);
-    const w = parse(weight);
-
-    if ((s !== undefined && d === undefined) || (s === undefined && d !== undefined)) {
-      setError('กรุณากรอกความดันทั้งตัวบนและตัวล่างให้ครบ');
-      return;
-    }
-    if (
-      (s !== undefined && (!Number.isFinite(s) || s < 40 || s > 300)) ||
-      (d !== undefined && (!Number.isFinite(d) || d < 20 || d > 200))
-    ) {
-      setError('ค่าความดันดูผิดปกติเกินไป กรุณาตรวจสอบตัวเลขอีกครั้ง');
-      return;
-    }
-    if (g !== undefined && (!Number.isFinite(g) || g < 10 || g > 800)) {
-      setError('ค่าน้ำตาลดูผิดปกติเกินไป กรุณาตรวจสอบตัวเลขอีกครั้ง');
-      return;
-    }
-    if (w !== undefined && (!Number.isFinite(w) || w < 2 || w > 400)) {
-      setError('ค่าน้ำหนักดูผิดปกติเกินไป กรุณาตรวจสอบตัวเลขอีกครั้ง');
-      return;
-    }
-
-    const extras: Partial<VitalReading> = {};
-    for (const m of EXTRA_METRICS) {
-      const raw = extra[m.field];
-      if (raw === undefined || raw.trim() === '') continue;
-      const n = Number(raw);
-      if (!Number.isFinite(n) || n < m.min || n > m.max) {
-        setError(`${m.label}ควรอยู่ระหว่าง ${m.min}–${m.max} ${m.unit} กรุณาตรวจสอบตัวเลข`);
-        return;
-      }
-      (extras as Record<string, number>)[m.field] = n;
-    }
-
-    if (s === undefined && g === undefined && w === undefined && Object.keys(extras).length === 0) {
-      setError('กรุณากรอกอย่างน้อย 1 รายการ');
-      return;
-    }
-
-    const at = new Date(when);
-    if (Number.isNaN(at.getTime())) {
-      setError('กรุณาเลือกวันและเวลาที่วัดให้ถูกต้อง');
-      return;
-    }
-    if (at.getTime() > Date.now() + 5 * 60_000) {
-      setError('วันและเวลาที่วัดต้องไม่เป็นอนาคต');
-      return;
-    }
-
-    onSave({
-      id: `vital-${Date.now()}`,
-      at: at.toISOString(),
-      systolic: s,
-      diastolic: d,
-      glucose: g,
-      glucoseTiming: g !== undefined ? timing : undefined,
-      weightKg: w,
-      ...extras,
-      note: note.trim() || undefined,
-    });
-  };
-
-  const extraField = (key: string) => {
-    const m = EXTRA_METRICS.find((x) => x.key === key) as ExtraMetric;
-    return (
-      <TextField
-        key={m.key}
-        id={`vital-${m.key}`}
-        type="number"
-        inputMode="decimal"
-        step={m.step}
-        label={`${m.label} (${m.unit})`}
-        placeholder={m.placeholder}
-        value={extra[m.field] ?? ''}
-        onChange={(e) => setExtraField(m.field, e.target.value)}
-      />
-    );
-  };
-
-  return (
-    <Modal
-      open
-      onClose={onClose}
-      title={`บันทึกค่าสุขภาพของ ${memberName}`}
-      footer={
-        <div className="grid grid-cols-2 gap-3">
-          <Button variant="neutral" fullWidth onClick={onClose}>
-            ยกเลิก
-          </Button>
-          <Button fullWidth onClick={handleSave}>
-            บันทึกค่าสุขภาพ
-          </Button>
-        </div>
-      }
-    >
-      <div className="py-4 space-y-4">
-        <p className="text-sm text-slate-600">
-          กรอกเฉพาะค่าที่วัดได้ในครั้งนี้ ค่าที่บันทึกจะนำไปแสดงเป็นกราฟพัฒนาการในแท็บประวัติสุขภาพ
-        </p>
-
-        {error && (
-          <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-sm font-bold text-rose-800">
-            {error}
-          </div>
-        )}
-
-        <VitalGroup icon={Clock} title="วันและเวลาที่วัด">
-          <TextField
-            id="vital-when"
-            type="datetime-local"
-            label="วัน/เวลา"
-            hint="ย้อนหลังได้ ถ้าลืมบันทึกไว้"
-            max={toLocalInput(new Date())}
-            value={when}
-            onChange={setField(setWhen)}
-          />
-        </VitalGroup>
-
-        <VitalGroup icon={HeartPulse} title="ความดันโลหิตและชีพจร">
-          <div className="grid grid-cols-2 gap-3">
-            <TextField id="vital-sys" type="number" inputMode="numeric" label="ตัวบน (mmHg)" placeholder="เช่น 125" value={sys} onChange={setField(setSys)} />
-            <TextField id="vital-dia" type="number" inputMode="numeric" label="ตัวล่าง (mmHg)" placeholder="เช่น 80" value={dia} onChange={setField(setDia)} />
-          </div>
-          {extraField('pulse')}
-        </VitalGroup>
-
-        <VitalGroup icon={Droplet} title="น้ำตาลในเลือด">
-          <TextField
-            id="vital-glucose"
-            type="number"
-            inputMode="decimal"
-            label="ค่าน้ำตาล (มก./ดล.)"
-            placeholder="เช่น 105"
-            value={glucose}
-            onChange={setField(setGlucose)}
-          />
-          <div>
-            <p className="text-xs font-bold text-slate-600 mb-1.5">ช่วงที่ตรวจ</p>
-            <div className="flex flex-wrap gap-2">
-              {(['fasting', 'after-meal', 'unknown'] as GlucoseTiming[]).map((t) => (
-                <button
-                  key={t}
-                  type="button"
-                  aria-pressed={timing === t}
-                  onClick={() => setTiming(t)}
-                  className={cn(
-                    'rounded-xl border px-3 py-1.5 text-sm font-bold transition-colors cursor-pointer',
-                    timing === t
-                      ? 'border-purple-600 bg-purple-600 text-white'
-                      : 'border-slate-200 bg-white text-slate-700 hover:bg-purple-50'
-                  )}
-                >
-                  {GLUCOSE_TIMING_LABEL[t]}
-                </button>
-              ))}
-            </div>
-          </div>
-          {extraField('hba1c')}
-        </VitalGroup>
-
-        <VitalGroup icon={Scale} title="ร่างกาย">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <TextField id="vital-weight" type="number" inputMode="decimal" step="0.1" label="น้ำหนัก (กก.)" placeholder="เช่น 58.5" value={weight} onChange={setField(setWeight)} />
-            {extraField('waist')}
-            {extraField('temp')}
-            {extraField('spo2')}
-          </div>
-        </VitalGroup>
-
-        <VitalGroup icon={Activity} title="ความรู้สึกและการนอน">
-          <div>
-            <p className="text-xs font-bold text-slate-600 mb-1.5">ระดับความปวด (0 = ไม่ปวด · 10 = ปวดมากที่สุด)</p>
-            <div className="flex flex-wrap gap-1.5">
-              {Array.from({ length: 11 }, (_, n) => n).map((n) => {
-                const on = extra.painScore === String(n);
-                return (
-                  <button
-                    key={n}
-                    type="button"
-                    aria-pressed={on}
-                    aria-label={`ความปวด ${n}`}
-                    onClick={() => setExtraField('painScore', on ? '' : String(n))}
-                    className={cn(
-                      'h-10 w-10 rounded-xl border text-sm font-extrabold transition-colors cursor-pointer',
-                      on
-                        ? 'border-purple-600 bg-purple-600 text-white'
-                        : 'border-slate-200 bg-white text-slate-700 hover:bg-purple-50'
-                    )}
-                  >
-                    {n}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-          {extraField('sleep')}
-        </VitalGroup>
-
-        <TextField
-          id="vital-note"
-          label="หมายเหตุเพิ่มเติม (ถ้ามี)"
-          placeholder="เช่น วัดหลังตื่นนอน หรือหลังเดินออกกำลังกาย"
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
         />
       </div>
     </Modal>
@@ -631,24 +378,14 @@ const BasicProfileModal: React.FC<{
               value={birthDay}
               onChange={(e) => setBirthDay(e.target.value)}
             />
-            <div>
-              <label htmlFor="basic-month" className="block text-sm font-bold text-slate-800 mb-1.5">
-                เดือน
-              </label>
-              <select
-                id="basic-month"
-                value={birthMonth}
-                onChange={(e) => setBirthMonth(e.target.value)}
-                className="w-full min-h-[48px] rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 focus:border-purple-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-600"
-              >
-                <option value="">ไม่ระบุ</option>
-                {MONTHS.map((m) => (
-                  <option key={m.value} value={m.value}>
-                    {m.label}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <SelectField
+              id="basic-month"
+              label="เดือน"
+              placeholder="ไม่ระบุ"
+              value={birthMonth}
+              onChange={setBirthMonth}
+              options={[{ value: '', label: 'ไม่ระบุ' }, ...MONTHS]}
+            />
             <TextField
               id="basic-year"
               type="number"
@@ -681,22 +418,17 @@ const BasicProfileModal: React.FC<{
         </div>
 
         <div>
-          <label htmlFor="basic-caregiver" className="block text-sm font-bold text-slate-800 mb-1.5">
-            ผู้ดูแลหลักของสมาชิกคนนี้
-          </label>
-          <select
+          <SelectField
             id="basic-caregiver"
+            label="ผู้ดูแลหลักของสมาชิกคนนี้"
+            placeholder="ใช้ค่าเริ่มต้นของผู้ดูแลหลัก"
             value={caregiverId}
-            onChange={(e) => setCaregiverId(e.target.value)}
-            className="w-full min-h-[48px] rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 focus:border-purple-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-600"
-          >
-            <option value="">ใช้ค่าเริ่มต้นของผู้ดูแลบ้าน</option>
-            {members.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.name} ({m.relation})
-              </option>
-            ))}
-          </select>
+            onChange={setCaregiverId}
+            options={[
+              { value: '', label: 'ใช้ค่าเริ่มต้นของผู้ดูแลหลัก' },
+              ...members.map((m) => ({ value: m.id, label: `${m.name} (${m.relation})` })),
+            ]}
+          />
         </div>
 
         <TextField
@@ -848,6 +580,8 @@ export const MemberDetailPage: React.FC = () => {
   const [onboarding, setOnboarding] = useState(loadOnboarding);
 
   const [activeTab, setActiveTab] = useState<DashboardTab>('overview');
+  /** แท็บภาพรวม: วันนี้ (สิ่งที่ต้องทำ) หรือพัฒนาการในช่วงเวลา */
+  const [overviewPeriod, setOverviewPeriod] = useState<'today' | '7d' | '30d' | '3m'>('today');
   const [historyFilter, setHistoryFilter] = useState<HistoryFilter>('all');
   const [showAllFollowUps, setShowAllFollowUps] = useState(false);
   const [rangePreset, setRangePreset] = useState<RangePreset>('30d');
@@ -856,7 +590,9 @@ export const MemberDetailPage: React.FC = () => {
     to: todayKey(),
   }));
 
-  const [dialog, setDialog] = useState<'view' | 'edit' | 'schedule' | 'vital' | 'basic' | null>(null);
+  const [dialog, setDialog] = useState<'view' | 'edit' | 'schedule' | 'basic' | null>(null);
+  // บันทึกประจำวัน (อาการ + ค่าสุขภาพ) ตัวเดียวกับหน้าบันทึกอาการ
+  const composer = useDailyRecordComposer();
   const [selectedMedId, setSelectedMedId] = useState<string | null>(null);
   const [editingMedInModal, setEditingMedInModal] = useState<Medication | null>(null);
 
@@ -891,6 +627,8 @@ export const MemberDetailPage: React.FC = () => {
   const member: HouseholdMember | undefined = settings.members.find((m) => m.id === id);
 
   const isMe = member?.id === CURRENT_MEMBER_ID;
+  /** เปิดบันทึกประจำวันของสมาชิกคนนี้ โดยเปิดส่วนค่าสุขภาพไว้ (ค่าที่บันทึกขึ้นกราฟในหน้านี้ทันที) */
+  const openRecord = () => composer.start({ first: 'vitals', about: isMe ? SELF_LABEL : member?.name });
   const ownProfile = isMe ? onboarding.profile : null;
 
   // รายการยาและบันทึกการกินยาของสมาชิกคนนี้
@@ -924,7 +662,7 @@ export const MemberDetailPage: React.FC = () => {
         </Link>
         <Card>
           <p className="text-lg font-bold text-slate-900">ไม่พบสมาชิกคนนี้ในบ้าน</p>
-          <p className="mt-1 text-base text-slate-600">อาจถูกนำออกจากบ้านไปแล้ว</p>
+          <p className="mt-1 text-base text-slate-600">อาจถูกนำออกจากกลุ่มบ้านไปแล้ว</p>
         </Card>
       </div>
     );
@@ -952,6 +690,8 @@ export const MemberDetailPage: React.FC = () => {
 
   const dosesToday = todayDoses(fullMeds, memberLogs);
   const summaryToday = doseSummary(dosesToday);
+  // คำสรุปรวม: ยาทุกตัวใช้กริยาเดียวกันใช้คำนั้น ถ้าปนกัน (กิน+หยอด+ฉีด) ใช้ "ใช้ยา"
+  const cw = commonDoseWords(fullMeds.map((m) => m.form));
 
   const memberPosts = postsAboutMember(posts, member);
   const latestPost = memberPosts[0] ?? null;
@@ -1008,16 +748,12 @@ export const MemberDetailPage: React.FC = () => {
   const diaSeries = seriesOf(bpReadings, (r) => r.diastolic);
   const gluSeries = seriesOf(gluReadings, (r) => r.glucose);
   const weightSeries = seriesOf(weightReadings, (r) => r.weightKg);
-  const extraCount = readingsInRange.filter((r) => EXTRA_METRICS.some((m) => r[m.field] != null)).length;
+  const extraCount = readingsInRange.filter((r) => EXTRA_METRICS.some((m) => metricValue(r, m) != null)).length;
   // แนวโน้มย่อบนหน้าภาพรวม ใช้ค่าล่าสุดทั้งหมด ไม่ขึ้นกับช่วงเวลาที่เลือกในแท็บประวัติ
   const allReadings = record.vitals ?? [];
   const sparkSys = seriesOf(allReadings, (r) => r.systolic);
   const sparkGlu = seriesOf(allReadings, (r) => r.glucose);
   const sparkWeight = seriesOf(allReadings, (r) => r.weightKg);
-  const latestExtras = EXTRA_METRICS.flatMap((m) => {
-    const pts = seriesOf(allReadings, (r) => r[m.field]);
-    return pts.length > 0 ? [{ m, last: pts[pts.length - 1] }] : [];
-  });
 
   // ---------- Actions ----------
 
@@ -1087,53 +823,6 @@ export const MemberDetailPage: React.FC = () => {
     toast.show(`อัปเดตสถานะยา ${med.name} (${PERIOD_LABEL[period]}) แล้ว`);
   };
 
-  const handleSaveVital = (reading: VitalReading) => {
-    if (!editable) {
-      toast.show('ไม่มีสิทธิ์บันทึกค่าสุขภาพ');
-      return;
-    }
-    const nextVitals = [reading, ...(record.vitals ?? [])];
-    // ถ้าเป็นการบันทึกย้อนหลัง ไม่เขียนทับ "ค่าล่าสุด" ที่เก็บไว้
-    const isNewest = (record.vitals ?? []).every((r) => r.at <= reading.at);
-    const nextBp =
-      isNewest && reading.systolic != null && reading.diastolic != null
-        ? `${reading.systolic}/${reading.diastolic}`
-        : record.health.bloodPressure;
-    const nextSugar = isNewest && reading.glucose != null ? String(reading.glucose) : record.health.bloodSugar;
-    const nextWeight = isNewest && reading.weightKg != null ? reading.weightKg : record.weightKg;
-
-    const updated: MemberRecord = {
-      ...record,
-      weightKg: nextWeight,
-      vitals: nextVitals,
-      health: {
-        ...record.health,
-        bloodPressure: nextBp,
-        bloodSugar: nextSugar,
-      },
-    };
-    saveMemberRecord(updated);
-    setRecord(updated);
-
-    if (isMe && isNewest) {
-      const ob = loadOnboarding();
-      saveOnboarding({
-        ...ob,
-        profile: {
-          ...ob.profile,
-          systolic: reading.systolic != null ? String(reading.systolic) : ob.profile.systolic,
-          diastolic: reading.diastolic != null ? String(reading.diastolic) : ob.profile.diastolic,
-          fastingGlucose: reading.glucose != null ? String(reading.glucose) : ob.profile.fastingGlucose,
-          weightKg: reading.weightKg != null ? String(reading.weightKg) : ob.profile.weightKg,
-        },
-      });
-    }
-
-    checkAndConsumeOnce();
-    setDialog(null);
-    toast.show('บันทึกค่าสุขภาพเรียบร้อยแล้ว');
-  };
-
   const handleSaveBasic = (
     patch: Partial<MemberRecord>,
     ownPatch?: { birthDay: string; birthMonth: string; birthYear: string; heightCm: string; weightKg: string }
@@ -1172,7 +861,7 @@ export const MemberDetailPage: React.FC = () => {
       return;
     }
     if (target === 'record') {
-      if (editable) setDialog('vital');
+      if (editable) openRecord();
       else {
         setActiveTab('history');
         setHistoryFilter('all');
@@ -1295,7 +984,7 @@ export const MemberDetailPage: React.FC = () => {
                   <PencilLine className="w-4 h-4" aria-hidden="true" />
                   <span>ข้อมูลพื้นฐาน</span>
                 </Button>
-                <Button size="sm" onClick={() => setDialog('vital')}>
+                <Button size="sm" onClick={() => openRecord()}>
                   <Plus className="w-4 h-4" aria-hidden="true" />
                   <span>บันทึกค่าสุขภาพ</span>
                 </Button>
@@ -1378,7 +1067,7 @@ export const MemberDetailPage: React.FC = () => {
       {/* ==================== กรณีข้อมูลถูกซ่อน ==================== */}
       {!viewable ? (
         <Card className="text-center py-12 shadow-xs">
-          <Lock className="mx-auto h-12 w-12 text-amber-700" aria-hidden="true" />
+          <Dino pose="peek" bob className="mx-auto h-28 w-32" />
           <p className="mt-3 text-lg font-bold text-slate-900">ข้อมูลนี้ถูกซ่อนไว้</p>
           <p className="mt-1 text-base text-slate-600">
             {member.name} ตั้งค่าไม่ให้คนในบ้านดูข้อมูลสุขภาพและตารางยา
@@ -1437,8 +1126,7 @@ export const MemberDetailPage: React.FC = () => {
             >
               <Sparkles className="w-3.5 h-3.5 sm:w-5 sm:h-5 shrink-0" aria-hidden="true" />
               <span className="truncate">
-                <span className="hidden sm:inline">ภาพรวมวันนี้</span>
-                <span className="sm:hidden">ภาพรวม</span>
+                ภาพรวม
               </span>
               {followUps.length > 0 && (
                 <span
@@ -1494,6 +1182,65 @@ export const MemberDetailPage: React.FC = () => {
           {/* ==================== TAB 1: ภาพรวมวันนี้ (เรียงตามลำดับความสำคัญ: ต้องทำ → ยา → ค่าสุขภาพ → นัด) ==================== */}
           {activeTab === 'overview' && (
             <div className="space-y-4 sm:space-y-5">
+              {/* เลือกดู: วันนี้ (สิ่งที่ต้องทำ) หรือพัฒนาการภาพรวมในช่วงเวลา */}
+              <fieldset className="min-w-0">
+                <legend className="sr-only">ช่วงเวลาของภาพรวม</legend>
+                <div className="seg-track grid grid-cols-4 gap-1 rounded-2xl p-1">
+                  {(
+                    [
+                      { id: 'today', label: 'วันนี้' },
+                      { id: '7d', label: '7 วัน' },
+                      { id: '30d', label: '30 วัน' },
+                      { id: '3m', label: '3 เดือน' },
+                    ] as const
+                  ).map((opt) => {
+                    const on = overviewPeriod === opt.id;
+                    return (
+                      <label
+                        key={opt.id}
+                        className={cn(
+                          'flex min-h-[48px] cursor-pointer items-center justify-center rounded-xl px-1 text-center text-base font-bold',
+                          'focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-purple-600',
+                          on ? 'seg-on text-white' : 'text-slate-700 hover:bg-white'
+                        )}
+                      >
+                        <input
+                          type="radio"
+                          name="overview-period"
+                          value={opt.id}
+                          checked={on}
+                          onChange={() => setOverviewPeriod(opt.id)}
+                          className="sr-only"
+                        />
+                        {opt.label}
+                      </label>
+                    );
+                  })}
+                </div>
+              </fieldset>
+
+              {overviewPeriod !== 'today' ? (
+                <ProgressOverview
+                  key={overviewPeriod}
+                  memberName={member.name}
+                  range={rangeFor(overviewPeriod, customRange)}
+                  rangeLabel={RANGE_LABEL[overviewPeriod]}
+                  readings={record.vitals ?? []}
+                  posts={memberPosts}
+                  adherence={(() => {
+                    const r = rangeFor(overviewPeriod, customRange);
+                    return rangeDoseReport(fullMeds, memberLogs, r.from, r.to).adherence;
+                  })()}
+                  keyOf={keyOfIso}
+                  onOpen={(target: ProgressTarget) => {
+                    setRangePreset(overviewPeriod);
+                    setHistoryFilter(target);
+                    setActiveTab('history');
+                  }}
+                  onRecord={editable ? openRecord : undefined}
+                />
+              ) : (
+              <>
               <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 sm:gap-5 items-start">
                 {/* ---------- คอลัมน์หลัก: สิ่งที่ต้องทำ ---------- */}
                 <div className="lg:col-span-3 space-y-4 sm:space-y-5">
@@ -1513,8 +1260,9 @@ export const MemberDetailPage: React.FC = () => {
                     />
 
                     {followUps.length === 0 ? (
-                      <p className="rounded-xl bg-emerald-50 px-3.5 py-3 text-sm sm:text-base font-bold text-emerald-900">
-                        ทุกอย่างเรียบร้อยดี ไม่มีรายการค้างที่ต้องติดตาม
+                      <p className="flex items-center gap-3 rounded-xl bg-emerald-50 px-3.5 py-2 text-sm sm:text-base font-bold text-emerald-900">
+                        <Dino pose="cheer" className="h-14 w-16 shrink-0" />
+                        <span>ทุกอย่างเรียบร้อยดี ไม่มีรายการค้างที่ต้องติดตาม</span>
                       </p>
                     ) : (
                       <>
@@ -1592,7 +1340,7 @@ export const MemberDetailPage: React.FC = () => {
 
                     {summaryToday.total === 0 ? (
                       <p className="rounded-xl bg-slate-50 px-3.5 py-3 text-sm sm:text-base text-slate-600">
-                        วันนี้ไม่มีมื้อยาที่ต้องรับประทาน
+                        วันนี้ไม่มีมื้อยาที่ต้อง{cw.verb}
                       </p>
                     ) : (
                       <>
@@ -1609,7 +1357,7 @@ export const MemberDetailPage: React.FC = () => {
                             aria-valuemin={0}
                             aria-valuemax={summaryToday.total}
                             aria-valuenow={doneDoses}
-                            aria-label="ความคืบหน้าการกินยาวันนี้"
+                            aria-label={`ความคืบหน้าการ${cw.phrase}วันนี้`}
                           >
                             <div
                               className="h-full rounded-full bg-emerald-500 transition-all"
@@ -1620,7 +1368,7 @@ export const MemberDetailPage: React.FC = () => {
                             <p className="mt-1.5 text-xs sm:text-sm font-semibold text-slate-600">
                               {summaryToday.skipped > 0 && `ข้าม ${summaryToday.skipped} มื้อ`}
                               {summaryToday.skipped > 0 && summaryToday.missed > 0 && ' · '}
-                              {summaryToday.missed > 0 && `ไม่ได้กิน ${summaryToday.missed} มื้อ`}
+                              {summaryToday.missed > 0 && `${cw.notDone} ${summaryToday.missed} มื้อ`}
                             </p>
                           )}
                         </div>
@@ -1663,7 +1411,7 @@ export const MemberDetailPage: React.FC = () => {
                                     onClick={() => handleToggleTodayDose(d.med, d.period, 'taken')}
                                   >
                                     <Check className="w-4 h-4" aria-hidden="true" />
-                                    <span>กินแล้ว</span>
+                                    <span>{doseWords(d.med.form).done}</span>
                                   </Button>
                                 )}
                               </li>
@@ -1698,7 +1446,7 @@ export const MemberDetailPage: React.FC = () => {
                         editable ? (
                           <button
                             type="button"
-                            onClick={() => setDialog('vital')}
+                            onClick={() => openRecord()}
                             className="inline-flex items-center gap-1 text-sm font-extrabold text-purple-800 hover:underline cursor-pointer"
                           >
                             <Plus className="w-4 h-4" aria-hidden="true" />
@@ -1716,7 +1464,7 @@ export const MemberDetailPage: React.FC = () => {
                             {vitals.bp && <span className="ml-1 text-xs font-bold text-slate-500">mmHg</span>}
                           </p>
                         </div>
-                        <Sparkline points={sparkSys} color="#5051C3" label="แนวโน้มความดันตัวบน" />
+                        <Sparkline points={sparkSys} color="#15703A" label="แนวโน้มความดันตัวบน" />
                         <div className="text-right shrink-0">
                           {bpClass && <ClassifiedChip value={bpClass} />}
                           <p className="mt-0.5 text-xs text-slate-500">
@@ -1768,24 +1516,7 @@ export const MemberDetailPage: React.FC = () => {
                         </div>
                       </li>
                     </ul>
-                    {latestExtras.length > 0 && (
-                      <div className="border-t border-slate-100 pt-3">
-                        <p className="mb-1.5 text-xs font-bold text-slate-500">ค่าอื่น ๆ ล่าสุด</p>
-                        <ul className="flex flex-wrap gap-1.5">
-                          {latestExtras.map(({ m, last }) => (
-                            <li
-                              key={m.key}
-                              className="rounded-lg bg-slate-50 px-2.5 py-1 text-xs sm:text-sm text-slate-600"
-                            >
-                              {m.label.replace(/ \(.*\)$/, '')}{' '}
-                              <b className="font-extrabold text-slate-900 tabular-nums">
-                                {last.v.toFixed(m.decimals)} {m.unit}
-                              </b>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
+                    <LatestByCategory readings={allReadings} />
                     <button
                       type="button"
                       onClick={() => {
@@ -1876,19 +1607,21 @@ export const MemberDetailPage: React.FC = () => {
                 <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" aria-hidden="true" />
                 <span>สถานะนี้เป็นเพียงตัวช่วยจัดลำดับความสำคัญในการดูแล ไม่ใช่การวินิจฉัยโรค</span>
               </p>
+              </>
+              )}
             </div>
           )}
 
           {/* ==================== TAB 2: ส่วนจัดการยา (Medication Overview) ==================== */}
           {activeTab === 'meds' && (
             <div className="space-y-5">
-              {/* เช็คชื่อการรับประทานยาวันนี้ */}
+              {/* เช็คชื่อมื้อยาวันนี้ (คำกริยาตามรูปแบบยา) */}
               <Card className="shadow-xs space-y-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
-                    <SectionTitle icon={Clock}>ตารางรับประทานยาวันนี้</SectionTitle>
+                    <SectionTitle icon={Clock}>ตาราง{cw.phrase}วันนี้</SectionTitle>
                     <p className="mt-0.5 text-sm text-slate-600">
-                      รับประทานแล้ว {summaryToday.taken}/{summaryToday.total} มื้อ · ยังไม่ยืนยัน {summaryToday.unconfirmed} · ข้าม {summaryToday.skipped}
+                      {cw.done} {summaryToday.taken}/{summaryToday.total} มื้อ · ยังไม่ยืนยัน {summaryToday.unconfirmed} · ข้าม {summaryToday.skipped}
                     </p>
                   </div>
                   {editable && (
@@ -1900,7 +1633,7 @@ export const MemberDetailPage: React.FC = () => {
                 </div>
 
                 {dosesToday.length === 0 ? (
-                  <EmptyNote>วันนี้ไม่มีมื้อยาที่ต้องรับประทานตามตาราง</EmptyNote>
+                  <EmptyNote>วันนี้ไม่มีมื้อยาที่ต้อง{cw.verb}ตามตาราง</EmptyNote>
                 ) : (
                   <ul className="divide-y divide-slate-100">
                     {dosesToday.map((d) => (
@@ -1928,12 +1661,12 @@ export const MemberDetailPage: React.FC = () => {
                         </div>
 
                         <div className="flex flex-wrap items-center justify-between md:justify-end gap-2 shrink-0 w-full md:w-auto pt-2.5 md:pt-0 border-t border-slate-100 md:border-t-0">
-                          <DoseStateChip state={d.state} />
+                          <DoseStateChip state={d.state} form={d.med.form} />
                           {editable && (
                             <div className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-slate-50 p-1 shrink-0">
                               <button
                                 type="button"
-                                title="ยืนยันว่ารับประทานแล้ว"
+                                title={`ยืนยันว่า${doseWords(d.med.form).done}`}
                                 onClick={() => handleToggleTodayDose(d.med, d.period, 'taken')}
                                 className={cn(
                                   'inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-extrabold transition-colors cursor-pointer',
@@ -1943,7 +1676,7 @@ export const MemberDetailPage: React.FC = () => {
                                 )}
                               >
                                 <Check className="w-3.5 h-3.5" />
-                                <span>กินแล้ว</span>
+                                <span>{doseWords(d.med.form).done}</span>
                               </button>
                               <button
                                 type="button"
@@ -1961,7 +1694,7 @@ export const MemberDetailPage: React.FC = () => {
                               </button>
                               <button
                                 type="button"
-                                title="ไม่ได้รับประทาน"
+                                title={doseWords(d.med.form).notDone}
                                 onClick={() => handleToggleTodayDose(d.med, d.period, 'missed')}
                                 className={cn(
                                   'inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-extrabold transition-colors cursor-pointer',
@@ -1971,7 +1704,7 @@ export const MemberDetailPage: React.FC = () => {
                                 )}
                               >
                                 <X className="w-3.5 h-3.5" />
-                                <span>ไม่ได้กิน</span>
+                                <span>{doseWords(d.med.form).notDone}</span>
                               </button>
                             </div>
                           )}
@@ -1986,9 +1719,9 @@ export const MemberDetailPage: React.FC = () => {
               <Card className="shadow-xs space-y-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
-                    <SectionTitle icon={Pill}>รายการยาที่สมาชิกต้องรับประทาน ({fullMeds.length})</SectionTitle>
+                    <SectionTitle icon={Pill}>รายการยาที่สมาชิกต้อง{cw.verb} ({fullMeds.length})</SectionTitle>
                     <p className="mt-0.5 text-sm text-slate-600">
-                      กดที่รายการยาเพื่อดูรายละเอียด สรรพคุณ และประวัติการรับประทานยาย้อนหลัง
+                      กดที่รายการยาเพื่อดูรายละเอียด สรรพคุณ และประวัติการ{cw.phrase}ย้อนหลัง
                     </p>
                   </div>
                   {isMe && (
@@ -2039,7 +1772,7 @@ export const MemberDetailPage: React.FC = () => {
 
                             {/* ขนาดและจำนวนที่ต้องรับประทาน + วิธีใช้ */}
                             <p className="text-sm font-bold text-slate-800">
-                              ขนาดรับประทาน: ครั้งละ {instructionText(med)}
+                              ขนาดที่ใช้: ครั้งละ {instructionText(med)}
                             </p>
 
                             {/* เวลาในการรับประทาน */}
@@ -2066,7 +1799,7 @@ export const MemberDetailPage: React.FC = () => {
                               {medDosesToday.map((d) => (
                                 <span key={d.key} className="inline-flex items-center gap-1 text-xs font-bold text-slate-600">
                                   <span>{PERIOD_LABEL[d.period]}:</span>
-                                  <DoseStateChip state={d.state} className="px-2 py-0.5 text-xs" />
+                                  <DoseStateChip state={d.state} form={d.med.form} className="px-2 py-0.5 text-xs" />
                                 </span>
                               ))}
                               {trusted && <StockBadge med={med} />}
@@ -2086,7 +1819,7 @@ export const MemberDetailPage: React.FC = () => {
             <div className="space-y-5">
               {/* ตัวกรองตามช่วงเวลา (7 วัน, 30 วัน, 3 เดือน, กำหนดเอง) และหมวดหมู่ */}
               <Card className="shadow-xs space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="fit-row justify-between">
                   <SectionTitle icon={History}>ประวัติสุขภาพย้อนหลัง (Health History)</SectionTitle>
 
                   {/* ปุ่มเลือกช่วงเวลา */}
@@ -2112,19 +1845,17 @@ export const MemberDetailPage: React.FC = () => {
                 {/* กำหนดวันที่เอง */}
                 {rangePreset === 'custom' && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 rounded-2xl border border-purple-200 bg-purple-50/40 p-3.5">
-                    <TextField
+                    <DateField
                       id="history-from"
-                      type="date"
                       label="ตั้งแต่วันที่"
                       value={customRange.from}
-                      onChange={(e) => setCustomRange((prev) => ({ ...prev, from: e.target.value }))}
+                      onChange={(val) => setCustomRange((prev) => ({ ...prev, from: val }))}
                     />
-                    <TextField
+                    <DateField
                       id="history-to"
-                      type="date"
                       label="ถึงวันที่"
                       value={customRange.to}
-                      onChange={(e) => setCustomRange((prev) => ({ ...prev, to: e.target.value }))}
+                      onChange={(val) => setCustomRange((prev) => ({ ...prev, to: val }))}
                     />
                   </div>
                 )}
@@ -2138,12 +1869,12 @@ export const MemberDetailPage: React.FC = () => {
                   {(
                     [
                       { id: 'all', label: 'ทั้งหมด' },
-                      { id: 'symptoms', label: `บันทึกอาการ (${postsInRange.length})` },
+                      { id: 'symptoms', label: `บันทึกประจำวัน (${postsInRange.length})` },
                       { id: 'bp', label: `ความดันโลหิต (${bpReadings.length})` },
                       { id: 'glucose', label: `ระดับน้ำตาล (${gluReadings.length})` },
                       { id: 'weight', label: `น้ำหนัก (${weightReadings.length})` },
-                      { id: 'other', label: `ค่าอื่น ๆ (${extraCount})` },
-                      { id: 'meds', label: `การรับประทานยา (${doseReport.days.length} วัน)` },
+                      { id: 'other', label: `ค่าอื่น ๆ และผลตรวจ (${extraCount})` },
+                      { id: 'meds', label: `การ${cw.phrase} (${doseReport.days.length} วัน)` },
                       { id: 'appointments', label: `นัดหมาย/การรักษา (${apptsInRange.length + medicalHistoryInRange.length})` },
                     ] as { id: HistoryFilter; label: string }[]
                   ).map((f) => (
@@ -2167,7 +1898,7 @@ export const MemberDetailPage: React.FC = () => {
               {/* 1) ประวัติการบันทึกอาการ */}
               {(historyFilter === 'all' || historyFilter === 'symptoms') && (
                 <Card className="shadow-xs space-y-3.5">
-                  <SectionTitle icon={BookHeart}>ประวัติการบันทึกอาการและอารมณ์</SectionTitle>
+                  <SectionTitle icon={BookHeart}>บันทึกประจำวัน (อาการ อารมณ์ และค่าที่วัด)</SectionTitle>
                   {postsInRange.length === 0 ? (
                     <EmptyNote>ไม่มีการบันทึกอาการในช่วงเวลานี้</EmptyNote>
                   ) : (
@@ -2204,6 +1935,18 @@ export const MemberDetailPage: React.FC = () => {
                                 ))}
                               </div>
                             )}
+                            {hasVitals(p.vitals) && (
+                              <div className="flex flex-wrap gap-1.5">
+                                {vitalChips(p.vitals).map((c) => (
+                                  <span
+                                    key={c.key}
+                                    className="rounded-full bg-sky-soft border border-sky-200 px-2.5 py-0.5 text-xs font-extrabold text-sky-900 tabular-nums"
+                                  >
+                                    {c.label} {c.value}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
                             {p.title && <p className="text-sm font-bold text-slate-900 break-words">{p.title}</p>}
                             {p.content && <p className="text-sm sm:text-base text-slate-800 break-words">{p.content}</p>}
                           </li>
@@ -2220,7 +1963,7 @@ export const MemberDetailPage: React.FC = () => {
                   <div className="flex items-center justify-between gap-2">
                     <SectionTitle icon={HeartPulse}>ประวัติค่าความดันโลหิต</SectionTitle>
                     {editable && (
-                      <Button size="sm" variant="soft" onClick={() => setDialog('vital')}>
+                      <Button size="sm" variant="soft" onClick={() => openRecord()}>
                         + บันทึกความดัน
                       </Button>
                     )}
@@ -2233,7 +1976,7 @@ export const MemberDetailPage: React.FC = () => {
                       label="ความดันโลหิต"
                       unit="mmHg"
                       series={[
-                        { label: 'ตัวบน', color: '#5051C3', points: sysSeries },
+                        { label: 'ตัวบน', color: '#15703A', points: sysSeries },
                         { label: 'ตัวล่าง', color: '#E5557A', points: diaSeries },
                       ]}
                     />
@@ -2267,7 +2010,7 @@ export const MemberDetailPage: React.FC = () => {
                   <div className="flex items-center justify-between gap-2">
                     <SectionTitle icon={Droplet}>ประวัติระดับน้ำตาลในเลือด</SectionTitle>
                     {editable && (
-                      <Button size="sm" variant="soft" onClick={() => setDialog('vital')}>
+                      <Button size="sm" variant="soft" onClick={() => openRecord()}>
                         + บันทึกค่าน้ำตาล
                       </Button>
                     )}
@@ -2314,7 +2057,7 @@ export const MemberDetailPage: React.FC = () => {
                   <div className="flex items-center justify-between gap-2">
                     <SectionTitle icon={Scale}>ประวัติน้ำหนักตัว</SectionTitle>
                     {editable && (
-                      <Button size="sm" variant="soft" onClick={() => setDialog('vital')}>
+                      <Button size="sm" variant="soft" onClick={() => openRecord()}>
                         + บันทึกน้ำหนัก
                       </Button>
                     )}
@@ -2349,17 +2092,17 @@ export const MemberDetailPage: React.FC = () => {
 
               {/* 4.5) ค่าสุขภาพอื่น ๆ พร้อมกราฟ */}
               {(historyFilter === 'all' || historyFilter === 'other') && (
-                <ExtraMetricsHistory readings={readingsInRange} editable={editable} onAdd={() => setDialog('vital')} />
+                <ExtraMetricsHistory readings={readingsInRange} editable={editable} onAdd={() => openRecord()} />
               )}
 
-              {/* 5) ประวัติการรับประทานยา */}
+              {/* 5) ประวัติการกิน/ใช้ยา (คำตามรูปแบบยา) */}
               {(historyFilter === 'all' || historyFilter === 'meds') && (
                 <Card className="shadow-xs space-y-3.5">
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <SectionTitle icon={Activity}>ประวัติการรับประทานยา</SectionTitle>
+                    <SectionTitle icon={Activity}>ประวัติการ{cw.phrase}</SectionTitle>
                     {doseReport.adherence !== null && (
                       <span className="rounded-full bg-purple-50 border border-purple-200 px-3 py-1 text-xs sm:text-sm font-extrabold text-purple-900">
-                        ความสม่ำเสมอ {doseReport.adherence}% (กินแล้ว {doseReport.totals.taken}/{doseReport.totals.expected - doseReport.totals.skipped} มื้อ)
+                        ความสม่ำเสมอ {doseReport.adherence}% ({cw.done} {doseReport.totals.taken}/{doseReport.totals.expected - doseReport.totals.skipped} มื้อ)
                       </span>
                     )}
                   </div>
@@ -2379,7 +2122,7 @@ export const MemberDetailPage: React.FC = () => {
                                 <span className="font-bold text-slate-800">
                                   {e.med.name} ({PERIOD_LABEL[e.period]})
                                 </span>
-                                <DoseStateChip state={e.state} className="px-2 py-0.5 text-xs" />
+                                <DoseStateChip state={e.state} form={e.med.form} className="px-2 py-0.5 text-xs" />
                               </div>
                             ))}
                           </div>
@@ -2469,13 +2212,7 @@ export const MemberDetailPage: React.FC = () => {
         />
       )}
 
-      {dialog === 'vital' && (
-        <VitalModal
-          memberName={member.name}
-          onClose={() => setDialog(null)}
-          onSave={handleSaveVital}
-        />
-      )}
+      {composer.element}
 
       {dialog === 'basic' && (
         <BasicProfileModal
@@ -2524,10 +2261,6 @@ export const MemberDetailPage: React.FC = () => {
           checkAndConsumeOnce();
           setSelectedMedId(null);
           toast.show(`ลบรายการยา ${med.name} แล้ว`);
-        }}
-        onRefill={(med) => {
-          setSelectedMedId(null);
-          if (editable) setEditingMedInModal(med);
         }}
       />
 

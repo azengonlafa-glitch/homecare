@@ -1,14 +1,8 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { CheckCircle2, ChevronsDown, TriangleAlert } from 'lucide-react';
+import { CheckCircle2, ChevronsDown } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
-import {
-  CONSENT_CLOSING,
-  CONSENT_INTRO,
-  CONSENT_IS_DRAFT,
-  CONSENT_SECTIONS,
-  CONSENT_TITLE,
-} from '../../data/consentDocument';
+import { ConsentArticle } from './ConsentArticle';
 
 interface ConsentDocumentModalProps {
   open: boolean;
@@ -114,41 +108,7 @@ export const ConsentDocumentModal: React.FC<ConsentDocumentModalProps> = ({ open
         </div>
       }
     >
-      <article className="py-5 space-y-6">
-        {CONSENT_IS_DRAFT && (
-          <p className="flex items-start gap-2 rounded-2xl bg-amber-50 border border-amber-200 p-3 text-sm text-amber-900">
-            <TriangleAlert className="w-4 h-4 mt-0.5 shrink-0" aria-hidden="true" />
-            <span>ฉบับร่างสำหรับทดสอบระบบ ยังไม่ผ่านการตรวจโดยฝ่ายกฎหมาย</span>
-          </p>
-        )}
-
-        <header>
-          <h3 className="text-xl sm:text-2xl font-bold text-slate-900 leading-snug">{CONSENT_TITLE}</h3>
-          <p className="mt-3 text-base sm:text-lg text-slate-700 leading-relaxed">{CONSENT_INTRO}</p>
-        </header>
-
-        {CONSENT_SECTIONS.map((section) => (
-          <section key={section.title} className="space-y-2">
-            <h4 className="text-lg font-bold text-purple-900">{section.title}</h4>
-            {section.paragraphs?.map((p) => (
-              <p key={p} className="text-base sm:text-lg text-slate-700 leading-relaxed">
-                {p}
-              </p>
-            ))}
-            {section.items && (
-              <ul className="list-disc pl-6 space-y-1.5 text-base sm:text-lg text-slate-700 leading-relaxed">
-                {section.items.map((item) => (
-                  <li key={item}>{item}</li>
-                ))}
-              </ul>
-            )}
-          </section>
-        ))}
-
-        <p className="rounded-2xl bg-purple-50 border border-purple-200 p-4 text-base sm:text-lg font-semibold text-purple-950 leading-relaxed">
-          {CONSENT_CLOSING}
-        </p>
-      </article>
+      <ConsentArticle />
     </Modal>
   );
 };

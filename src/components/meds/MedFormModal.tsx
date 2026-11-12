@@ -1,10 +1,12 @@
-import React, { useMemo, useRef, useState } from 'react';
-import { CheckCircle2, ChevronRight, Link2, Loader2, Package, ScanLine } from 'lucide-react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { AlertTriangle, CheckCircle2, ChevronRight, ImagePlus, Link2, Loader2, Package, ScanLine } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { TextField } from '../ui/TextField';
 import { TextAreaField } from '../ui/TextAreaField';
 import { NativeSelect } from '../ui/NativeSelect';
+import { TimePicker } from '../ui/TimePicker';
+import { DateField } from '../ui/DatePicker';
 import { Chip, FieldGroup } from '../ui/ChoiceChips';
 import { SwitchRow } from '../settings/SwitchRow';
 import { ConfirmDialog } from '../settings/ConfirmDialog';
@@ -15,13 +17,15 @@ import { PhotoSlot } from './PhotoSlot';
 import { DRUGS, drugById, matchDrugInText, searchDrugs, type DrugInfo } from '../../data/drugDb';
 import { deleteFiles, saveFile } from '../../lib/fileStore';
 import { loadOnboarding, type Attachment } from '../../lib/onboarding';
-import { hasScanData, scanMedPhoto, type ScanResult } from '../../lib/medScan';
+import { hasScanData, preloadMedScanner, scanMedPhoto, type ScanProgress, type ScanResult } from '../../lib/medScan';
 import {
   DEFAULT_EXPIRY_WARN_DAYS,
   DEFAULT_REMINDER_REPEAT_MIN,
+  FORM_GROUPS,
   FORM_OPTIONS,
   MEAL_OPTIONS,
   formatMedForm,
+  doseWords,
   PERIODS,
   PERIOD_LABEL,
   UNIT_OPTIONS,
@@ -35,7 +39,7 @@ import {
 } from '../../lib/meds';
 import { cn } from '../../lib/cn';
 
-export type MedFormData = Omit<Medication, 'id' | 'createdAt' | 'refillRequestedAt' | 'stoppedAt'>;
+export type MedFormData = Omit<Medication, 'id' | 'createdAt' | 'stoppedAt'>;
 
 interface MedFormModalProps {
   open: boolean;
@@ -187,8 +191,11 @@ const ScanResultCard: React.FC<{ result: ScanResult; onApply: () => void; onDism
   else if (result.unit) rows.push(['หน่วย', result.unit]);
   if (result.periods?.length) rows.push(['เวลา', result.periods.map((p) => PERIOD_LABEL[p]).join(' · ')]);
   if (result.meal) rows.push(['อาหาร', MEAL_OPTIONS.find((o) => o.value === result.meal)?.label ?? '']);
+  if (result.asNeeded) rows.push(['การใช้', 'ใช้เมื่อมีอาการ (ไม่มีเวลาประจำ)']);
   if (result.quantity) rows.push(['จำนวนในซอง', String(result.quantity)]);
   const found = hasScanData(result);
+  // รูปไม่ชัด: OCR ไม่มั่นใจ ผลอาจผิด ต้องตรวจละเอียด
+  const blurry = result.confidence !== undefined && result.confidence < 55;
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-4">
@@ -196,6 +203,12 @@ const ScanResultCard: React.FC<{ result: ScanResult; onApply: () => void; onDism
         <CheckCircle2 className="w-5 h-5 text-emerald-600" aria-hidden="true" />
         {found ? 'อ่านจากรูปได้ดังนี้ ตรวจให้ถูกก่อนใช้' : 'อ่านข้อมูลยาจากรูปไม่ได้'}
       </p>
+      {found && blurry && (
+        <p className="mt-2 flex items-start gap-1.5 rounded-xl bg-amber-50 p-2.5 text-sm font-semibold text-amber-900 ring-1 ring-amber-200">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+          รูปไม่ค่อยชัด ข้อมูลอาจผิด ตรวจกับซองยาให้ดี หรือถ่ายใหม่ให้ชัดกว่านี้
+        </p>
+      )}
       {found ? (
         <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-base">
           {rows.map(([k, v]) => (
@@ -206,9 +219,14 @@ const ScanResultCard: React.FC<{ result: ScanResult; onApply: () => void; onDism
           ))}
         </dl>
       ) : (
-        <p className="mt-2 text-sm text-slate-700">
-          ลองถ่ายใหม่ให้ตัวหนังสือชัด ไม่เอียง แสงพอ หรือกรอกเองด้านล่าง รูปถูกเก็บไว้เป็น “รูปฉลากยา” แล้ว
-        </p>
+        <div className="mt-2 space-y-1 text-sm text-slate-700">
+          <p>ลองถ่ายใหม่ หรือกรอกเองด้านล่าง (รูปถูกเก็บไว้เป็น “รูปฉลากยา” แล้ว)</p>
+          <ul className="list-disc pl-5">
+            <li>ถ่ายเฉพาะฉลาก ให้ตัวหนังสือเต็มกรอบ</li>
+            <li>วางซองให้เรียบ ไม่ยับ ถือกล้องตรง ๆ</li>
+            <li>แสงสว่างพอ ไม่มีเงาหรือแสงสะท้อนบนซอง</li>
+          </ul>
+        </div>
       )}
       {result.rawText.trim() && (
         <details className="mt-3">
@@ -262,9 +280,14 @@ const FormDialog: React.FC<Omit<MedFormModalProps, 'open'>> = ({
   const [confirmClose, setConfirmClose] = useState(false);
   const [nameFocused, setNameFocused] = useState(false);
   const [scan, setScan] = useState<
-    { state: 'idle' } | { state: 'reading'; progress: number } | { state: 'done'; result: ScanResult } | { state: 'error' }
+    { state: 'idle' } | { state: 'reading'; progress: ScanProgress } | { state: 'done'; result: ScanResult } | { state: 'error' }
   >({ state: 'idle' });
   const scanInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
+  // โหลดตัวอ่านฉลากไว้ล่วงหน้าตอนเปิดฟอร์ม กดถ่ายรูปแล้วจะอ่านได้เร็วขึ้น
+  useEffect(() => {
+    preloadMedScanner();
+  }, []);
   const snapshot = useRef(JSON.stringify(form));
   const originalIds = useRef(new Set([initial?.pillPhoto?.id, initial?.labelPhoto?.id].filter(Boolean) as string[]));
   const uploadedIds = useRef(new Set<string>());
@@ -342,8 +365,9 @@ const FormDialog: React.FC<Omit<MedFormModalProps, 'open'>> = ({
   // ----- ถ่ายรูปซองยา: เก็บเป็นรูปฉลาก แล้วอ่านข้อมูลอัตโนมัติ -----
   const handleScanFile = async (file: File | undefined) => {
     if (scanInputRef.current) scanInputRef.current.value = '';
+    if (galleryInputRef.current) galleryInputRef.current.value = '';
     if (!file || !file.type.startsWith('image/')) return;
-    setScan({ state: 'reading', progress: 0 });
+    setScan({ state: 'reading', progress: { stage: 'กำลังเตรียมรูป', percent: 0 } });
     try {
       const saved = await saveFile(file);
       setPhoto('labelPhoto', saved);
@@ -367,6 +391,7 @@ const FormDialog: React.FC<Omit<MedFormModalProps, 'open'>> = ({
       perDose: r.perDose ? formatQty(r.perDose) : prev.perDose,
       unit: r.unit ?? prev.unit,
       periods: r.periods?.length ? r.periods : prev.periods,
+      asNeeded: r.asNeeded && !r.periods?.length ? true : prev.asNeeded,
       meal: r.meal ?? prev.meal,
       remaining: r.quantity ? String(r.quantity) : prev.remaining,
     }));
@@ -395,6 +420,8 @@ const FormDialog: React.FC<Omit<MedFormModalProps, 'open'>> = ({
   const linked = form.drugRef ? drugById(form.drugRef) : undefined;
   const autoMatch = !form.drugRef ? matchDrugInText(form.name) : undefined;
 
+  // คำในฟอร์มเปลี่ยนตามรูปแบบที่เลือก (กิน / ฉีด / หยอด / ทา / พ่น / ตรวจ / ใช้)
+  const w = doseWords(form.form);
   const perDose = toNumber(form.perDose);
   const remaining = toNumber(form.remaining);
   const lowDays = toNumber(form.lowStockDays);
@@ -402,7 +429,7 @@ const FormDialog: React.FC<Omit<MedFormModalProps, 'open'>> = ({
 
   const submit = () => {
     const found: Record<string, string> = {};
-    if (!form.name.trim()) found['med-name'] = 'กรอกชื่อยาก่อนนะ';
+    if (!form.name.trim()) found['med-name'] = 'กรุณากรอกชื่อยา';
     if (!(perDose > 0)) found['med-perdose'] = 'กรอกจำนวนต่อครั้งมากกว่า 0';
     if (!form.asNeeded && form.periods.length === 0) found['med-periods'] = 'เลือกช่วงเวลาอย่างน้อย 1 ช่วง';
     if (!form.asNeeded && !form.everyDay && form.weekdays.length === 0) found['med-weekdays'] = 'เลือกวันอย่างน้อย 1 วัน';
@@ -647,10 +674,26 @@ const FormDialog: React.FC<Omit<MedFormModalProps, 'open'>> = ({
               className="sr-only"
               onChange={(e) => void handleScanFile(e.target.files?.[0])}
             />
+            <input
+              ref={galleryInputRef}
+              type="file"
+              accept="image/*"
+              tabIndex={-1}
+              className="sr-only"
+              onChange={(e) => void handleScanFile(e.target.files?.[0])}
+            />
             {scan.state === 'reading' ? (
-              <div className="flex items-center gap-3 text-base font-semibold text-slate-900" aria-live="polite">
-                <Loader2 className="w-6 h-6 animate-spin" aria-hidden="true" />
-                <span>กำลังอ่านข้อมูลจากรูป… {scan.progress > 0 ? `${scan.progress}%` : ''}</span>
+              <div className="space-y-2" aria-live="polite">
+                <div className="flex items-center gap-3 text-base font-semibold text-slate-900">
+                  <Loader2 className="w-6 h-6 shrink-0 animate-spin" aria-hidden="true" />
+                  <span>
+                    {scan.progress.stage}… {scan.progress.percent > 0 ? `${scan.progress.percent}%` : ''}
+                  </span>
+                </div>
+                <div className="h-2 overflow-hidden rounded-full bg-slate-200" aria-hidden="true">
+                  <div className="h-full rounded-full bg-purple-600 transition-[width] duration-300" style={{ width: `${Math.max(4, scan.progress.percent)}%` }} />
+                </div>
+                <p className="text-sm text-slate-600">อ่านในเครื่องนี้ รูปไม่ถูกส่งออกไปไหน</p>
               </div>
             ) : scan.state === 'done' ? (
               <ScanResultCard
@@ -659,22 +702,29 @@ const FormDialog: React.FC<Omit<MedFormModalProps, 'open'>> = ({
                 onDismiss={() => setScan({ state: 'idle' })}
               />
             ) : (
-              <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+              <div className="fit-row">
                 <div className="min-w-0 flex-1">
                   <p className="text-base font-bold text-slate-900">ถ่ายรูปซองยา ให้ช่วยกรอกให้</p>
                   <p className="text-sm text-slate-600">
                     ระบบจะอ่านชื่อยา ครั้งละ เวลา และก่อน/หลังอาหารจากฉลาก แล้วให้คุณตรวจก่อนใช้
                   </p>
+                  <p className="mt-1 text-sm text-slate-600">อ่านในเครื่องนี้ รูปไม่ถูกส่งออกไปไหน · ถ่ายเฉพาะฉลาก ตรง ๆ แสงพอ</p>
                   {scan.state === 'error' && (
                     <p role="alert" className="mt-1 text-sm font-semibold text-red-700">
                       อ่านรูปไม่สำเร็จ (ครั้งแรกต้องต่ออินเทอร์เน็ตเพื่อโหลดตัวอ่านภาษาไทย) ลองใหม่หรือกรอกเอง
                     </p>
                   )}
                 </div>
-                <Button type="button" size="sm" onClick={() => scanInputRef.current?.click()} className="shrink-0">
-                  <ScanLine className="w-5 h-5" aria-hidden="true" />
-                  <span>ถ่ายรูปซองยา</span>
-                </Button>
+                <div className="flex shrink-0 flex-wrap gap-2">
+                  <Button type="button" size="sm" onClick={() => scanInputRef.current?.click()}>
+                    <ScanLine className="w-5 h-5" aria-hidden="true" />
+                    <span>ถ่ายรูปซองยา</span>
+                  </Button>
+                  <Button type="button" size="sm" variant="neutral" onClick={() => galleryInputRef.current?.click()}>
+                    <ImagePlus className="w-5 h-5" aria-hidden="true" />
+                    <span>เลือกรูป</span>
+                  </Button>
+                </div>
               </div>
             )}
           </div>
@@ -751,11 +801,18 @@ const FormDialog: React.FC<Omit<MedFormModalProps, 'open'>> = ({
             ) : null}
 
             <FieldGroup label="รูปแบบยา / สิ่งที่ใช้ดูแล">
-              <div className="flex flex-wrap gap-2">
-                {FORM_OPTIONS.map((o) => (
-                  <Chip key={o.value} selected={form.form === o.value} onClick={() => changeForm(o.value)}>
-                    {o.label}
-                  </Chip>
+              <div className="space-y-3.5">
+                {FORM_GROUPS.map((g) => (
+                  <div key={g.id} role="group" aria-label={g.label}>
+                    <p className="mb-1.5 text-sm font-bold text-slate-600">{g.label}</p>
+                    <div className="flex flex-wrap gap-2">
+                      {FORM_OPTIONS.filter((o) => o.group === g.id).map((o) => (
+                        <Chip key={o.value} selected={form.form === o.value} onClick={() => changeForm(o.value)}>
+                          {o.label}
+                        </Chip>
+                      ))}
+                    </div>
+                  </div>
                 ))}
               </div>
 
@@ -766,7 +823,7 @@ const FormDialog: React.FC<Omit<MedFormModalProps, 'open'>> = ({
                     id="med-custom-form"
                     name="custom-form"
                     label="ระบุรูปแบบหรือวิธีใช้อื่น ๆ"
-                    placeholder="เช่น แผ่นแปะผิวหนัง, ยาฉีดอินซูลินใต้ผิวหนัง, อาหารทางการแพทย์"
+                    placeholder="เช่น น้ำเกลือล้างจมูก, อาหารทางการแพทย์, น้ำยากลั้วคอ"
                     value={form.customForm}
                     onChange={(e) => setForm((prev) => ({ ...prev, customForm: e.target.value }))}
                     autoFocus
@@ -793,7 +850,7 @@ const FormDialog: React.FC<Omit<MedFormModalProps, 'open'>> = ({
                       type="button"
                       onClick={() => set('condition', c)}
                       className={cn(
-                        'min-h-[40px] px-3 rounded-full border text-sm font-semibold cursor-pointer',
+                        'min-h-[48px] px-3 rounded-full border text-sm font-semibold cursor-pointer',
                         form.condition === c
                           ? 'bg-purple-700 border-purple-700 text-white'
                           : 'bg-white border-slate-300 text-slate-700 hover:bg-purple-50'
@@ -811,7 +868,7 @@ const FormDialog: React.FC<Omit<MedFormModalProps, 'open'>> = ({
                 id="med-drugref"
                 label="เชื่อมกับฐานข้อมูลยา"
                 labelSuffix="(ไม่บังคับ)"
-                hint="ช่วยแสดงข้อมูลยาและข้อควรระวัง และสั่งเติมยาได้ง่ายขึ้น"
+                hint="ช่วยแสดงข้อมูลยาและข้อควรระวังได้ง่ายขึ้น"
                 options={DRUG_OPTIONS}
                 value={form.drugRef}
                 onChange={(v) => set('drugRef', v)}
@@ -828,7 +885,7 @@ const FormDialog: React.FC<Omit<MedFormModalProps, 'open'>> = ({
                   <button
                     type="button"
                     onClick={() => pickDrug(autoMatch)}
-                    className="inline-flex items-center gap-2 min-h-[40px] px-3 rounded-full border border-slate-300 bg-white text-sm font-semibold text-slate-800 hover:bg-slate-50 cursor-pointer"
+                    className="inline-flex items-center gap-2 min-h-[48px] px-3 rounded-full border border-slate-300 bg-white text-sm font-semibold text-slate-800 hover:bg-slate-50 cursor-pointer"
                   >
                     <Link2 className="w-4 h-4" aria-hidden="true" />
                     ตรงกับ {autoMatch.generic} · กดเพื่อเชื่อม
@@ -860,8 +917,8 @@ const FormDialog: React.FC<Omit<MedFormModalProps, 'open'>> = ({
           <SectionBox title={inventory ? 'ปริมาณที่ใช้' : 'ใช้เมื่อไหร่'}>
             {!inventory && (
               <SwitchRow
-                label="ไม่มีตารางประจำ (กินเมื่อจำเป็น)"
-                description="เช่น ยาแก้ปวดเมื่อมีอาการ เข็มหรือชุดตรวจ จะไม่ขึ้นในตารางวันนี้และไม่เตือนลืมกิน แต่ยังนับจำนวนคงเหลือได้"
+                label={`ไม่มีตารางประจำ (${w.verb}เมื่อจำเป็น)`}
+                description={`เช่น ยาแก้ปวดเมื่อมีอาการ เข็มหรือชุดตรวจ จะไม่ขึ้นในตารางวันนี้และไม่เตือนลืม${w.verb} แต่ยังนับจำนวนคงเหลือได้`}
                 checked={form.asNeeded}
                 onChange={(v) => set('asNeeded', v)}
               />
@@ -889,7 +946,7 @@ const FormDialog: React.FC<Omit<MedFormModalProps, 'open'>> = ({
             <>
             <FieldGroup
               label="เวลาใช้ยา"
-              hint="เลือกได้หลายช่วง ใส่เวลาเป๊ะหรือไม่ก็ได้ (ใช้เตือนเมื่อลืมกินยา)"
+              hint={`เลือกได้หลายช่วง ใส่เวลาเป๊ะหรือไม่ก็ได้ (ใช้เตือนเมื่อลืม${w.phrase})`}
               error={errors['med-periods']}
             >
               <div id="med-periods" tabIndex={-1} className="space-y-2">
@@ -913,12 +970,11 @@ const FormDialog: React.FC<Omit<MedFormModalProps, 'open'>> = ({
                         {p.label}
                       </label>
                       {on && (
-                        <input
-                          type="time"
-                          aria-label={`เวลา${p.label} (ไม่บังคับ)`}
+                        <TimePicker
+                          variant="compact"
+                          ariaLabel={`เวลา${p.label} (ไม่บังคับ)`}
                           value={form.times[p.value] ?? ''}
-                          onChange={(e) => set('times', { ...form.times, [p.value]: e.target.value })}
-                          className="min-h-[44px] px-3 rounded-full border border-purple-200 bg-white text-base text-purple-900 [color-scheme:light]"
+                          onChange={(val) => set('times', { ...form.times, [p.value]: val })}
                         />
                       )}
                     </div>
@@ -929,7 +985,7 @@ const FormDialog: React.FC<Omit<MedFormModalProps, 'open'>> = ({
 
             <FieldGroup
               label="แจ้งเตือนเมื่อถึงเวลา"
-              hint="ค่าเริ่มต้น: แจ้งตรงเวลา ถ้ายังไม่กินจะแจ้งซ้ำทุก 10 นาที ปรับได้เฉพาะยานี้"
+              hint={`ค่าเริ่มต้น: แจ้งตรงเวลา ถ้ายังไม่${w.verb}จะแจ้งซ้ำทุก 10 นาที ปรับได้เฉพาะยานี้`}
             >
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <NativeSelect
@@ -941,7 +997,7 @@ const FormDialog: React.FC<Omit<MedFormModalProps, 'open'>> = ({
                 />
                 <NativeSelect
                   id="med-remind-repeat"
-                  label="ถ้ายังไม่กิน แจ้งซ้ำทุก"
+                  label={`ถ้ายังไม่${w.verb} แจ้งซ้ำทุก`}
                   options={REMIND_REPEAT_OPTIONS}
                   value={form.reminderRepeat}
                   onChange={(v) => set('reminderRepeat', v)}
@@ -959,7 +1015,7 @@ const FormDialog: React.FC<Omit<MedFormModalProps, 'open'>> = ({
               </div>
             </FieldGroup>
 
-            <FieldGroup label="วันที่ต้องกิน" error={errors['med-weekdays']}>
+            <FieldGroup label={`วันที่ต้อง${w.verb}`} error={errors['med-weekdays']}>
               <div className="flex flex-wrap gap-2">
                 <Chip selected={form.everyDay} onClick={() => set('everyDay', true)}>
                   ทุกวัน
@@ -992,12 +1048,11 @@ const FormDialog: React.FC<Omit<MedFormModalProps, 'open'>> = ({
             </FieldGroup>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <TextField
+              <DateField
                 id="med-start"
-                type="date"
                 label="วันที่เริ่มใช้"
                 value={form.startDate}
-                onChange={(e) => set('startDate', e.target.value)}
+                onChange={(val) => set('startDate', val)}
                 error={errors['med-start']}
               />
               <FieldGroup label="ระยะเวลาการใช้ยา">
@@ -1065,17 +1120,16 @@ const FormDialog: React.FC<Omit<MedFormModalProps, 'open'>> = ({
               {preview ? (
                 <StockBadge med={preview} />
               ) : (
-                <p className="text-sm text-slate-500">กรอกจำนวนที่เหลือ ระบบจะคำนวณว่าพอกินอีกกี่วันให้เอง</p>
+                <p className="text-sm text-slate-500">กรอกจำนวนที่เหลือ ระบบจะคำนวณว่าพอ{w.use}อีกกี่วันให้เอง</p>
               )}
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <TextField
+              <DateField
                 id="med-last-refill"
-                type="date"
                 label="วันที่รับยาล่าสุด"
                 labelSuffix="(ไม่บังคับ)"
                 value={form.lastRefillDate}
-                onChange={(e) => set('lastRefillDate', e.target.value)}
+                onChange={(val) => set('lastRefillDate', val)}
               />
               <TextField
                 id="med-refills"
@@ -1089,14 +1143,13 @@ const FormDialog: React.FC<Omit<MedFormModalProps, 'open'>> = ({
               />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <TextField
+              <DateField
                 id="med-expiry"
-                type="date"
                 label="วันหมดอายุของยา"
                 labelSuffix="(ไม่บังคับ)"
                 hint="ดูได้บนฉลากหรือกล่อง ระบบจะนับถอยหลังและเตือนให้"
                 value={form.expiryDate}
-                onChange={(e) => set('expiryDate', e.target.value)}
+                onChange={(val) => set('expiryDate', val)}
               />
               {form.expiryDate && (
                 <NativeSelect

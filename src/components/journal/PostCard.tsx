@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { HeartPulse, MessageCircle, Pencil, Send, Trash2, X } from 'lucide-react';
+import { Gauge, HeartPulse, LineChart, MessageCircle, Pencil, Send, Trash2, X } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { Heart } from 'lucide-react';
 import { Avatar } from '../ui/Avatar';
 import { loadSettings } from '../../lib/settings';
@@ -8,6 +9,7 @@ import { MoodBadge } from './MoodPickerModal';
 import { cn } from '../../lib/cn';
 import { formatDateTime, SELF_LABEL, type JournalPost, type JournalUser } from '../../lib/journal';
 import { SYMPTOM_DESCRIPTIONS } from '../../data/symptomDescriptions';
+import { hasVitals, memberIdForAbout, vitalChips } from '../../lib/dailyRecord';
 
 interface PostCardProps {
   post: JournalPost;
@@ -46,6 +48,8 @@ export const PostCard: React.FC<PostCardProps> = ({
     ? loadSettings().profile.photo
     : loadSettings().members.find((m) => m.id === post.authorId || m.name === post.authorName)?.photo;
   const liked = post.likes.includes(user.id);
+  const vitals = hasVitals(post.vitals) ? post.vitals : null;
+  const progressMemberId = vitals ? memberIdForAbout(post.about, loadSettings().members, SELF_LABEL) : null;
   const commentsId = `comments-${post.id}`;
 
   const submitComment = (e: React.FormEvent) => {
@@ -70,7 +74,7 @@ export const PostCard: React.FC<PostCardProps> = ({
           <p className="text-lg font-bold text-slate-900 break-words">{post.authorName}</p>
           {post.about && post.about !== SELF_LABEL && post.about !== 'ตัวฉันเอง' && post.about !== post.authorName && (
             <p className="text-sm text-slate-600">
-              บันทึกอาการของ <strong className="font-semibold">{post.about}</strong>
+              บันทึกของ <strong className="font-semibold">{post.about}</strong>
             </p>
           )}
           <p className="text-sm text-slate-500">
@@ -118,6 +122,37 @@ export const PostCard: React.FC<PostCardProps> = ({
                   className="rounded-full bg-red-50 border border-red-200 px-3 py-1 text-base font-semibold text-red-900 cursor-help"
                 >
                   {item}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {vitals && (
+          <div className="rounded-2xl border border-sky-200 bg-sky-soft/60 p-3.5">
+            <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+              <p className="flex items-center gap-1.5 text-sm font-bold text-slate-800">
+                <Gauge className="h-4 w-4 text-sky-700" aria-hidden="true" />
+                ค่าสุขภาพที่วัดได้
+                {vitals.at && vitals.at.slice(0, 16) !== post.createdAt.slice(0, 16) && (
+                  <span className="font-normal text-slate-600">· วัดเมื่อ {formatDateTime(vitals.at)}</span>
+                )}
+              </p>
+              {progressMemberId && (
+                <Link
+                  to={`/members/${progressMemberId}`}
+                  className="inline-flex min-h-[48px] items-center gap-1.5 rounded-full px-3 text-sm font-bold text-sky-800 hover:bg-white"
+                >
+                  <LineChart className="h-4 w-4" aria-hidden="true" />
+                  ดูพัฒนาการ
+                </Link>
+              )}
+            </div>
+            <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {vitalChips(vitals).map((c) => (
+                <li key={c.key} className="rounded-xl bg-white/90 px-3 py-2 ring-1 ring-sky-100">
+                  <span className="block text-xs font-semibold text-slate-600">{c.label}</span>
+                  <span className="block text-base font-extrabold tabular-nums text-slate-900 break-words">{c.value}</span>
                 </li>
               ))}
             </ul>

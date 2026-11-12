@@ -52,7 +52,7 @@ const seedRequests = (): AccessRequest[] => [
     requesterId: 'mint',
     targetId: CURRENT_MEMBER_ID,
     scope: 'edit',
-    message: 'ขออนุญาตจัดตารางยาให้แม่นะคะ จะได้ไม่ลืมมื้อเช้า',
+    message: 'ขออนุญาตจัดตารางยาให้แม่ จะได้ไม่ลืมมื้อเช้า',
     decision: 'pending',
     createdAt: new Date(Date.now() - 1000 * 60 * 25).toISOString(),
     decidedAt: null,

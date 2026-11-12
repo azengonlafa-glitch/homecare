@@ -25,14 +25,14 @@ export const ProviderPublicPage: React.FC = () => {
   const back = (
     <Link to="/consult" className="inline-flex min-h-[48px] items-center gap-1.5 text-base font-bold text-purple-800 hover:underline">
       <ArrowLeft className="w-5 h-5" aria-hidden="true" />
-      ผู้ให้บริการทั้งหมด
+      ร้านยาและคลินิกทั้งหมด
     </Link>
   );
   if (!data || !provider) {
     return (
       <div className="space-y-4">
         {back}
-        <ErrorCard message="ไม่พบผู้ให้บริการนี้ หรือไม่เปิดให้บริการแล้ว" />
+        <ErrorCard message="ไม่พบร้านยาหรือคลินิกนี้ หรือไม่เปิดให้บริการแล้ว" />
       </div>
     );
   }
@@ -44,7 +44,7 @@ export const ProviderPublicPage: React.FC = () => {
       <ProviderDetail provider={provider} reviews={data.reviews} />
       <Card className="mx-auto max-w-3xl space-y-2 p-5 sm:p-6">
         {!available && <p className="text-base font-semibold text-amber-900">ร้านนี้ปิดให้บริการอยู่ในขณะนี้ จึงเริ่มปรึกษาใหม่ไม่ได้</p>}
-        {available && !provider.online && <p className="text-sm text-slate-600">ยังไม่ออนไลน์ ส่งคำขอไว้ได้ ผู้ให้บริการจะตอบเมื่อกลับมาออนไลน์</p>}
+        {available && !provider.online && <p className="text-sm text-slate-600">ยังไม่ออนไลน์ ส่งคำขอไว้ได้ ร้านยาหรือคลินิกจะตอบเมื่อกลับมาออนไลน์</p>}
         <Button
           fullWidth
           disabled={!available}

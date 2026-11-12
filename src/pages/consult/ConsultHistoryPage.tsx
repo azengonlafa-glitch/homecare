@@ -20,9 +20,9 @@ import { todayKey } from '../../lib/meds';
 
 const ACCESS_LABEL: Record<string, string> = {
   consent_granted: 'คุณให้ความยินยอม',
-  brief_opened: 'ผู้ให้บริการเปิดดูข้อมูลสุขภาพ',
+  brief_opened: 'ร้านยาหรือคลินิกเปิดดูข้อมูลสุขภาพ',
   consent_revoked: 'คุณถอนความยินยอม',
-  cancelled_by_admin: 'ผู้ดูแลระบบปิดผู้ให้บริการรายนี้ การปรึกษาถูกยกเลิก',
+  cancelled_by_admin: 'ผู้ดูแลระบบปิดร้านยาหรือคลินิกรายนี้ การปรึกษาถูกยกเลิก',
   claimed: 'เจ้าหน้าที่รับเรื่อง',
   released: 'เจ้าหน้าที่คืนเรื่องเข้าคิวเพื่อให้เพื่อนร่วมงานรับต่อ',
   taken_over: 'เจ้าหน้าที่อีกคนในร้านรับช่วงดูแลต่อ',
@@ -30,8 +30,8 @@ const ACCESS_LABEL: Record<string, string> = {
 
 const FOLLOW_STATUS: Record<FollowUp['status'], string> = {
   pending: 'รออัปเดตอาการ',
-  responded: 'ส่งข้อมูลให้ผู้ให้บริการแล้ว',
-  reviewed: 'ผู้ให้บริการตรวจแล้ว',
+  responded: 'ส่งข้อมูลให้ร้านยาหรือคลินิกแล้ว',
+  reviewed: 'ร้านยาหรือคลินิกตรวจแล้ว',
 };
 
 const dateText = (d: string) => new Date(d.length === 10 ? `${d}T00:00:00` : d).toLocaleDateString('th-TH', { dateStyle: 'long' });
@@ -97,7 +97,7 @@ const Entry: React.FC<{ bundle: SessionBundle; onChanged: () => void }> = ({ bun
             </p>
             <h2 className="text-lg font-bold text-slate-900 break-words">{session.topic}</h2>
             <p className="text-base text-slate-700 break-words">
-              {provider?.displayName ?? 'ผู้ให้บริการ'}
+              {provider?.displayName ?? 'ร้านยาหรือคลินิก'}
             </p>
           </div>
           <StatusBadge status={session.status} />
@@ -113,7 +113,7 @@ const Entry: React.FC<{ bundle: SessionBundle; onChanged: () => void }> = ({ bun
 
         {note && <NoteSummary note={note} />}
 
-        {session.status === 'completed' && <ReviewForm sessionId={session.id} providerName={provider?.displayName ?? 'ผู้ให้บริการ'} existing={bundle.review} onSaved={onChanged} />}
+        {session.status === 'completed' && <ReviewForm sessionId={session.id} providerName={provider?.displayName ?? 'ร้านยาหรือคลินิก'} existing={bundle.review} onSaved={onChanged} />}
 
         {followUps.map((f) => {
           const due = f.status === 'pending' && f.dueDate <= today;
@@ -191,7 +191,7 @@ const Entry: React.FC<{ bundle: SessionBundle; onChanged: () => void }> = ({ bun
       <ConfirmDialog
         open={confirmRevoke}
         title="ถอนความยินยอม?"
-        message="ผู้ให้บริการจะเปิดข้อมูลสุขภาพชุดนี้ไม่ได้อีก แต่ข้อความสนทนาและบันทึกการปรึกษายังอยู่ ถ้าต้องการลบด้วย ให้กดลบข้อมูลการปรึกษานี้เมื่อการปรึกษาปิดแล้ว"
+        message="ร้านยาหรือคลินิกจะเปิดข้อมูลสุขภาพชุดนี้ไม่ได้อีก แต่ข้อความสนทนาและบันทึกการปรึกษายังอยู่ ถ้าต้องการลบด้วย ให้กดลบข้อมูลการปรึกษานี้เมื่อการปรึกษาปิดแล้ว"
         confirmLabel="ถอนความยินยอม"
         onConfirm={() => void revoke()}
         onCancel={() => setConfirmRevoke(false)}
@@ -199,7 +199,7 @@ const Entry: React.FC<{ bundle: SessionBundle; onChanged: () => void }> = ({ bun
       <ConfirmDialog
         open={confirmDelete}
         title="ลบข้อมูลการปรึกษานี้ถาวร?"
-        message="ข้อความ ไฟล์แนบ ข้อมูลอาการ บันทึกของผู้ให้บริการ และนัดติดตามของการปรึกษานี้จะถูกลบถาวร ทั้งคุณและผู้ให้บริการจะดูไม่ได้อีก และกู้คืนไม่ได้"
+        message="ข้อความ ไฟล์แนบ ข้อมูลอาการ บันทึกของร้านยาหรือคลินิก และนัดติดตามของการปรึกษานี้จะถูกลบถาวร ทั้งคุณและร้านยาหรือคลินิกจะดูไม่ได้อีก และกู้คืนไม่ได้"
         confirmLabel="ลบถาวร"
         onConfirm={() => void erase()}
         onCancel={() => setConfirmDelete(false)}
@@ -244,7 +244,7 @@ export const ConsultHistoryPage: React.FC = () => {
       ) : error && !data ? (
         <ErrorCard message={error} onRetry={reload} />
       ) : !data?.length ? (
-        <EmptyState icon={History} message="ยังไม่มีประวัติการปรึกษา" />
+        <EmptyState pose="peek" icon={History} message="ยังไม่มีประวัติการปรึกษา" />
       ) : (
         <ol className="relative space-y-4 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-0.5 before:bg-purple-200">
           {data.map((bundle) => (
@@ -269,7 +269,7 @@ export const ConsultHistoryPage: React.FC = () => {
       <ConfirmDialog
         open={confirmAll}
         title="ลบข้อมูลการปรึกษาทั้งหมดถาวร?"
-        message={`การปรึกษาที่ปิดแล้ว ${closedIds.length} รายการ รวมข้อความ ไฟล์แนบ ข้อมูลอาการ บันทึกของผู้ให้บริการ และนัดติดตาม จะถูกลบถาวร ทั้งคุณและผู้ให้บริการจะดูไม่ได้อีก และกู้คืนไม่ได้`}
+        message={`การปรึกษาที่ปิดแล้ว ${closedIds.length} รายการ รวมข้อความ ไฟล์แนบ ข้อมูลอาการ บันทึกของร้านยาหรือคลินิก และนัดติดตาม จะถูกลบถาวร ทั้งคุณและร้านยาหรือคลินิกจะดูไม่ได้อีก และกู้คืนไม่ได้`}
         confirmLabel="ลบถาวร"
         onConfirm={() => void eraseAll()}
         onCancel={() => setConfirmAll(false)}

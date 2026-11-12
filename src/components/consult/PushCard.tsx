@@ -55,7 +55,7 @@ export const PushCard: React.FC<{ title?: string }> = ({ title = 'แจ้ง�
   };
 
   return (
-    <Card className="flex flex-col sm:flex-row sm:items-center gap-3 p-5">
+    <Card className="fit-row justify-between p-5">
       <div className="min-w-0 flex-1">
         <h2 className="flex items-center gap-2 text-lg font-bold text-slate-900">
           <Bell className="w-5 h-5 shrink-0 text-purple-700" aria-hidden="true" />

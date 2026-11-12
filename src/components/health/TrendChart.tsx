@@ -117,7 +117,7 @@ export const TrendChart: React.FC<{
 /** กราฟเล็กไม่มีแกน ใช้เห็นแนวโน้มคร่าว ๆ ในแถวสรุป */
 export const Sparkline: React.FC<{ points: TrendPoint[]; color?: string; label: string }> = ({
   points,
-  color = '#5051C3',
+  color = '#15703A',
   label,
 }) => {
   if (points.length < 2) return null;

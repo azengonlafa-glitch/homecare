@@ -1,5 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
-import { AlertTriangle, RotateCcw } from 'lucide-react';
+import { RotateCcw } from 'lucide-react';
+import { Dino } from './Dino';
 
 interface Props {
   children: ReactNode;
@@ -43,9 +44,7 @@ export class ErrorBoundary extends Component<Props, State> {
       return (
         <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
           <div className="w-full max-w-md rounded-3xl bg-white p-6 sm:p-8 text-center shadow-lg border border-slate-200">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-red-50 text-red-600">
-              <AlertTriangle className="h-8 w-8" aria-hidden="true" />
-            </div>
+            <Dino pose="cry" bob className="mx-auto mb-3 h-28 w-32" />
             <h1 className="text-xl font-bold text-slate-900">เกิดข้อผิดพลาดในการแสดงผล</h1>
             <p className="mt-2 text-base text-slate-600">
               ระบบพบปัญหาชั่วคราว ข้อมูลของคุณยังถูกบันทึกไว้อย่างปลอดภัย โปรดลองโหลดหน้านี้ใหม่อีกครั้ง

@@ -5,6 +5,7 @@ import './index.css';
 import { bootCloud } from './cloud/engine';
 import { retryPendingUploads } from './lib/fileStore';
 import { applyFontScale, loadSettings } from './lib/settings';
+import { installUiSounds } from './lib/sound';
 
 /** รอเตรียมระบบคลาวด์ได้นานสุดเท่านี้ ถ้าเน็ตช้าหรือเซิร์ฟเวอร์ไม่ตอบ ก็ยังเปิดแอปด้วยข้อมูลในเครื่องให้ใช้งานได้ ไม่ค้างหน้าขาว */
 const BOOT_TIMEOUT_MS = 6000;
@@ -21,6 +22,7 @@ Promise.race([
     // ใช้ขนาดตัวอักษรที่ผู้ใช้เลือกไว้ ก่อนวาดหน้าจอครั้งแรก (กันข้อความกระพริบ)
     applyFontScale(loadSettings().fontScale);
     void retryPendingUploads();
+    installUiSounds();
 
     ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
       <React.StrictMode>

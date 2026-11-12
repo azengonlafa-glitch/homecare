@@ -60,7 +60,7 @@ export const AdminListPage: React.FC = () => {
             </div>
           )}
           {counts.all === 0 ? (
-            <EmptyState icon={Stethoscope} message="ยังไม่มีผู้ให้บริการ ผู้ใช้จะยังเลือกปรึกษาใครไม่ได้ กด “เพิ่มผู้ให้บริการ” เพื่อเริ่ม" />
+            <EmptyState pose="peek" icon={Stethoscope} message="ยังไม่มีผู้ให้บริการ ผู้ใช้จะยังเลือกปรึกษาใครไม่ได้ กด “เพิ่มผู้ให้บริการ” เพื่อเริ่ม" />
           ) : shown.length === 0 ? (
             <EmptyState icon={Stethoscope} message="ไม่มีร้านในสถานะนี้" />
           ) : (

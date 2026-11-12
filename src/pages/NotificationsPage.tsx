@@ -1,10 +1,10 @@
 import React, { useMemo, useState } from 'react';
+import { Dino } from '../components/ui/Dino';
 import { Link } from 'react-router-dom';
 import {
   Bell,
   Calendar,
   Check,
-  CheckCircle2,
   ChevronRight,
   ExternalLink,
   Pill,
@@ -18,6 +18,7 @@ import {
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
+import { SelectField } from '../components/ui/SelectField';
 import { useToast } from '../components/ui/Toast';
 import { cn } from '../lib/cn';
 import { CURRENT_MEMBER_ID, loadSettings } from '../lib/settings';
@@ -64,7 +65,7 @@ function simplifyNotification(item: HealthNotification) {
       .trim();
   }
 
-  // 2. ปรับคำทางการให้เป็นภาษาพูดที่ชัดเจน
+  // 2. ปรับคำทางการให้เป็นภาษาพูด (เฉพาะรายการเก่าที่เก็บไว้ก่อนระบบเลือกคำตามรูปแบบยา ข้อความใหม่ถูกต้องตั้งแต่ต้นทางแล้ว)
   title = title
     .replace('ยังไม่มีการยืนยันการรับประทานยา:', 'ยังไม่ได้กินยา:')
     .replace('ยังไม่ยืนยันการรับประทานยา:', 'ยังไม่ได้กินยา:')
@@ -191,8 +192,8 @@ export const NotificationsPage: React.FC = () => {
   return (
     <div className="w-full space-y-6">
       {/* 1. Header: ขนาดใหญ่ ชัดเจน เต็มตา */}
-      <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-slate-200">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="bg-label-block !inline-flex flex-wrap items-center gap-x-3 gap-y-1 !py-2.5">
           <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight">
             การแจ้งเตือน
           </h1>
@@ -229,8 +230,8 @@ export const NotificationsPage: React.FC = () => {
 
       {/* 2. Control Toolbar: ปรับตามขนาดหน้าจอ มือถือ/แท็บเล็ต/คอมพิวเตอร์ */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3.5">
-        {/* แท็บสถานะหลัก: สกอร์ลได้ไม่ล้นจอมือถือ */}
-        <div className="inline-flex p-1.5 rounded-2xl bg-slate-100 border border-slate-200 text-sm font-bold w-full sm:w-fit max-w-full overflow-x-auto scrollbar-none">
+        {/* แท็บสถานะหลัก: ขึ้นบรรทัดใหม่เมื่อจอแคบ (เดิมเลื่อนแนวนอนโดยซ่อนแถบเลื่อน แท็บท้ายถูกตัดโดยไม่มีสัญญาณ) */}
+        <div className="inline-flex flex-wrap gap-1 p-1.5 rounded-2xl bg-slate-100 border border-slate-200 text-sm font-bold w-full sm:w-fit max-w-full">
           <button
             type="button"
             onClick={() => setStatusFilter('pending')}
@@ -243,7 +244,7 @@ export const NotificationsPage: React.FC = () => {
           >
             <span>ต้องดูแล</span>
             {pendingCount > 0 && (
-              <span className="h-5 min-w-5 px-1.5 rounded-full text-xs font-black flex items-center justify-center bg-amber-500 text-white">
+              <span className="h-5 min-w-5 px-1.5 rounded-full text-xs font-black flex items-center justify-center bg-amber-700 text-white">
                 {pendingCount}
               </span>
             )}
@@ -298,32 +299,40 @@ export const NotificationsPage: React.FC = () => {
 
         {/* ตัวกรองสมาชิก, หมวดหมู่ และ ช่องค้นหา: บนมือถือจัดเรียงเป็นตารางไม่ล้น */}
         <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2.5 w-full lg:w-auto">
-          <select
-            value={memberFilter}
-            onChange={(e) => setMemberFilter(e.target.value)}
-            aria-label="เลือกสมาชิก"
-            className="col-span-1 min-h-[44px] w-full sm:w-auto rounded-xl border border-slate-300 bg-white px-3.5 text-sm sm:text-base font-bold text-slate-800 focus:border-purple-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-600 shadow-2xs"
-          >
-            <option value="all">ทุกคนในบ้าน</option>
-            {settings.members.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.name}
-              </option>
-            ))}
-          </select>
+          <div className="col-span-1 w-full sm:w-auto">
+            <SelectField
+              id="notif-member-filter"
+              label="เลือกสมาชิก"
+              hideLabel
+              variant="filter"
+              value={memberFilter}
+              onChange={setMemberFilter}
+              options={[
+                { value: 'all', label: 'ทุกคนในบ้าน' },
+                ...settings.members.map((m) => ({ value: m.id, label: m.name })),
+              ]}
+              className="w-full sm:w-auto"
+            />
+          </div>
 
-          <select
-            value={activeTab}
-            onChange={(e) => setActiveTab(e.target.value as FilterCategory)}
-            aria-label="เลือกหมวดหมู่"
-            className="col-span-1 min-h-[44px] w-full sm:w-auto rounded-xl border border-slate-300 bg-white px-3.5 text-sm sm:text-base font-bold text-slate-800 focus:border-purple-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-600 shadow-2xs"
-          >
-            <option value="all">ทุกหมวดหมู่</option>
-            <option value="medication">ยาและการดูแล</option>
-            <option value="appointment">นัดหมายแพทย์</option>
-            <option value="family">ครอบครัว</option>
-            <option value="system">ระบบ</option>
-          </select>
+          <div className="col-span-1 w-full sm:w-auto">
+            <SelectField
+              id="notif-category-filter"
+              label="เลือกหมวดหมู่"
+              hideLabel
+              variant="filter"
+              value={activeTab}
+              onChange={(val) => setActiveTab(val as FilterCategory)}
+              options={[
+                { value: 'all', label: 'ทุกหมวดหมู่' },
+                { value: 'medication', label: 'ยาและการดูแล' },
+                { value: 'appointment', label: 'นัดหมายแพทย์' },
+                { value: 'family', label: 'ครอบครัว' },
+                { value: 'system', label: 'ระบบ' },
+              ]}
+              className="w-full sm:w-auto"
+            />
+          </div>
 
           <div className="col-span-2 relative w-full sm:w-60">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-slate-400" aria-hidden="true" />
@@ -354,7 +363,7 @@ export const NotificationsPage: React.FC = () => {
       <div className="space-y-3.5">
         {filtered.length === 0 ? (
           <Card className="py-16 text-center shadow-xs">
-            <CheckCircle2 className="mx-auto h-12 w-12 text-emerald-500" aria-hidden="true" />
+            <Dino pose={statusFilter === 'pending' ? 'cheer' : 'confused'} bob className="mx-auto h-28 w-32" />
             <p className="mt-3 text-lg sm:text-xl font-bold text-slate-900">ไม่มีรายการที่ต้องติดตาม</p>
             <p className="mt-1 text-sm sm:text-base text-slate-500">
               {statusFilter === 'pending'
@@ -391,16 +400,17 @@ export const NotificationsPage: React.FC = () => {
                   />
                 )}
 
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                {/* ข้อความได้ที่อย่างน้อย 18rem ก่อน ถ้าที่ไม่พอ ปุ่มจะตกลงไปบรรทัดล่างเอง (ไม่บีบข้อความจนเหลือตัวเดียว) */}
+                <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
                   {/* ซ้าย: ไอคอนใหญ่ + ข้อความใหญ่ชัดเจน */}
-                  <div className="flex items-start gap-4 min-w-0 flex-1">
+                  <div className="flex items-start gap-4 min-w-0 flex-1 basis-[18rem]">
                     <div
                       className={cn(
                         'h-12 w-12 sm:h-14 sm:w-14 rounded-2xl flex items-center justify-center shrink-0 mt-0.5 shadow-xs',
                         item.category === 'medication'
                           ? 'bg-purple-100 text-purple-700'
                           : item.category === 'appointment'
-                          ? 'bg-blue-100 text-blue-700'
+                          ? 'bg-sky-soft text-sky-800'
                           : item.category === 'family'
                           ? 'bg-emerald-100 text-emerald-700'
                           : 'bg-slate-100 text-slate-700'
@@ -423,7 +433,7 @@ export const NotificationsPage: React.FC = () => {
                             <span aria-hidden="true">•</span>
                           </>
                         )}
-                        <span className="text-sm text-slate-400">
+                        <span className="text-sm text-slate-600">
                           {relativeDateTime(item.createdAt)}
                         </span>
                         {item.escalatedAt && (
@@ -458,7 +468,7 @@ export const NotificationsPage: React.FC = () => {
                   </div>
 
                   {/* ขวา: ปุ่มขนาดใหญ่ กดง่าย เต็มมือ ปรับพอดีทั้งจอมือถือและจอคอม */}
-                  <div className="flex items-center gap-2.5 shrink-0 w-full sm:w-auto justify-end pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
+                  <div className="flex flex-wrap items-center gap-2.5 ml-auto justify-end">
                     {isResolved ? (
                       <span className="inline-flex items-center gap-1.5 min-h-[46px] px-4 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 text-sm sm:text-base font-bold">
                         <Check className="w-4 h-4 text-emerald-600" />
@@ -489,7 +499,7 @@ export const NotificationsPage: React.FC = () => {
                           className="inline-flex items-center gap-1.5 min-h-[46px] rounded-xl border border-slate-300 bg-white px-4 text-sm sm:text-base font-bold text-slate-700 hover:text-slate-900 hover:bg-slate-50 transition-colors cursor-pointer shadow-2xs"
                         >
                           <Check className="w-4.5 h-4.5 text-emerald-600" />
-                          <span className="hidden sm:inline">เสร็จแล้ว</span>
+                          <span>เสร็จแล้ว</span>
                         </button>
                       </>
                     )}
@@ -585,14 +595,14 @@ export const NotificationsPage: React.FC = () => {
               </h3>
 
               {selectedNotif.recipients.length === 0 ? (
-                <p className="text-sm text-slate-400">แจ้งเตือนทุกคนในบ้าน</p>
+                <p className="text-sm text-slate-600">แจ้งเตือนทุกคนในบ้าน</p>
               ) : (
                 <ul className="divide-y divide-slate-100 rounded-xl border border-slate-200 bg-slate-50/50">
                   {selectedNotif.recipients.map((rec) => (
                     <li key={rec.memberId} className="p-3 flex items-center justify-between text-sm">
                       <div>
                         <span className="font-bold text-slate-800">{rec.memberName}</span>
-                        <span className="text-slate-400 ml-1.5">
+                        <span className="text-slate-600 ml-1.5">
                           ({rec.role === 'caregiver' ? 'ผู้ดูแล' : rec.role === 'patient' ? 'ผู้ป่วย' : 'สมาชิก'})
                         </span>
                       </div>
@@ -602,7 +612,7 @@ export const NotificationsPage: React.FC = () => {
                             อ่านแล้ว {shortDateTime(rec.readAt)}
                           </span>
                         ) : (
-                          <span className="text-slate-400">ยังไม่อ่าน</span>
+                          <span className="text-slate-600">ยังไม่อ่าน</span>
                         )}
                       </div>
                     </li>

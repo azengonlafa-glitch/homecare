@@ -15,7 +15,7 @@ export const NoteSummary: React.FC<{ note: ConsultNote }> = ({ note }) => (
   <section className="rounded-3xl border border-emerald-300 bg-emerald-50/60 p-4 sm:p-5 space-y-2">
     <h2 className="flex items-center gap-2 text-lg font-bold text-slate-900">
       <ClipboardCheck className="w-6 h-6 text-emerald-700" aria-hidden="true" />
-      ผลการปรึกษาจากผู้ให้บริการ
+      ผลการปรึกษาจากร้านยาหรือคลินิก
     </h2>
     {ROWS.map(({ key, label }) =>
       note[key] ? (

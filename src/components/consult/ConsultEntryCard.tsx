@@ -13,7 +13,7 @@ export const ConsultEntryCard: React.FC = () => (
     </span>
     <span className="min-w-0 flex-1">
       <span className="block text-base font-bold text-purple-950">ปรึกษาเภสัชกรหรือคลินิก</span>
-      <span className="block text-sm text-slate-700">ส่งข้อมูลสุขภาพที่คุณเลือกให้ผู้เชี่ยวชาญ</span>
+      <span className="block text-sm text-slate-700">ส่งเฉพาะข้อมูลสุขภาพที่คุณเลือก</span>
     </span>
     <ChevronRight className="w-6 h-6 shrink-0 text-purple-800" aria-hidden="true" />
   </Link>

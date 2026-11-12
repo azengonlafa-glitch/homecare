@@ -30,7 +30,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({ variant }) => {
       aria-label={`บ้าน ${name} สมาชิก ${count} คน`}
       className={cn(
         'relative flex items-center gap-3 min-w-0 overflow-hidden',
-        isSidebar ? 'w-full px-4 lg:px-6' : 'rounded-2xl pr-4 pl-2 py-1.5 max-w-full',
+        isSidebar ? 'w-full px-4 lg:px-6' : 'rounded-2xl pr-2 pl-1 py-1.5 max-w-full gap-2',
         isSidebar ? (banner ? 'h-28 items-end pb-3.5' : 'h-20') : banner ? 'h-14' : ''
       )}
     >
@@ -45,7 +45,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({ variant }) => {
       <span
         className={cn(
           'relative shrink-0 overflow-hidden flex items-center justify-center',
-          isSidebar ? 'w-12 h-12 rounded-2xl' : 'w-10 h-10 rounded-xl',
+          isSidebar ? 'w-12 h-12 rounded-2xl' : 'w-[44px] h-[44px] rounded-xl',
           settings.home.photo ? 'bg-white' : 'bg-purple-700 text-white',
           banner && 'ring-2 ring-white/80'
         )}
@@ -60,8 +60,9 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({ variant }) => {
       <span className="relative min-w-0 leading-tight">
         <span
           className={cn(
-            'block truncate font-bold tracking-tight',
-            isSidebar ? 'text-lg' : 'text-base sm:text-lg',
+            'block font-bold tracking-tight',
+            // แถบบน: ชื่อบ้านยาวขึ้นบรรทัดที่สองได้ (ตัวอักษรใหญ่สุดเดิมเหลือ "บ้า…") ส่วนเมนูข้างยังตัดบรรทัดเดียว
+            isSidebar ? 'truncate text-lg' : 'line-clamp-2 break-words text-base sm:text-lg',
             banner ? 'text-white drop-shadow' : 'text-slate-900'
           )}
         >

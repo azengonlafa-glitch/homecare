@@ -18,7 +18,7 @@ export const MenuPage: React.FC = () => {
 
   return (
     <div className="mx-auto w-full max-w-4xl space-y-6">
-      <PageHeader title="โหมดทั้งหมด" description="เลือกโหมดที่ต้องการใช้งาน" />
+      <PageHeader title="เมนู" description="เลือกหน้าที่ต้องการใช้งาน" />
 
       {(['home', 'personal'] as NavGroup[]).map((group) => {
         const items = NAV_ITEMS.filter((item) => !item.hidden && (isOwner || !item.ownerOnly) && item.group === group);
@@ -26,8 +26,9 @@ export const MenuPage: React.FC = () => {
         const meta = NAV_GROUP_META[group];
         return (
           <section key={group} aria-label={meta.title} className="space-y-3">
-            <h2 className="px-1 text-lg font-extrabold text-slate-900">
-              {meta.title} <span className="text-sm font-semibold text-slate-600">· {meta.hint}</span>
+            <h2 className="bg-label text-lg font-extrabold text-slate-900">
+              <span aria-hidden="true" className="bg-label-dot" />
+              {meta.title} <span className="text-sm font-semibold text-slate-700">· {meta.hint}</span>
             </h2>
             <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
               {items.map(({ to, label, art, description }) => {

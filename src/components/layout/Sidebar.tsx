@@ -24,7 +24,7 @@ export const Sidebar: React.FC = () => {
         <HomeHeader variant="sidebar" />
       </div>
 
-      <nav aria-label="เมนูหลัก" className="relative flex-1 overflow-y-auto overscroll-contain p-4 pb-32">
+      <nav aria-label="เมนูหลัก" className="relative flex-1 overflow-y-auto overscroll-contain p-4 pb-12 [@media(max-height:800px)]:p-3 [@media(max-height:800px)]:pb-12">
         {(['home', 'personal'] as NavGroup[]).map((group, groupIndex) => {
           const items = NAV_ITEMS.filter((item) => !item.hidden && (isOwner || !item.ownerOnly) && item.group === group);
           if (items.length === 0) return null;
@@ -33,12 +33,12 @@ export const Sidebar: React.FC = () => {
             <section
               key={group}
               aria-label={meta.title}
-              className={groupIndex > 0 ? 'mt-5 pt-5 border-t-2 border-dashed border-slate-200' : ''}
+              className={groupIndex > 0 ? 'mt-5 pt-5 border-t-2 border-dashed border-slate-200 [@media(max-height:800px)]:mt-3 [@media(max-height:800px)]:pt-3' : ''}
             >
               <p className="px-4 mb-2 text-sm font-semibold text-slate-700">
                 {meta.title} <span className="font-medium">· {meta.hint}</span>
               </p>
-              <ul className="space-y-2">
+              <ul className="space-y-2 [@media(max-height:800px)]:space-y-1">
                 {items.map(({ to, label, art, end, sidebarIcon }) => {
                   const count = badges[to] ?? 0;
                   return (
@@ -48,7 +48,7 @@ export const Sidebar: React.FC = () => {
                         end={end}
                         className={({ isActive }) =>
                           cn(
-                            'nav-item group flex items-center gap-3 min-h-[56px] pl-2.5 pr-4 rounded-[1.25rem] text-lg',
+                            'nav-item group flex items-center gap-3 min-h-[56px] [@media(max-height:800px)]:min-h-[48px] pl-2.5 pr-4 rounded-[1.25rem] text-lg',
                             isActive
                               ? 'nav-item-active tab-stripe text-white font-semibold'
                               : 'font-medium text-slate-800 hover:bg-slate-100'
@@ -65,8 +65,8 @@ export const Sidebar: React.FC = () => {
                         <span className="flex-1 min-w-0 truncate">{label}</span>
                         {count > 0 && (
                           <span
-                            aria-label={`${count} รายการอัพเดตใหม่`}
-                            className="ml-auto inline-flex items-center justify-center min-w-[22px] h-[22px] px-1.5 rounded-full bg-sun text-slate-900 text-xs font-extrabold shrink-0 anim-pop"
+                            aria-label={`${count} รายการอัปเดตใหม่`}
+                            className="badge-beat ml-auto inline-flex items-center justify-center min-w-[22px] h-[22px] px-1.5 rounded-full bg-sun text-slate-900 text-xs font-extrabold shrink-0 anim-pop"
                           >
                             {count > 99 ? '99+' : count}
                           </span>
@@ -83,7 +83,8 @@ export const Sidebar: React.FC = () => {
         })}
       </nav>
 
-
+      {/* แถบจางล่างเมนู: บอกว่ายังมีเมนูให้เลื่อนดูต่อ (บนจอเตี้ย "ตั้งค่าส่วนตัว" อยู่ใต้จอ) */}
+      <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-[#FFFDF7] to-transparent" />
     </aside>
   );
 };

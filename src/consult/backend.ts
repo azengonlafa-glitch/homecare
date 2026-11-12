@@ -112,8 +112,8 @@ export interface ConsultBackend {
 const ERROR_TEXT: Record<string, string> = {
   not_authenticated: 'กรุณาเข้าสู่ระบบอีกครั้ง',
   forbidden: 'คุณไม่มีสิทธิ์ทำรายการนี้',
-  provider_unavailable: 'ผู้ให้บริการนี้ไม่พร้อมให้บริการแล้ว กรุณาเลือกใหม่',
-  channel_unavailable: 'ผู้ให้บริการนี้ไม่มีช่องทางที่เลือก กรุณาเลือกใหม่',
+  provider_unavailable: 'ร้านยาหรือคลินิกนี้ไม่พร้อมให้บริการแล้ว กรุณาเลือกใหม่',
+  channel_unavailable: 'ร้านยาหรือคลินิกนี้ไม่มีช่องทางที่เลือก กรุณาเลือกใหม่',
   consent_required: 'ต้องอนุญาตให้เปิดเผยข้อมูลอาการก่อนเริ่มปรึกษา',
   consent_revoked: 'ผู้ใช้ถอนความยินยอมแล้ว จึงเปิดข้อมูลสุขภาพไม่ได้',
   schedule_required: 'กรุณาเลือกวันและเวลานัด',
@@ -144,7 +144,7 @@ export function consultErrorText(err: unknown): string {
     if (message.includes(code)) return text;
   }
   if (/fetch|network|Failed to/i.test(message)) return 'เชื่อมต่อไม่ได้ กรุณาตรวจอินเทอร์เน็ตแล้วลองใหม่';
-  return 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง';
+  return 'ทำรายการไม่สำเร็จ ลองอีกครั้ง ถ้ายังไม่ได้ ให้โหลดหน้านี้ใหม่หรือลองใหม่ภายหลัง';
 }
 
 let instance: Promise<ConsultBackend> | null = null;

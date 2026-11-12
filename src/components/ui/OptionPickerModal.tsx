@@ -38,7 +38,7 @@ const PickerDialog: React.FC<DialogProps> = ({
   descriptions,
   searchPlaceholder = 'ค้นหา',
   listHeading = 'ทั้งหมด',
-  customHeading = 'ไม่มีในรายการ? พิมพ์เพิ่มเอง',
+  customHeading = 'ไม่เจอที่ต้องการ? พิมพ์เพิ่มเอง',
   customPlaceholder = 'พิมพ์ชื่อที่ต้องการเพิ่ม',
   saveLabel = 'บันทึก',
   onSkip,
@@ -139,7 +139,6 @@ const PickerDialog: React.FC<DialogProps> = ({
                   <span>{item}</span>
                 </div>
                 <p className="text-slate-700 text-xs sm:text-sm leading-relaxed">{desc}</p>
-                <p className="pt-1 text-xs font-medium text-slate-500">ข้อมูลทางการแพทย์เบื้องต้น</p>
               </div>
               <button
                 type="button"
@@ -195,16 +194,9 @@ const PickerDialog: React.FC<DialogProps> = ({
                 className={fieldControlClass(false) + ' pl-12'}
               />
             </div>
-            <p className="flex items-start gap-2 text-sm text-slate-600 leading-snug">
-              <Info className="w-4 h-4 mt-0.5 shrink-0" aria-hidden="true" />
-              <span>เลือกได้หลายรายการ ถ้าไม่เจอที่ต้องการ พิมพ์เพิ่มเองได้ที่ท้ายรายการ</span>
+            <p className="text-sm text-slate-600 leading-snug">
+              ติ๊กได้หลายข้อ{descriptions ? ' · แตะ ⓘ เพื่ออ่านคำอธิบาย' : ''}
             </p>
-            {descriptions && (
-              <p className="flex items-center gap-2 text-xs sm:text-sm text-purple-900 bg-purple-50/90 border border-purple-200/80 rounded-xl px-3 py-2 leading-relaxed">
-                <Info className="w-4 h-4 shrink-0 text-purple-600" aria-hidden="true" />
-                <span>นำเมาส์ชี้หรือแตะที่ไอคอน ℹ️ ท้ายชื่อ เพื่อดูคำอธิบายอาการทางการแพทย์</span>
-              </p>
-            )}
           </div>
         }
         footer={
@@ -253,7 +245,7 @@ const PickerDialog: React.FC<DialogProps> = ({
           {filtered.length > 0 ? (
             <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 sm:gap-x-6">{filtered.map(renderItem)}</ul>
           ) : (
-            <p className="py-4 text-base text-slate-600">ไม่พบ “{trimmed}” ในรายการ พิมพ์เพิ่มเองได้ด้านล่าง</p>
+            <p className="py-4 text-base text-slate-600">ไม่เจอ “{trimmed}” พิมพ์เพิ่มเองได้ด้านล่าง</p>
           )}
 
           {/* ท้ายรายการ: พิมพ์รายการที่ไม่มีให้เลือก */}
@@ -310,22 +302,16 @@ const PickerDialog: React.FC<DialogProps> = ({
               width: '300px',
               maxWidth: 'calc(100vw - 32px)',
             }}
-            className="pointer-events-none z-[100] p-3 rounded-2xl bg-slate-900/95 text-white shadow-2xl backdrop-blur-sm border border-slate-700/60 anim-pop text-left"
+            className="pointer-events-none z-[100] p-3 rounded-2xl bg-white text-slate-800 shadow-xl border border-slate-200 anim-pop text-left"
             role="tooltip"
           >
             <div className="flex items-center justify-between gap-2 mb-1.5">
-              <div className="flex items-center gap-1.5 font-bold text-purple-300 text-xs sm:text-sm">
-                <Info className="w-3.5 h-3.5 text-purple-400 shrink-0" aria-hidden="true" />
+              <div className="flex items-center gap-1.5 font-bold text-purple-800 text-sm">
+                <Info className="w-3.5 h-3.5 text-purple-600 shrink-0" aria-hidden="true" />
                 <span>{hovered.item}</span>
               </div>
-              <span className="shrink-0 whitespace-nowrap text-xs font-medium text-purple-200 bg-purple-950/80 px-2 py-0.5 rounded-full border border-purple-700/50">
-                ข้อมูลทางการแพทย์
-              </span>
             </div>
-            <p className="text-xs sm:text-sm text-slate-200 leading-relaxed font-normal">{hovered.desc}</p>
-            <p className="text-xs text-slate-400 mt-2 pt-1.5 border-t border-slate-800 flex items-center justify-between">
-              <span>แตะหรือคลิก ℹ️ เพื่อเปิดค้างไว้</span>
-            </p>
+            <p className="text-sm text-slate-700 leading-relaxed font-normal">{hovered.desc}</p>
           </div>,
           document.body
         )}

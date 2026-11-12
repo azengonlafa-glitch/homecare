@@ -11,14 +11,14 @@ const TABS = [
 /** กรอบของทุกหน้าในระบบปรึกษา (ฝั่งผู้ใช้) */
 export const ConsultShell: React.FC = () => (
   <div className="space-y-5">
-    <nav aria-label="เมนูระบบปรึกษา" className="grid grid-cols-2 gap-1 rounded-[1.5rem] bg-purple-100 p-1.5">
+    <nav aria-label="เมนูระบบปรึกษา" className="seg-track grid grid-cols-2 gap-1 rounded-[1.5rem] p-1.5">
       {TABS.map((tab) => (
         <NavLink
           key={tab.to}
           to={tab.to}
           end={tab.end}
           className={({ isActive }) =>
-            cn('flex min-h-[48px] items-center justify-center rounded-xl px-2 text-center text-base font-bold transition-colors', isActive ? 'bg-purple-700 text-white' : 'text-slate-700 hover:bg-white')
+            cn('flex min-h-[48px] items-center justify-center rounded-xl px-2 text-center text-base font-bold transition-colors', isActive ? 'seg-on text-white' : 'text-slate-700 hover:bg-white')
           }
         >
           {tab.label}

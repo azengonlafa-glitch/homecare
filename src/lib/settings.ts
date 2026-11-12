@@ -51,6 +51,8 @@ export interface ReminderSettings {
   escalateToFamily: boolean;
   /** เล่นเสียงตอนมีแจ้งเตือนใหม่ขณะเปิดแอปอยู่ */
   sound: boolean;
+  /** เสียงเอฟเฟกต์เบา ๆ ตอนกดปุ่ม เปิด/ปิดสวิตช์ เปิดหน้าต่าง และบันทึกสำเร็จ */
+  uiSound: boolean;
 }
 
 /** ข้อมูลส่วนตัวในหน้า "โปรไฟล์ของฉัน" (นอกเหนือจากชื่อเล่น) */
@@ -134,7 +136,7 @@ export const ROLE_ORDER: MemberRole[] = ['owner', 'member', 'external'];
 
 export const ROLE_META: Record<MemberRole, RoleMeta> = {
   owner: {
-    label: 'ผู้ดูแลหลักของบ้าน',
+    label: 'ผู้ดูแลหลัก',
     description: 'เห็นหน้าตั้งค่าบ้าน จัดการบ้านและมอบบทบาทได้ ทำได้ทุกอย่าง มีได้แค่คนเดียว (ผู้สร้างบ้าน)',
     dot: 'bg-amber-500',
   },
@@ -265,7 +267,7 @@ export function defaultSettings(): AppSettings {
           { id: 'chai', name: 'พี่ชัย', relation: 'พี่ชาย', role: 'member' },
           { id: 'daeng', name: 'ป้าแดง', relation: 'ป้า', role: 'external' },
         ],
-    reminders: { lowStock: true, doseWindow: true, appointment: true, lowStockDays: 7, repeatCount: 3, escalateToFamily: true, repeatIntervalMinutes: 15, sound: true },
+    reminders: { lowStock: true, doseWindow: true, appointment: true, lowStockDays: 7, repeatCount: 3, escalateToFamily: true, repeatIntervalMinutes: 15, sound: true, uiSound: true },
     fontScale: 'normal',
   };
 }
@@ -301,6 +303,7 @@ export function loadSettings(): AppSettings {
             : 3,
         escalateToFamily: reminders.escalateToFamily !== false,
         sound: reminders.sound !== false,
+        uiSound: reminders.uiSound !== false,
         repeatIntervalMinutes:
           typeof reminders.repeatIntervalMinutes === 'number'
             ? Math.min(120, Math.max(1, Math.round(reminders.repeatIntervalMinutes)))

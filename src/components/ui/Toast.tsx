@@ -1,7 +1,8 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
 import { cn } from '../../lib/cn';
-import { Mascot } from './Mascot';
+import { Dino } from './Dino';
+import { playUiSound } from '../../lib/sound';
 
 type ToastTone = 'success' | 'error';
 
@@ -30,7 +31,7 @@ const ToastItem: React.FC<{ toast: ToastState }> = ({ toast }) => {
   return (
     <div
       className={cn(
-        'anim-drop-in relative overflow-hidden rounded-[1.5rem] bg-white py-3.5 pl-4 pr-5 shadow-[0_14px_34px_-14px_rgba(42,34,29,0.5)] ring-1',
+        'toast-in toast-paper relative overflow-hidden rounded-[1.5rem] py-3.5 pl-4 pr-5 ring-1',
         error ? 'ring-red-200' : 'ring-purple-100'
       )}
     >
@@ -42,19 +43,19 @@ const ToastItem: React.FC<{ toast: ToastState }> = ({ toast }) => {
         ) : (
           <span className="relative shrink-0">
             <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[#FFF4E8]">
-              <Mascot kind="sun" still className="h-9 w-9" />
+              <Dino pose="wink" className="h-9 w-10" />
             </span>
             <CheckCircle2 className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-white text-emerald-500" aria-hidden="true" />
           </span>
         )}
-        <p className={cn('min-w-0 break-words text-base font-bold leading-snug', error ? 'text-red-800' : 'text-purple-900')}>
+        <p className={cn('min-w-0 break-words text-base font-bold leading-snug', error ? 'text-red-800' : 'text-slate-900')}>
           {toast.message}
         </p>
       </div>
       {/* แถบเวลาไล่หมดตามที่ Toast ค้างอยู่ */}
       <span
         aria-hidden="true"
-        className={cn('toast-timer absolute inset-x-0 bottom-0 h-1 origin-left', error ? 'bg-red-300' : 'bg-purple-300')}
+        className={cn('toast-timer absolute inset-x-0 bottom-0 h-1 origin-left', error ? 'bg-red-300' : 'bg-[color:var(--accent)] opacity-50')}
         style={{ animationDuration: `${TOAST_DURATION_MS}ms` }}
       />
     </div>
@@ -73,7 +74,9 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const show = useCallback((message: string, options?: ToastOptions) => {
     window.clearTimeout(timer.current);
     counter.current += 1;
-    setToast({ id: counter.current, message, tone: options?.tone ?? 'success' });
+    const tone = options?.tone ?? 'success';
+    setToast({ id: counter.current, message, tone });
+    playUiSound(tone === 'error' ? 'error' : 'success');
     timer.current = window.setTimeout(() => setToast(null), TOAST_DURATION_MS);
   }, []);
 

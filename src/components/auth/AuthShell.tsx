@@ -1,5 +1,6 @@
 import React from 'react';
 import { cn } from '../../lib/cn';
+import { GrowaLogo } from '../ui/GrowaLogo';
 
 export type AuthTab = 'login' | 'signup';
 
@@ -21,7 +22,7 @@ export const AuthShell: React.FC<AuthShellProps> = ({
   children,
 }) => {
   return (
-    <div className="relative isolate min-h-dvh w-full overflow-x-hidden bg-slate-900 flex items-center justify-center">
+    <main className="relative isolate min-h-dvh w-full overflow-x-hidden bg-slate-900 flex items-center justify-center">
       {/* 1. ภาพพื้นหลังตามขนาดหน้าจอ (คอม = ไดโนเสาร์ขี่มอเตอร์ไซค์สดใส, มือถือ = โกรว่าส่งยา) */}
       <div
         aria-hidden="true"
@@ -44,11 +45,9 @@ export const AuthShell: React.FC<AuthShellProps> = ({
       <div className="min-h-dvh w-full flex flex-col justify-center lg:grid lg:grid-cols-[1fr_1fr] xl:grid-cols-[1.05fr_0.95fr]">
         {/* ฝั่งซ้ายบนจอคอม: โล่งโปร่งให้เห็นตัวไดโนเสาร์ขี่มอเตอร์ไซค์อย่างชัดเจน */}
         <div className="hidden lg:flex flex-col justify-between p-8 xl:p-12 min-h-dvh pointer-events-none">
-          <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-white/85 backdrop-blur-md shadow-md border border-white/70 w-fit pointer-events-auto">
-            <span className="font-display font-black text-base text-[#16A34A] tracking-wide">
-              growa homecare
-            </span>
-            <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
+          <div className="inline-flex items-center gap-2 pl-2 pr-5 py-1.5 rounded-full bg-white/85 backdrop-blur-md shadow-md border border-white/70 w-fit pointer-events-auto">
+            <GrowaLogo className="h-12 w-12" />
+            <span className="font-display font-black text-base text-slate-800 tracking-wide">homecare</span>
           </div>
           <div />
         </div>
@@ -93,15 +92,12 @@ export const AuthShell: React.FC<AuthShellProps> = ({
               }}
             />
 
+            <h1 className="sr-only">{currentTab === 'login' ? 'เข้าสู่ระบบ Growa Homecare' : 'สมัครสมาชิก Growa Homecare'}</h1>
+
             {/* โลโก้ growa สีเขียวเข้มสดใส และสโลแกน */}
             <div className="relative z-20 text-center pt-2 sm:pt-3 mb-6 sm:mb-7">
-              <div className="inline-flex items-center justify-center gap-1.5">
-                <span className="font-display font-black text-4xl sm:text-5xl lg:text-[3.25rem] text-[#15803D] tracking-tight">
-                  growa
-                </span>
-                <span className="inline-block w-3.5 h-3.5 rounded-full bg-[#15803D] -mt-4 animate-pulse" />
-              </div>
-              <p className="text-xs sm:text-sm lg:text-base font-bold text-slate-600 leading-relaxed max-w-[340px] sm:max-w-md mx-auto mt-1.5 sm:mt-2">
+              <GrowaLogo alt="Growa" className="mx-auto h-28 w-28 sm:h-32 sm:w-32 lg:h-36 lg:w-36 drop-shadow-md" />
+              <p className="text-sm lg:text-base font-bold text-slate-700 leading-relaxed max-w-[340px] sm:max-w-md mx-auto mt-1.5 sm:mt-2">
                 ร้านยาใกล้บ้าน เภสัชกรช่วยดูแล และระบบดูแลยาของครอบครัว
               </p>
             </div>
@@ -111,6 +107,7 @@ export const AuthShell: React.FC<AuthShellProps> = ({
               <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
                 <button
                   type="button"
+                  aria-pressed={currentTab === 'login'}
                   onClick={() => onTabChange('login')}
                   className={cn(
                     'flex items-center justify-center min-h-[44px] sm:min-h-[48px] lg:min-h-[52px] px-3 rounded-full text-sm sm:text-base lg:text-lg font-black transition-all cursor-pointer',
@@ -131,6 +128,7 @@ export const AuthShell: React.FC<AuthShellProps> = ({
                 </button>
                 <button
                   type="button"
+                  aria-pressed={currentTab === 'signup'}
                   onClick={() => onTabChange('signup')}
                   className={cn(
                     'flex items-center justify-center min-h-[44px] sm:min-h-[48px] lg:min-h-[52px] px-3 rounded-full text-sm sm:text-base lg:text-lg font-black transition-all cursor-pointer',
@@ -157,6 +155,6 @@ export const AuthShell: React.FC<AuthShellProps> = ({
           </div>
         </div>
       </div>
-    </div>
+    </main>
   );
 };

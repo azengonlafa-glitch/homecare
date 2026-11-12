@@ -3,7 +3,9 @@ import { ChevronRight } from 'lucide-react';
 import { Card } from '../ui/Card';
 import { DayStrip, adherenceTone } from './MedDetailModal';
 import {
-  DOSE_STATUS_LABEL,
+  commonDoseWords,
+  doseStatusLabel,
+  doseWords,
   LATE_THRESHOLD_MIN,
   PERIOD_LABEL,
   medStats,
@@ -50,6 +52,9 @@ export const MedReport: React.FC<MedReportProps> = ({ meds, logs, onOpen }) => {
   const overall = denom > 0 ? Math.round((total.taken / denom) * 100) : null;
 
   const names = new Map(meds.map((m) => [m.id, m.name]));
+  const forms = new Map(meds.map((m) => [m.id, m.form]));
+  // คำสรุปรวม: ยาทุกตัวใช้กริยาเดียวกันใช้คำนั้น ถ้าปนกัน (กิน+หยอด+ฉีด) ใช้ "ใช้ยา"
+  const cw = commonDoseWords(meds.map((m) => m.form));
   const since = range ? todayKey(addDays(new Date(), -(range - 1))) : '';
   const inRange = (key: string) => !since || key >= since;
   // เรื่องที่ควรรู้: ไม่ได้กิน (ไม่นับที่หมอสั่งงด) และกินช้า ใหม่ → เก่า
@@ -87,21 +92,23 @@ export const MedReport: React.FC<MedReportProps> = ({ meds, logs, onOpen }) => {
         <div className="mt-3 flex flex-col sm:flex-row sm:items-center gap-4">
           <p className={cn('text-5xl font-extrabold', adherenceTone(overall))}>{overall === null ? '–' : `${overall}%`}</p>
           <div className="text-base text-slate-700">
-            <p className="font-semibold">กินตามนัด</p>
+            <p className="font-semibold">{cw.verb}ตามนัด</p>
             <p>
-              กินแล้ว {total.taken} จาก {total.expected} มื้อ · ไม่ได้กิน/ไม่ได้บันทึก {total.missed} · กินช้า{' '}
+              {cw.done} {total.taken} จาก {total.expected} มื้อ · {cw.notDone}/ไม่ได้บันทึก {total.missed} · {cw.late}{' '}
               {total.late} · งดตามแพทย์สั่ง {total.skipped}
             </p>
           </div>
         </div>
         <p className="mt-3 text-sm text-slate-500">
-          มื้อที่เลยเวลาแล้วแต่ไม่ได้บันทึก นับเป็นพลาด · กดกินช้าเกิน {LATE_THRESHOLD_MIN} นาทีนับเป็น “กินช้า” ·
+          มื้อที่เลยเวลาแล้วแต่ไม่ได้บันทึก นับเป็นพลาด · กด{cw.verb}ช้าเกิน {LATE_THRESHOLD_MIN} นาทีนับเป็น “{cw.late}” ·
           มื้อที่งดตามแพทย์สั่งไม่นำมาคิด
         </p>
       </Card>
 
       <Card className="p-5 sm:p-6">
-        <h2 className="text-lg font-bold text-slate-900 mb-3">ไม่ได้กิน / กินช้า</h2>
+        <h2 className="text-lg font-bold text-slate-900 mb-3">
+          {cw.notDone} / {cw.late}
+        </h2>
         {issues.length === 0 ? (
           <p className="text-base text-slate-600">ไม่มีในช่วงนี้ ยอดเยี่ยมมาก</p>
         ) : (
@@ -119,8 +126,8 @@ export const MedReport: React.FC<MedReportProps> = ({ meds, logs, onOpen }) => {
                 </p>
                 <p className="text-sm text-slate-700">
                   {l.status === 'missed'
-                    ? `ไม่ได้กิน${l.reason ? ` · เหตุผล: ${l.reason}` : ' · ไม่ได้ระบุเหตุผล'}`
-                    : `กินช้ากว่ากำหนด ${l.lateMinutes} นาที`}
+                    ? `${doseWords(forms.get(l.medId)).notDone}${l.reason ? ` · เหตุผล: ${l.reason}` : ' · ไม่ได้ระบุเหตุผล'}`
+                    : `${doseWords(forms.get(l.medId)).verb}ช้ากว่ากำหนด ${l.lateMinutes} นาที`}
                 </p>
               </li>
             ))}
@@ -145,7 +152,7 @@ export const MedReport: React.FC<MedReportProps> = ({ meds, logs, onOpen }) => {
                       {!med.active && <span className="ml-2 text-sm font-semibold text-slate-500">(หยุดใช้แล้ว)</span>}
                     </p>
                     <p className="text-sm text-slate-600">
-                      กินแล้ว {stats.taken}/{stats.expected} มื้อ · เริ่มนับ {thaiDate(stats.from, 'medium')}
+                      {doseWords(med.form).done} {stats.taken}/{stats.expected} มื้อ · เริ่มนับ {thaiDate(stats.from, 'medium')}
                     </p>
                   </div>
                   <span className={cn('shrink-0 text-xl font-extrabold', adherenceTone(stats.adherence))}>
@@ -178,7 +185,7 @@ export const MedReport: React.FC<MedReportProps> = ({ meds, logs, onOpen }) => {
               <li key={`${l.medId}-${l.date}-${l.period}`} className="flex flex-wrap items-baseline gap-x-2 text-base">
                 <span className="font-semibold text-slate-900">{names.get(l.medId)}</span>
                 <span className="text-slate-600">
-                  {thaiDate(l.date, 'medium')} มื้อ{PERIOD_LABEL[l.period]} · {DOSE_STATUS_LABEL[l.status]}
+                  {thaiDate(l.date, 'medium')} มื้อ{PERIOD_LABEL[l.period]} · {doseStatusLabel(l.status, forms.get(l.medId))}
                   {l.lateMinutes ? ` (ช้า ${l.lateMinutes} นาที)` : ''}
                   {l.reason ? ` · ${l.reason}` : ''}
                 </span>

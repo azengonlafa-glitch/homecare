@@ -242,7 +242,7 @@ export const EventCard: React.FC<EventCardProps> = ({
               {assigned.map((member) => (
                 <li
                   key={member.id}
-                  className="inline-flex items-center gap-2 pl-1 pr-3 min-h-[40px] rounded-full bg-purple-50 border border-purple-200 text-base font-semibold text-purple-900"
+                  className="inline-flex items-center gap-2 pl-1 pr-3 min-h-[48px] rounded-full bg-purple-50 border border-purple-200 text-base font-semibold text-purple-900"
                 >
                   <span
                     aria-hidden="true"
