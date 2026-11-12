@@ -4,7 +4,7 @@ import * as webpush from 'jsr:@negrel/webpush@0.5';
 import { sendDoseReminders, type PushSubscriptionRow, type SendResult } from './doses.ts';
 
 /**
- * ส่งแจ้งเตือนถึงเวลากินยา เรียกโดย pg_cron ทุก 5 นาที (supabase/med_push.sql)
+ * ส่งแจ้งเตือนถึงเวลากินยา เรียกโดย pg_cron ทุก 1 นาที (supabase/med_push.sql)
  * ใช้ Secrets ชุดเดียวกับ consult-followup-reminders: VAPID_KEYS_JSON, VAPID_SUBJECT
  * ปิด verify_jwt เพราะตรวจสิทธิ์เองด้วย x-cron-secret เทียบกับ Vault
  * ข้อความไม่มีชื่อยา และไม่บันทึก endpoint หรือรหัสผู้ใช้ลง log
