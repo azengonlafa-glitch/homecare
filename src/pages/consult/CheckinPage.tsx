@@ -1,6 +1,26 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Bot, FileText, FolderOpen, Mic, MicOff, Paperclip, Pencil, X } from 'lucide-react';
+import {
+  Activity,
+  ArrowLeft,
+  ArrowRight,
+  Bot,
+  CalendarCheck,
+  Check,
+  ClipboardList,
+  FileText,
+  FolderOpen,
+  HeartPulse,
+  MessageCircle,
+  Mic,
+  MicOff,
+  Paperclip,
+  Pencil,
+  Pill,
+  X,
+  type LucideIcon,
+} from 'lucide-react';
+import { cn } from '../../lib/cn';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { CheckboxField } from '../../components/ui/CheckboxField';
@@ -34,6 +54,16 @@ import {
 } from '../../consult/options';
 import type { CheckinAnswers, Trend } from '../../consult/types';
 import { loadMeds, todayKey } from '../../lib/meds';
+
+/** ไอคอนและคำอธิบายสั้น ๆ ของแต่ละเรื่องที่ปรึกษา (ไม่ใช่คำแนะนำทางการแพทย์) */
+const PURPOSE_META: Record<string, { icon: LucideIcon; hint: string }> = {
+  symptoms: { icon: HeartPulse, hint: 'เล่าอาการที่เป็นอยู่ให้เภสัชกรทราบ' },
+  medication_question: { icon: Pill, hint: 'สงสัยเรื่องยาที่ใช้อยู่หรือยาที่ได้รับ' },
+  side_effects: { icon: Activity, hint: 'ใช้ยาแล้วรู้สึกไม่สบายหรือผิดปกติ' },
+  follow_up: { icon: CalendarCheck, hint: 'อัปเดตอาการหลังการรักษาหรือใช้ยา' },
+  med_management: { icon: ClipboardList, hint: 'ลืมกินยา จัดยา หรือวางแผนการใช้ยา' },
+  other: { icon: MessageCircle, hint: 'เรื่องอื่นที่ไม่อยู่ในรายการ' },
+};
 
 type StepId = 'purpose' | 'symptoms' | 'severity' | 'details' | 'questions' | 'summary';
 const STEP_TITLE: Record<StepId, string> = {
@@ -211,20 +241,54 @@ export const CheckinPage: React.FC = () => {
       <Card className="space-y-6 p-5 sm:p-7">
           {step === 'purpose' && (
             <>
-              <FieldGroup id="ci-purpose" label="ต้องการปรึกษาเรื่องอะไร" required error={errors['ci-purpose']}>
-                <div className="flex flex-wrap gap-2">
-                  {PURPOSES.map((p) => (
-                    <Chip
-                      key={p.value}
-                      selected={answers.purpose === p.value}
-                      onClick={() => {
-                        update({ purpose: p.value });
-                        clear('ci-purpose');
-                      }}
-                    >
-                      {p.label}
-                    </Chip>
-                  ))}
+              <FieldGroup id="ci-purpose" label="ต้องการปรึกษาเรื่องอะไร" hint="เลือก 1 ข้อที่ตรงกับคุณที่สุด" required error={errors['ci-purpose']}>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {PURPOSES.map((p) => {
+                    const meta = PURPOSE_META[p.value];
+                    const Icon = meta?.icon ?? MessageCircle;
+                    const selected = answers.purpose === p.value;
+                    return (
+                      <button
+                        key={p.value}
+                        type="button"
+                        aria-pressed={selected}
+                        onClick={() => {
+                          update({ purpose: p.value });
+                          clear('ci-purpose');
+                        }}
+                        className={cn(
+                          'relative flex min-h-[84px] items-center gap-3 rounded-2xl border-2 p-3 pr-4 text-left transition cursor-pointer',
+                          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-600 focus-visible:ring-offset-2',
+                          selected
+                            ? 'border-purple-700 bg-purple-50 shadow-xs'
+                            : 'border-slate-200 bg-white hover:border-purple-300 hover:bg-purple-50/50'
+                        )}
+                      >
+                        <span
+                          aria-hidden="true"
+                          className={cn(
+                            'flex h-12 w-12 shrink-0 items-center justify-center rounded-xl',
+                            selected ? 'bg-purple-700 text-white' : 'bg-purple-50 text-purple-700'
+                          )}
+                        >
+                          <Icon className="h-6 w-6" />
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-base sm:text-lg font-bold leading-snug text-slate-900">{p.label}</span>
+                          {meta && <span className="mt-0.5 block text-sm leading-snug text-slate-600">{meta.hint}</span>}
+                        </span>
+                        <span
+                          aria-hidden="true"
+                          className={cn(
+                            'flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2',
+                            selected ? 'border-purple-700 bg-purple-700 text-white' : 'border-slate-300 bg-white'
+                          )}
+                        >
+                          {selected && <Check className="h-4 w-4" strokeWidth={3} />}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
               </FieldGroup>
               {answers.purpose === 'other' && (

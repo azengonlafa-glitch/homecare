@@ -164,8 +164,8 @@ export const ReviewConsentPage: React.FC = () => {
       <Card className="space-y-4 p-5 sm:p-6">
         {docOutdated && (
           <div className="rounded-2xl border border-amber-300 bg-amber-50 p-4 space-y-3">
-            <p className="text-base font-semibold text-amber-950">เอกสารให้ความยินยอมมีการปรับปรุงเรื่องการส่งข้อมูลให้เภสัชกร กรุณาอ่านให้จบก่อนเริ่มปรึกษา</p>
-            <Button id="rv-doc" variant="soft" size="sm" onClick={() => setDocOpen(true)}>
+            <p className="text-base font-semibold text-amber-950">เอกสารให้ความยินยอมมีการปรับปรุงเรื่องการส่งข้อมูลให้เภสัชกร กรุณาอ่านให้จบก่อนเริ่มปรึกษา ช่องยินยอมด้านล่างจะกดได้หลังอ่านและกดยอมรับในเอกสารแล้ว</p>
+            <Button id="rv-doc" variant="primary" size="sm" onClick={() => setDocOpen(true)}>
               <FileText className="w-5 h-5" aria-hidden="true" />
               เปิดอ่านเอกสาร
             </Button>
@@ -176,7 +176,7 @@ export const ReviewConsentPage: React.FC = () => {
             )}
           </div>
         )}
-        <CheckboxField id="rv-agree" boxed checked={agree} error={errors['rv-agree']} onChange={setAgree}>
+        <CheckboxField id="rv-agree" boxed disabled={docOutdated} checked={agree} error={errors['rv-agree']} onChange={setAgree}>
           {CONSULT_MODE === 'mock'
             ? 'เข้าใจว่านี่เป็นโหมดทดสอบ ข้อมูลอยู่ในเครื่องนี้เท่านั้นและไม่ได้ส่งให้ใคร'
             : `ฉันยินยอมให้เปิดเผยข้อมูลทั้งหมดด้านบน รวมถึงเอกสารแนบ แก่ ${provider.displayName} (${provider.orgName}) เพื่อการปรึกษาครั้งนี้ ผู้ให้บริการอาจคัดลอกรายงานไปบันทึกในระบบของตน ถอนความยินยอมได้ที่หน้าประวัติ หลังถอนผู้ให้บริการจะเปิดข้อมูลสุขภาพชุดนี้ไม่ได้อีก แต่ข้อความสนทนาและบันทึกการปรึกษาจะยังอยู่จนกว่าคุณจะกดลบข้อมูลการปรึกษานั้น`}
