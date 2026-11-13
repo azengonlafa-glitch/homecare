@@ -35,6 +35,11 @@ begin
     end if;
   end if;
 
+  -- บันทึกว่าใครเข้าดู/แก้ข้อมูลของบัญชีนี้ (data_access_log.sql) ถ้าติดตั้งไว้ ลบไปด้วย
+  if to_regclass('public.member_data_log') is not null then
+    delete from public.member_data_log where target_id = uid::text;
+  end if;
+
   delete from auth.users where id = uid;
 end;
 $$;

@@ -1011,6 +1011,58 @@ async function removeAllFilesUnder(sb: ReturnType<typeof requireClient>, bucket:
  * 4) เรียก delete_my_account() ฝั่งเซิร์ฟเวอร์ (supabase/account_delete.sql) ลบบัญชี ข้อมูลส่วนตัว และการปรึกษา
  * ทุกขั้นก่อนข้อ 4 ล้มเหลวได้โดยข้อมูลยังอยู่ครบ
  */
+/** รายการในบันทึกว่าใครเข้าดู/แก้ข้อมูลของฉัน (supabase/data_access_log.sql) */
+export interface DataLogEntry {
+  id: number;
+  actorId: string | null;
+  action: 'view' | 'edit';
+  /** หัวข้อที่แก้ (ไม่มีค่าจริง) */
+  keys: string[];
+  at: string;
+}
+
+/**
+ * ดึงบันทึกการเข้าดู/แก้ไขข้อมูลของฉันล่าสุด
+ * คืน null ถ้าใช้ไม่ได้ (โหมดต้นแบบ หรือเซิร์ฟเวอร์ยังไม่ได้รัน data_access_log.sql)
+ */
+export async function fetchMyDataLog(limit = 40): Promise<DataLogEntry[] | null> {
+  const c = ctx;
+  if (!cloudEnabled || !c) return null;
+  const { data, error } = await requireClient()
+    .from('member_data_log')
+    .select('id, actor_id, action, keys, at')
+    .eq('target_id', c.userId)
+    .order('at', { ascending: false })
+    .limit(limit);
+  if (error) {
+    console.warn('Data log unavailable', error.message);
+    return null;
+  }
+  return (data ?? []).map((r) => ({
+    id: r.id as number,
+    actorId: (r.actor_id as string | null) ?? null,
+    action: r.action as 'view' | 'edit',
+    keys: (r.keys as string[] | null) ?? [],
+    at: r.at as string,
+  }));
+}
+
+const viewLoggedAt = new Map<string, number>();
+
+/** บอกเซิร์ฟเวอร์ว่าเปิดดูข้อมูลของสมาชิกคนนี้ (เพื่อให้เจ้าของข้อมูลตรวจสอบได้) ไม่รอผล ไม่กระทบการใช้งานถ้าล้มเหลว */
+export function logMemberView(targetId: string): void {
+  const c = ctx;
+  if (!cloudEnabled || !c?.homeId || targetId === c.userId) return;
+  const last = viewLoggedAt.get(targetId) ?? 0;
+  if (Date.now() - last < 10 * 60 * 1000) return;
+  viewLoggedAt.set(targetId, Date.now());
+  void requireClient()
+    .rpc('log_member_view', { p_home: c.homeId, p_target: targetId })
+    .then(({ error }) => {
+      if (error) console.warn('View log skipped', error.message);
+    });
+}
+
 export async function deleteMyAccount(): Promise<void> {
   const c = ctx;
   if (!c) throw new Error('not_authenticated');
