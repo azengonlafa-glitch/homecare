@@ -10,7 +10,6 @@ import { MoodBadge } from './MoodPickerModal';
 import { SYMPTOM_TITLE_SUGGESTIONS } from '../../data/suggestions';
 import type { Attachment } from '../../lib/onboarding';
 import type { MoodKey } from '../../data/journalOptions';
-import { SYMPTOM_DESCRIPTIONS } from '../../data/symptomDescriptions';
 import { draftHasValues, emptyVitalDraft, parseVitalDraft, vitalChips, type VitalDraft, type VitalValues } from '../../lib/dailyRecord';
 
 export interface PostDraft {
@@ -150,8 +149,7 @@ const ComposerDialog: React.FC<Omit<PostComposerModalProps, 'open'>> = ({
               {draft.symptoms.map((item) => (
                 <li
                   key={item}
-                  title={SYMPTOM_DESCRIPTIONS[item]}
-                  className="inline-flex items-center gap-1 pl-4 pr-1 min-h-[44px] rounded-full bg-red-50 border border-red-200 text-red-900 text-base font-semibold cursor-help"
+                  className="inline-flex items-center gap-1 pl-4 pr-1 min-h-[44px] rounded-full bg-red-50 border border-red-200 text-red-900 text-base font-semibold"
                 >
                   <span>{item}</span>
                   <button

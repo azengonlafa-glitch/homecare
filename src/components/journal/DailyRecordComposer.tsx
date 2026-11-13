@@ -6,7 +6,6 @@ import { PostComposerModal, type PostDraft } from './PostComposerModal';
 import { VitalsStepModal } from '../health/VitalsStepModal';
 import { useToast } from '../ui/Toast';
 import { SYMPTOMS, type MoodKey } from '../../data/journalOptions';
-import { SYMPTOM_DESCRIPTIONS } from '../../data/symptomDescriptions';
 import { deleteFiles } from '../../lib/fileStore';
 import { loadHomeData } from '../../lib/storage';
 import { CURRENT_MEMBER_ID, loadSettings } from '../../lib/settings';
@@ -227,7 +226,6 @@ export function useDailyRecordComposer() {
         onClose={closePicker}
         title="เลือกอาการที่พบ"
         options={SYMPTOMS}
-        descriptions={SYMPTOM_DESCRIPTIONS}
         value={draft.symptoms}
         searchPlaceholder="ค้นหาอาการ เช่น ปวดหัว ไอ มีไข้"
         listHeading="อาการทั้งหมด"

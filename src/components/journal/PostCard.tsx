@@ -8,7 +8,6 @@ import { AttachmentImage } from '../ui/AttachmentImage';
 import { MoodBadge } from './MoodPickerModal';
 import { cn } from '../../lib/cn';
 import { formatDateTime, SELF_LABEL, type JournalPost, type JournalUser } from '../../lib/journal';
-import { SYMPTOM_DESCRIPTIONS } from '../../data/symptomDescriptions';
 import { hasVitals, memberIdForAbout, vitalChips } from '../../lib/dailyRecord';
 
 interface PostCardProps {
@@ -118,8 +117,7 @@ export const PostCard: React.FC<PostCardProps> = ({
               {post.symptoms.map((item) => (
                 <li
                   key={item}
-                  title={SYMPTOM_DESCRIPTIONS[item]}
-                  className="rounded-full bg-red-50 border border-red-200 px-3 py-1 text-base font-semibold text-red-900 cursor-help"
+                  className="rounded-full bg-red-50 border border-red-200 px-3 py-1 text-base font-semibold text-red-900"
                 >
                   {item}
                 </li>
