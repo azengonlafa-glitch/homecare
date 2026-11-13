@@ -238,6 +238,17 @@ describe('คำขออนุญาต', () => {
   });
 });
 
+describe('ฟังก์ชันช่วยตรวจสิทธิ์', () => {
+  it('ผู้ใช้เรียก member_sharing / member_access_granted ตรง ๆ ไม่ได้ (กันอ่านค่าความเป็นส่วนตัวของคนอื่น)', async () => {
+    await expect(as(HELPER, 'select public.member_sharing($1, $2)', [HOME, OWNER])).rejects.toThrow(/permission denied/);
+    await expect(as(HELPER, 'select public.member_access_granted($1, $2, $3)', [HOME, OWNER, 'view'])).rejects.toThrow(/permission denied/);
+  });
+
+  it('แต่นโยบายแถวยังใช้งานได้ (เรียกผ่านฟังก์ชันที่ผู้ใช้เรียกได้)', async () => {
+    expect(await readHealth(OWNER, OPEN)).toHaveLength(1);
+  });
+});
+
 describe('ออกจากบ้าน', () => {
   it('remove_member ลบทั้งแถวที่ทุกคนเห็นและแถวสุขภาพ', async () => {
     await as(PRIVATE, 'select public.remove_member($1, $2)', [HOME, PRIVATE]);
