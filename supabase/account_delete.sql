@@ -31,7 +31,7 @@ begin
       delete from public.homes where id = h;
     else
       -- สมาชิกทั่วไป: ถอนข้อมูลสมาชิกของตัวเองที่เผยแพร่ในบ้าน (เหมือนตอนออกจากบ้านเอง)
-      delete from public.home_items where home_id = h and collection = 'member_records' and id = uid::text;
+      delete from public.home_items where home_id = h and collection in ('member_records', 'member_health') and id = uid::text;
     end if;
   end if;
 
