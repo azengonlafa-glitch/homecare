@@ -318,7 +318,7 @@ const VitalsDialog: React.FC<Omit<VitalsStepModalProps, 'open'>> = ({ forName, v
           )}
           <p className="flex items-start gap-1.5 text-xs text-slate-600">
             <Activity className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-            แอปช่วยจดและดูแนวโน้มเท่านั้น ไม่ได้บอกว่าปกติหรือไม่ ถ้าสงสัยถามหมอหรือเภสัชกรนะ
+            บางค่าแอปเทียบกับเกณฑ์ทั่วไปเพื่อช่วยสังเกต ไม่ใช่การวินิจฉัย ถ้าสงสัยถามหมอหรือเภสัชกรนะ
           </p>
         </div>
       )}

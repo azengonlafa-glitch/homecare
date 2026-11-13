@@ -2,6 +2,7 @@ import type { RealtimeChannel, User } from '@supabase/supabase-js';
 import { cloudEnabled, requireClient, supabase } from './client';
 import { AUTH_KEY, CURRENT_MEMBER_ID, readAuthUser } from './identity';
 import { CLOUD_UPDATED_EVENT, setSyncHandler, type StoreName } from './queue';
+import { HEALTH_COLLECTION, PUBLIC_COLLECTION, itemKey, mergeRecord, parseItemKey, splitRecord } from './recordSplit';
 
 /**
  * ชั้นซิงก์ข้อมูลกับ Supabase
@@ -127,6 +128,8 @@ interface Item {
 
 interface ItemStoreDef {
   collection: string;
+  /** ชุดข้อมูลที่เก็บข้ามหลาย collection (รหัสรายการเป็น "collection:id") ตอนนี้มีแค่ข้อมูลสมาชิก */
+  collections?: string[];
   toItems(raw: string | null): Item[];
   fromItems(items: Item[]): Json;
 }
@@ -159,16 +162,33 @@ const ITEM_STORES: Partial<Record<StoreName, ItemStoreDef>> = {
         .sort((a, b) => String(b.sharedAt ?? '').localeCompare(String(a.sharedAt ?? '')))
         .slice(0, 50),
   },
+  // ข้อมูลสมาชิก: แยกเป็นส่วนที่ทุกคนเห็น กับส่วนสุขภาพที่เซิร์ฟเวอร์ส่งให้เฉพาะคนที่มีสิทธิ์ (supabase/health_privacy.sql)
   records: {
-    collection: 'member_records',
+    collection: PUBLIC_COLLECTION,
+    collections: [PUBLIC_COLLECTION, HEALTH_COLLECTION],
     toItems(raw) {
       const map = parse(raw);
       if (!map || typeof map !== 'object') return [];
-      return Object.entries(map as Record<string, Json>).map(([id, data]) => ({ id, data }));
+      const items: Item[] = [];
+      for (const [id, data] of Object.entries(map as Record<string, Json>)) {
+        if (!data || typeof data !== 'object') continue;
+        const { pub, health } = splitRecord(data as Record<string, unknown>);
+        items.push({ id: itemKey(PUBLIC_COLLECTION, id), data: pub });
+        if (health) items.push({ id: itemKey(HEALTH_COLLECTION, id), data: health });
+      }
+      return items;
     },
     fromItems(items) {
+      const pubs = new Map<string, Record<string, unknown>>();
+      const healths = new Map<string, Record<string, unknown>>();
+      for (const item of items) {
+        const { collection, id } = parseItemKey(item.id);
+        (collection === HEALTH_COLLECTION ? healths : pubs).set(id, item.data as Record<string, unknown>);
+      }
       const out: Record<string, Json> = {};
-      for (const item of items) out[item.id] = item.data;
+      for (const id of new Set([...pubs.keys(), ...healths.keys()])) {
+        out[id] = mergeRecord(id, pubs.get(id), healths.get(id), ctx?.userId ?? '');
+      }
       return out;
     },
   },
@@ -178,6 +198,7 @@ const ITEM_STORES: Partial<Record<StoreName, ItemStoreDef>> = {
 const DOC_STORES: Partial<Record<StoreName, string>> = { meds: 'meds', onboarding: 'onboarding', folders: 'folders' };
 
 const COLLECTION_TO_STORE: Record<string, StoreName> = {
+  [HEALTH_COLLECTION]: 'records',
   calendar: 'calendar',
   journal: 'journal',
   access: 'access',
@@ -201,6 +222,8 @@ let chain: Promise<unknown> = Promise.resolve();
 function onQueue(store: StoreName, ids?: string[]) {
   if (!ctx) return;
   if (ITEM_STORES[store] && !ctx.homeId) return;
+  const multi = ITEM_STORES[store]?.collections;
+  if (multi && ids) ids = ids.flatMap((id) => multi.map((col) => itemKey(col, id)));
   const existing = dirty.get(store);
   if (!ids || existing === 'all') dirty.set(store, 'all');
   else dirty.set(store, new Set([...(existing ?? []), ...ids]));
@@ -258,6 +281,7 @@ async function pushStore(store: StoreName, ids?: string[]) {
 
   const def = ITEM_STORES[store];
   if (!def || !c.homeId) return;
+  if (def.collections) return pushMultiStore(store, def, ids);
   const snapshot = itemSnapshots.get(store) ?? new Map<string, string>();
   itemSnapshots.set(store, snapshot);
 
@@ -293,6 +317,67 @@ async function pushStore(store: StoreName, ids?: string[]) {
     if (error) throw error;
     for (const id of removed) snapshot.delete(id);
   }
+}
+
+/** permission denied / forbidden จาก RLS หรือ trigger: ไม่มีสิทธิ์ ส่งซ้ำก็ไม่ผ่าน */
+const isPermissionError = (err: unknown): boolean => {
+  const e = err as { code?: string; message?: string } | null;
+  return e?.code === '42501' || /forbidden|row-level security|permission denied/i.test(e?.message ?? '');
+};
+
+/**
+ * ส่งข้อมูลสมาชิกขึ้นเซิร์ฟเวอร์ (สองแถวต่อคน)
+ * - ข้อมูลของคนอื่น ส่งเฉพาะแถวที่ได้รับจากเซิร์ฟเวอร์มาแล้ว หรือที่เราเพิ่งแก้เอง (กันค่าเริ่มต้นว่าง ๆ ไปทับของจริง)
+ * - ไม่ลบแถวของคนอื่น (การออกจากบ้านใช้ remove_member ที่เซิร์ฟเวอร์ลบให้)
+ * - ไม่มีสิทธิ์ (เช่น สิทธิ์ถูกถอนระหว่างแก้) ทิ้งการแก้นั้นแล้วดึงข้อมูลจริงกลับมา ไม่ส่งซ้ำวนไม่จบ
+ */
+async function pushMultiStore(store: StoreName, def: ItemStoreDef, ids?: string[]) {
+  const c = ctx;
+  if (!c || !c.homeId) return;
+  const sb = requireClient();
+  const snapshot = itemSnapshots.get(store) ?? new Map<string, string>();
+  itemSnapshots.set(store, snapshot);
+
+  const items = def.toItems(localStorage.getItem(KEYS[store]));
+  const current = new Map(items.map((i) => [i.id, stable(i.data)]));
+  const isMine = (key: string) => parseItemKey(key).id === c.userId;
+
+  const upserts = items.filter(
+    (i) =>
+      (!ids || ids.includes(i.id)) &&
+      snapshot.get(i.id) !== current.get(i.id) &&
+      (isMine(i.id) || snapshot.has(i.id) || !!ids?.includes(i.id))
+  );
+  const removed = (ids ?? [...snapshot.keys()]).filter((key) => snapshot.has(key) && !current.has(key) && isMine(key));
+
+  let denied = false;
+  for (const item of upserts) {
+    const { collection, id } = parseItemKey(item.id);
+    const { error } = await sb.from('home_items').upsert({
+      home_id: c.homeId,
+      collection,
+      id,
+      data: item.data,
+      updated_by: c.userId,
+      updated_at: new Date().toISOString(),
+    });
+    if (error) {
+      if (!isPermissionError(error)) throw error;
+      console.warn('Sync skipped (no permission)', collection);
+      denied = true;
+      continue;
+    }
+    snapshot.set(item.id, current.get(item.id)!);
+  }
+
+  for (const key of removed) {
+    const { collection, id } = parseItemKey(key);
+    const { error } = await sb.from('home_items').delete().eq('home_id', c.homeId).eq('collection', collection).eq('id', id);
+    if (error && !isPermissionError(error)) throw error;
+    snapshot.delete(key);
+  }
+
+  if (denied) scheduleRefresh(store);
 }
 
 interface StoredSettings {
@@ -376,18 +461,22 @@ async function refreshItems(store: StoreName) {
   const def = ITEM_STORES[store];
   if (!c || !c.homeId || !def) return;
   const sb = requireClient();
-  const rows = await fetchAll<{ id: string; data: Json }>((from, to) =>
+  const collections = def.collections ?? [def.collection];
+  const fetched = await fetchAll<{ collection: string; id: string; data: Json }>((from, to) =>
     sb
       .from('home_items')
-      .select('id, data')
+      .select('collection, id, data')
       .eq('home_id', c.homeId!)
-      .eq('collection', def.collection)
+      .in('collection', collections)
+      .order('collection')
       .order('id')
       .range(from, to)
   );
+  // ชุดที่อยู่หลาย collection ใช้รหัส "collection:id" ชุดปกติใช้ id ตรง ๆ เหมือนเดิม
+  const rows = fetched.map((r) => ({ id: def.collections ? itemKey(r.collection, r.id) : r.id, data: r.data }));
   if (dirty.has(store)) return; // มีการแก้ไขในเครื่องที่ยังไม่ได้ส่ง: รอบหน้าค่อยรวม
   itemSnapshots.set(store, new Map(rows.map((r) => [r.id, stable(r.data)])));
-  writeLocal(store, def.fromItems(rows.map((r) => ({ id: r.id, data: r.data }))));
+  writeLocal(store, def.fromItems(rows));
 }
 
 async function refreshDoc(store: StoreName) {
@@ -922,6 +1011,58 @@ async function removeAllFilesUnder(sb: ReturnType<typeof requireClient>, bucket:
  * 4) เรียก delete_my_account() ฝั่งเซิร์ฟเวอร์ (supabase/account_delete.sql) ลบบัญชี ข้อมูลส่วนตัว และการปรึกษา
  * ทุกขั้นก่อนข้อ 4 ล้มเหลวได้โดยข้อมูลยังอยู่ครบ
  */
+/** รายการในบันทึกว่าใครเข้าดู/แก้ข้อมูลของฉัน (supabase/data_access_log.sql) */
+export interface DataLogEntry {
+  id: number;
+  actorId: string | null;
+  action: 'view' | 'edit';
+  /** หัวข้อที่แก้ (ไม่มีค่าจริง) */
+  keys: string[];
+  at: string;
+}
+
+/**
+ * ดึงบันทึกการเข้าดู/แก้ไขข้อมูลของฉันล่าสุด
+ * คืน null ถ้าใช้ไม่ได้ (โหมดต้นแบบ หรือเซิร์ฟเวอร์ยังไม่ได้รัน data_access_log.sql)
+ */
+export async function fetchMyDataLog(limit = 40): Promise<DataLogEntry[] | null> {
+  const c = ctx;
+  if (!cloudEnabled || !c) return null;
+  const { data, error } = await requireClient()
+    .from('member_data_log')
+    .select('id, actor_id, action, keys, at')
+    .eq('target_id', c.userId)
+    .order('at', { ascending: false })
+    .limit(limit);
+  if (error) {
+    console.warn('Data log unavailable', error.message);
+    return null;
+  }
+  return (data ?? []).map((r) => ({
+    id: r.id as number,
+    actorId: (r.actor_id as string | null) ?? null,
+    action: r.action as 'view' | 'edit',
+    keys: (r.keys as string[] | null) ?? [],
+    at: r.at as string,
+  }));
+}
+
+const viewLoggedAt = new Map<string, number>();
+
+/** บอกเซิร์ฟเวอร์ว่าเปิดดูข้อมูลของสมาชิกคนนี้ (เพื่อให้เจ้าของข้อมูลตรวจสอบได้) ไม่รอผล ไม่กระทบการใช้งานถ้าล้มเหลว */
+export function logMemberView(targetId: string): void {
+  const c = ctx;
+  if (!cloudEnabled || !c?.homeId || targetId === c.userId) return;
+  const last = viewLoggedAt.get(targetId) ?? 0;
+  if (Date.now() - last < 10 * 60 * 1000) return;
+  viewLoggedAt.set(targetId, Date.now());
+  void requireClient()
+    .rpc('log_member_view', { p_home: c.homeId, p_target: targetId })
+    .then(({ error }) => {
+      if (error) console.warn('View log skipped', error.message);
+    });
+}
+
 export async function deleteMyAccount(): Promise<void> {
   const c = ctx;
   if (!c) throw new Error('not_authenticated');

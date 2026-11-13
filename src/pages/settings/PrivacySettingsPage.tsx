@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Check, Eye, ShieldCheck, X } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 import { PageLayout } from '../../components/settings/PageLayout';
+import { AccessLogCard, GrantsCard } from '../../components/settings/DataAccessCards';
 import { SwitchRow } from '../../components/settings/SwitchRow';
 import { SegmentedControl } from '../../components/ui/SegmentedControl';
 import { useToast } from '../../components/ui/Toast';
@@ -154,6 +155,10 @@ export const PrivacySettingsPage: React.FC = () => {
               />
             </div>
           </Card>
+
+          {/* สิทธิ์ที่ฉันให้ไว้ + บันทึกว่าใครเข้าดู/แก้ข้อมูลของฉัน */}
+          <GrantsCard requests={requests} />
+          <AccessLogCard />
 
           {/* คำขอที่ฉันส่งไป */}
           {outgoing.length > 0 && (

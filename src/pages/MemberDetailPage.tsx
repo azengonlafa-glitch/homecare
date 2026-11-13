@@ -64,6 +64,7 @@ import {
   requestsFor,
   useAccessRequests,
 } from '../lib/access';
+import { logMemberView } from '../cloud/engine';
 import {
   MEDS_CHANGED_EVENT,
   PERIOD_LABEL,
@@ -627,6 +628,12 @@ export const MemberDetailPage: React.FC = () => {
   const member: HouseholdMember | undefined = settings.members.find((m) => m.id === id);
 
   const isMe = member?.id === CURRENT_MEMBER_ID;
+
+  // เปิดดูข้อมูลของสมาชิกคนอื่น: บันทึกไว้ให้เจ้าของข้อมูลตรวจสอบได้ (ตั้งค่า > ความเป็นส่วนตัว)
+  useEffect(() => {
+    if (member && member.id !== CURRENT_MEMBER_ID) logMemberView(member.id);
+  }, [member?.id]);
+
   /** เปิดบันทึกประจำวันของสมาชิกคนนี้ โดยเปิดส่วนค่าสุขภาพไว้ (ค่าที่บันทึกขึ้นกราฟในหน้านี้ทันที) */
   const openRecord = () => composer.start({ first: 'vitals', about: isMe ? SELF_LABEL : member?.name });
   const ownProfile = isMe ? onboarding.profile : null;

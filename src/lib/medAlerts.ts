@@ -1,6 +1,7 @@
 import { queueSync } from '../cloud/queue';
 import { useEffect, useState } from 'react';
 import { JOURNAL_CHANGED_EVENT, loadPosts, savePosts, type JournalPost } from './journal';
+import { loadMemberRecord } from './members';
 import {
   DEFAULT_EXPIRY_WARN_DAYS,
   MEDS_CHANGED_EVENT,
@@ -198,11 +199,16 @@ const readNotified = (): Set<string> => {
   }
 };
 
-/** ข้อความแจ้งคนในบ้านว่าสมาชิกคนนี้ยังไม่ได้กิน/ฉีด/หยอดยา (ตามรูปแบบยา) หลังเตือนหลายรอบ */
-function noticeText(who: string, a: MedAlert) {
+/**
+ * ข้อความแจ้งคนในบ้านว่าสมาชิกคนนี้ยังไม่ได้กิน/ฉีด/หยอดยา (ตามรูปแบบยา) หลังเตือนหลายรอบ
+ * ถ้าเจ้าตัวปิดการแชร์ข้อมูล (shareData = false) ไม่ใส่ชื่อยาในข้อความที่ส่งให้คนอื่น
+ * (ชื่อยาบอกโรคของเขาได้) เหลือแค่ว่ามื้อไหนยังไม่ได้บันทึก คนในบ้านยังรู้ว่าต้องช่วยดู
+ */
+export function familyNoticeText(who: string, a: Pick<MedAlert, 'form' | 'period' | 'body' | 'dueTime' | 'round'>, shareData: boolean) {
+  const detail = shareData ? a.body : `เวลา ${a.dueTime} น. ยังไม่ได้บันทึก`;
   return {
     title: `${who} ยังไม่ได้${doseWords(a.form).phrase}${a.period ? `มื้อ${PERIOD_LABEL[a.period]}` : ''}`,
-    body: `${a.body} · เตือนไปแล้ว ${a.round} ครั้ง ยังไม่ได้บันทึก ช่วยโทรถามหรือแวะดูหน่อย`,
+    body: `${detail} · เตือนไปแล้ว ${a.round} ครั้ง ยังไม่ได้บันทึก ช่วยโทรถามหรือแวะดูหน่อย`,
   };
 }
 
@@ -215,6 +221,7 @@ function syncFamilyNotices(alerts: MedAlert[]) {
   if (shared.length === 0) return;
   const me = getCurrentMember(loadSettings());
   const who = me?.name || 'สมาชิกในบ้าน';
+  const shareData = loadMemberRecord(CURRENT_MEMBER_ID).sharing.shareData;
   try {
     const raw = localStorage.getItem(FAMILY_NOTICE_KEY);
     const existing = raw ? (JSON.parse(raw) as FamilyNotice[]) : [];
@@ -225,7 +232,7 @@ function syncFamilyNotices(alerts: MedAlert[]) {
         key: a.key,
         memberId: CURRENT_MEMBER_ID,
         memberName: who,
-        ...noticeText(who, a),
+        ...familyNoticeText(who, a, shareData),
         round: a.round,
         sharedAt: new Date().toISOString(),
         memberNames: a.familyNames,

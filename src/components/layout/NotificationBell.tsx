@@ -124,12 +124,17 @@ export const NotificationBell: React.FC = () => {
                   <li key={req.id} className="rounded-2xl border border-amber-200 bg-amber-50/80 p-3">
                     <div className="flex items-start gap-2.5">
                       <ShieldCheck className="w-5 h-5 mt-0.5 shrink-0 text-amber-700" aria-hidden="true" />
-                      <div className="min-w-0">
+                      <Link
+                        to="/settings/privacy"
+                        onClick={() => setOpen(false)}
+                        className="min-w-0 rounded-lg hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-purple-600"
+                      >
                         <p className="text-sm font-bold text-slate-900 break-words">
                           {memberNameById(req.requesterId)} ขอ{req.scope === 'edit' ? 'แก้ไขข้อมูลของคุณ' : 'ดูข้อมูลของคุณ'}
                         </p>
                         {req.message && <p className="mt-0.5 text-xs text-slate-600 break-words">“{req.message}”</p>}
-                      </div>
+                        <p className="mt-1 text-xs font-bold text-purple-800">แตะเพื่อไปตั้งค่าความเป็นส่วนตัว</p>
+                      </Link>
                     </div>
                     <div className="mt-2.5 grid grid-cols-2 gap-1.5">
                       <button

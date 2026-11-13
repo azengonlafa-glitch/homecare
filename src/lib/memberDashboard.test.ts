@@ -130,27 +130,35 @@ const ctx = (over: Partial<FollowContext> = {}): FollowContext => ({
 });
 
 describe('ค่าสุขภาพ', () => {
-  it('จัดระดับความดันตามเกณฑ์', () => {
-    expect(classifyBp(118, 76)).toMatchObject({ severity: 'ok', label: 'ปกติ' });
-    expect(classifyBp(128, 82)).toMatchObject({ severity: 'ok', label: 'เริ่มสูง' });
-    expect(classifyBp(145, 85)).toMatchObject({ severity: 'watch', label: 'สูง' });
-    expect(classifyBp(130, 92)).toMatchObject({ severity: 'watch', label: 'สูง' });
-    expect(classifyBp(85, 55)).toMatchObject({ severity: 'watch', label: 'ต่ำ' });
-    expect(classifyBp(185, 100).severity).toBe('urgent');
-    expect(classifyBp(150, 120).severity).toBe('urgent');
+  it('จัดระดับความดันตามเกณฑ์วัดที่บ้านของไทย 2022 (ทั้งตัวบนและตัวล่าง)', () => {
+    expect(classifyBp(118, 72)).toMatchObject({ severity: 'ok', label: 'ปกติ' });
+    expect(classifyBp(128, 72)).toMatchObject({ severity: 'ok', label: 'สูงกว่าปกติเล็กน้อย' });
+    expect(classifyBp(118, 80)).toMatchObject({ severity: 'ok', label: 'สูงกว่าปกติเล็กน้อย' });
+    expect(classifyBp(135, 70)).toMatchObject({ severity: 'watch', label: 'สูง' });
+    expect(classifyBp(120, 85)).toMatchObject({ severity: 'watch', label: 'สูง' });
+    // ความดันต่ำมีความหมายเมื่อมีอาการเท่านั้น จึงไม่แจ้งเตือน
+    expect(classifyBp(85, 55)).toMatchObject({ severity: 'ok', label: 'ต่ำ' });
+    expect(classifyBp(180, 100)).toMatchObject({ severity: 'urgent', label: 'สูงมาก' });
+    expect(classifyBp(150, 110).severity).toBe('urgent');
+    expect(classifyBp(179, 109).severity).toBe('watch');
   });
 
-  it('จัดระดับน้ำตาลตามเกณฑ์ และผ่อนเกณฑ์ให้ผู้เป็นเบาหวาน', () => {
-    expect(classifyGlucose(90, 'fasting', false).severity).toBe('ok');
-    expect(classifyGlucose(110, 'fasting', false)).toMatchObject({ severity: 'ok', label: 'เสี่ยงเบาหวาน' });
-    expect(classifyGlucose(130, 'fasting', false).severity).toBe('watch');
-    expect(classifyGlucose(150, 'after-meal', false).severity).toBe('ok');
-    expect(classifyGlucose(210, 'after-meal', false).severity).toBe('watch');
-    expect(classifyGlucose(150, 'fasting', true).severity).toBe('ok');
-    expect(classifyGlucose(190, 'fasting', true).severity).toBe('watch');
+  it('จัดระดับน้ำตาลตาม ADA 2025', () => {
+    // ไม่เป็นเบาหวาน
+    expect(classifyGlucose(90, 'fasting', false)).toMatchObject({ severity: 'ok', label: 'ปกติ' });
+    expect(classifyGlucose(110, 'fasting', false)).toMatchObject({ severity: 'ok', label: 'สูงกว่าปกติ' });
+    expect(classifyGlucose(126, 'fasting', false)).toMatchObject({ severity: 'watch', label: 'สูง ควรตรวจยืนยัน' });
+    expect(classifyGlucose(190, 'after-meal', false).severity).toBe('ok');
+    expect(classifyGlucose(200, 'after-meal', false).severity).toBe('watch');
+    // เป็นเบาหวาน: เป้าทั่วไปก่อนอาหาร 80–130 หลังอาหาร <180
+    expect(classifyGlucose(130, 'fasting', true)).toMatchObject({ severity: 'ok', label: 'ตามเป้าทั่วไป' });
+    expect(classifyGlucose(131, 'fasting', true)).toMatchObject({ severity: 'ok', label: 'สูงกว่าเป้าทั่วไป' });
+    expect(classifyGlucose(170, 'after-meal', true).label).toBe('ตามเป้าทั่วไป');
+    expect(classifyGlucose(180, 'after-meal', true).label).toBe('สูงกว่าเป้าทั่วไป');
+    expect(classifyGlucose(200, 'unknown', true).severity).toBe('watch');
+    // น้ำตาลต่ำ: ระดับ 1 <70, ระดับ 2 <54
     expect(classifyGlucose(65, 'fasting', true).severity).toBe('watch');
-    expect(classifyGlucose(50, 'fasting', true).severity).toBe('urgent');
-    expect(classifyGlucose(320, 'unknown', true).severity).toBe('urgent');
+    expect(classifyGlucose(53, 'fasting', false).severity).toBe('urgent');
   });
 
   it('ใช้ค่าที่บันทึกล่าสุดก่อน และถอยไปใช้ค่าตั้งต้นเมื่อไม่มีบันทึก', () => {
@@ -175,17 +183,27 @@ describe('ค่าสุขภาพ', () => {
     expect(base.weight).toEqual({ kg: 56, at: null });
   });
 
-  it('จับน้ำหนักที่เปลี่ยนเร็วภายใน 7 วัน', () => {
+  it('จับน้ำหนักขึ้นเกิน 2 กก. ใน 3 วัน (ESC สำหรับหัวใจล้มเหลว)', () => {
     const fast: VitalReading[] = [
-      { id: '1', at: isoAt(4), weightKg: 60 },
-      { id: '2', at: isoAt(0), weightKg: 63 },
+      { id: '1', at: isoAt(3), weightKg: 60 },
+      { id: '2', at: isoAt(0), weightKg: 62.5 },
     ];
-    expect(weightShift(fast)).toEqual({ deltaKg: 3, days: 4 });
+    expect(weightShift(fast)).toEqual({ deltaKg: 2.5, days: 3 });
+    const exactlyTwo: VitalReading[] = [
+      { id: '1', at: isoAt(2), weightKg: 60 },
+      { id: '2', at: isoAt(0), weightKg: 62 },
+    ];
+    expect(weightShift(exactlyTwo)).toBeNull();
     const slow: VitalReading[] = [
-      { id: '1', at: isoAt(20), weightKg: 60 },
+      { id: '1', at: isoAt(6), weightKg: 60 },
       { id: '2', at: isoAt(0), weightKg: 63 },
     ];
     expect(weightShift(slow)).toBeNull();
+    const loss: VitalReading[] = [
+      { id: '1', at: isoAt(2), weightKg: 63 },
+      { id: '2', at: isoAt(0), weightKg: 60 },
+    ];
+    expect(weightShift(loss)).toBeNull();
     expect(weightShift([{ id: '1', at: isoAt(0), weightKg: 60 }])).toBeNull();
   });
 });

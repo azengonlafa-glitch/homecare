@@ -19,10 +19,10 @@ select cron.schedule(
   $$ delete from public.med_push_sent where sent_at < now() - interval '3 days' $$
 );
 
--- ตรวจเวลากินยาทุก 5 นาที (รันไฟล์นี้ซ้ำได้ cron.schedule ชื่อเดิมจะแทนที่ของเดิม)
+-- ตรวจเวลากินยาทุก 1 นาที (แจ้งเตือนช้าสุดไม่เกินประมาณ 1 นาที) (รันไฟล์นี้ซ้ำได้ cron.schedule ชื่อเดิมจะแทนที่ของเดิม)
 select cron.schedule(
   'med-dose-reminders',
-  '*/5 * * * *',
+  '* * * * *',
   $job$
   select net.http_post(
     url := 'https://idczulbdpkndboxjguyk.supabase.co/functions/v1/med-dose-reminders',

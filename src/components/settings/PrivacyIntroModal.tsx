@@ -4,12 +4,16 @@ import { Eye, Settings2, ShieldCheck } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Modal } from '../ui/Modal';
 import { markPrivacyIntroAnswered, privacyIntroAnswered } from '../../lib/privacyIntro';
+import { loadMemberRecord } from '../../lib/members';
+import { CURRENT_MEMBER_ID } from '../../lib/settings';
 
 /** อธิบายความเป็นส่วนตัวตอนเข้าบ้านครั้งแรก: ตั้งตอนนี้ได้เลย หรือกลับมาปรับทีหลังที่เมนูตั้งค่า */
 export const PrivacyIntroModal: React.FC = () => {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [never, setNever] = useState(false);
+  // บอกสถานะจริงตามที่เจ้าตัวเลือกไว้ตอนให้ความยินยอม (ไม่เลือกแชร์ = ไม่แสดงให้คนในบ้านเห็น)
+  const [sharing] = useState(() => loadMemberRecord(CURRENT_MEMBER_ID).sharing.shareData);
 
   useEffect(() => {
     if (privacyIntroAnswered()) return;
@@ -71,7 +75,11 @@ export const PrivacyIntroModal: React.FC = () => {
           </li>
           <li className="flex items-start gap-3">
             <Settings2 className="mt-0.5 h-5 w-5 shrink-0 text-purple-700" aria-hidden="true" />
-            <span>ตอนนี้คนในบ้านดูข้อมูลของคุณได้ แต่ยังไม่มีใครแก้ไขได้ จนกว่าคุณจะอนุญาต</span>
+            <span>
+              {sharing
+                ? 'ตอนนี้คนในบ้านดูข้อมูลของคุณได้ แต่จะแก้ไขได้ต่อเมื่อคุณอนุญาต ถ้าไม่อยากให้ใครดู ปิดได้ที่ ตั้งค่า → ความเป็นส่วนตัว'
+                : 'ตอนนี้คนในบ้านยังไม่เห็นข้อมูลสุขภาพของคุณ ตามที่คุณเลือกไว้ตอนให้ความยินยอม เปิดให้ดูหรือให้ใครแก้ไขได้เมื่อไรก็ได้ที่ ตั้งค่า → ความเป็นส่วนตัว'}
+            </span>
           </li>
         </ul>
         <p className="rounded-2xl bg-peach-soft p-3 text-base text-slate-800">

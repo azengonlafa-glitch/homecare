@@ -31,8 +31,13 @@ begin
       delete from public.homes where id = h;
     else
       -- สมาชิกทั่วไป: ถอนข้อมูลสมาชิกของตัวเองที่เผยแพร่ในบ้าน (เหมือนตอนออกจากบ้านเอง)
-      delete from public.home_items where home_id = h and collection = 'member_records' and id = uid::text;
+      delete from public.home_items where home_id = h and collection in ('member_records', 'member_health') and id = uid::text;
     end if;
+  end if;
+
+  -- บันทึกว่าใครเข้าดู/แก้ข้อมูลของบัญชีนี้ (data_access_log.sql) ถ้าติดตั้งไว้ ลบไปด้วย
+  if to_regclass('public.member_data_log') is not null then
+    delete from public.member_data_log where target_id = uid::text;
   end if;
 
   delete from auth.users where id = uid;

@@ -142,9 +142,10 @@ const emptyHealth = (): MemberHealth => ({
   history: [],
 });
 
-const sharingFor = (id: string): MemberSharing => ({
+const defaultSharing = (): MemberSharing => ({
   shareData: true,
-  editPolicy: id === CURRENT_MEMBER_ID ? 'choose' : 'choose',
+  // ค่าเริ่มต้น: ทุกคนในบ้านดูได้ แต่ต้องขออนุญาตเจ้าของก่อนแก้ไข (เจ้าของเปิดให้ทุกคนแก้ หรือปิดการแชร์ได้ที่ ตั้งค่า > ความเป็นส่วนตัว)
+  editPolicy: 'choose',
   allowedEditors: [],
   blockedEditors: [],
 });
@@ -188,7 +189,7 @@ function seedRecord(id: string): MemberRecord {
     age: null,
     gender: '',
     photo: '',
-    sharing: sharingFor(id),
+    sharing: defaultSharing(),
     health: emptyHealth(),
     meds: [],
   };
