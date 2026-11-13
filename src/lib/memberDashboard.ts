@@ -49,26 +49,39 @@ export const VITAL_FRESH_DAYS = 7;
 export const VITAL_MISSING_DAYS = 7;
 /** อาการที่บันทึกไว้ภายในกี่ชั่วโมง ถือว่าเป็นอาการล่าสุดที่ต้องจับตา */
 export const SYMPTOM_FRESH_HOURS = 24;
-/** น้ำหนักเปลี่ยนเร็ว: เปลี่ยนตั้งแต่กี่กก. ภายในกี่วัน */
-export const WEIGHT_SHIFT_KG = 2.5;
-export const WEIGHT_SHIFT_DAYS = 7;
+/**
+ * น้ำหนักขึ้นเร็ว (อาจเป็นน้ำคั่ง) ใช้กับผู้ที่มีภาวะหัวใจล้มเหลวเท่านั้น
+ * ESC (heartfailurematters.org): ขึ้นเกิน 2 กก. ใน 3 วัน ให้แจ้งแพทย์หรือพยาบาล
+ */
+export const WEIGHT_SHIFT_KG = 2;
+export const WEIGHT_SHIFT_DAYS = 3;
 
-/** อาการที่คำอธิบายทางการแพทย์ระบุว่าเป็นสัญญาณอันตราย/ควรพบแพทย์ทันที */
-export const URGENT_SYMPTOMS = new Set([
+/**
+ * อาการที่ต้องโทร 1669 ทันที ห้ามรอดูอาการ
+ * - ปากเบี้ยว แขนขาอ่อนแรงครึ่งซีก พูดไม่ชัด ตามองเห็นผิดปกติ: สัญญาณโรคหลอดเลือดสมอง (BE FAST)
+ * - เจ็บหน้าอก: สงสัยหัวใจขาดเลือดเฉียบพลัน
+ * - หายใจลำบาก, ชัก, เป็นลม/หมดสติ: ตรงกับข้อความเหตุฉุกเฉินที่แอปแสดงอยู่แล้ว (EmergencyNote)
+ */
+export const EMERGENCY_SYMPTOMS = new Set([
   'เจ็บหน้าอก',
   'หายใจลำบาก',
-  'ไอเป็นเลือด',
-  'อาเจียนเป็นเลือด',
-  'ถ่ายเป็นเลือด',
-  'ถ่ายอุจจาระสีดำ',
-  'ปัสสาวะเป็นเลือด',
-  'ปัสสาวะไม่ออก',
   'อ่อนแรงครึ่งซีก',
   'พูดไม่ชัด',
   'ปากเบี้ยว',
   'มองเห็นภาพซ้อน',
   'ชัก',
   'เป็นลม',
+]);
+
+/** อาการที่ควรพบแพทย์โดยเร็ว (ไม่ถึงขั้นเรียกรถฉุกเฉินเสมอไป) */
+export const URGENT_SYMPTOMS = new Set([
+  ...EMERGENCY_SYMPTOMS,
+  'ไอเป็นเลือด',
+  'อาเจียนเป็นเลือด',
+  'ถ่ายเป็นเลือด',
+  'ถ่ายอุจจาระสีดำ',
+  'ปัสสาวะเป็นเลือด',
+  'ปัสสาวะไม่ออก',
   'แพ้ยา',
   'น้ำตาลในเลือดต่ำ',
 ]);
@@ -111,6 +124,8 @@ export const parseBp = (text: string): { sys: number; dia: number } | null => {
 
 export const hasDiabetes = (conditions: string[]): boolean => conditions.some((c) => c.includes('เบาหวาน'));
 export const hasHypertension = (conditions: string[]): boolean => conditions.some((c) => c.includes('ความดัน'));
+export const hasHeartFailure = (conditions: string[]): boolean =>
+  conditions.some((c) => c.includes('หัวใจล้มเหลว') || c.includes('หัวใจวาย'));
 
 // ---------- ข้อมูลพื้นฐาน ----------
 
@@ -212,30 +227,66 @@ export interface Classified {
   label: string;
 }
 
-/** ความดัน: เกณฑ์สากลทั่วไป (ใช้จัดลำดับความสำคัญเท่านั้น ผู้ที่ได้รับยาควรใช้เป้าหมายของแพทย์) */
+/**
+ * ความดันที่วัดเองที่บ้าน (ค่าครั้งเดียว) ตามเกณฑ์วัดที่บ้านของ Thai Hypertension Society 2022:
+ *   125–134 / 75–84 = สูงกว่าปกติเล็กน้อย (high normal) · ≥135 / ≥85 = สูง (hypertension)
+ *   แนวทางให้ดูค่าเฉลี่ยหลายวัน ค่าครั้งเดียวจึงใช้ "จัดลำดับให้สังเกต" เท่านั้น ไม่ใช่การวินิจฉัย
+ * ≥180 / ≥110 = สูงมาก (grade 3 ของ ESC/ESH 2018 ที่ ESH 2023 ยังใช้ต่อ เป็นเกณฑ์วัดที่คลินิก ค่าที่บ้านจึงไม่ต่ำกว่านี้)
+ * <90 / <60 = ต่ำ (NHS) มีความหมายเมื่อมีอาการเท่านั้น จึงไม่แจ้งเตือน
+ * ใช้กับผู้ใหญ่เท่านั้น ที่มาทั้งหมด: docs/HEALTH_CRITERIA_AND_LEGAL.pdf (ต้นฉบับ .html)
+ */
 export function classifyBp(sys: number, dia: number): Classified {
-  if (sys >= 180 || dia >= 120) return { severity: 'urgent', tone: 'bad', label: 'สูงมาก' };
-  if (sys >= 140 || dia >= 90) return { severity: 'watch', tone: 'bad', label: 'สูง' };
-  if (sys < 90 || dia < 60) return { severity: 'watch', tone: 'warn', label: 'ต่ำ' };
-  if (sys >= 120 || dia >= 80) return { severity: 'ok', tone: 'warn', label: 'เริ่มสูง' };
+  if (sys >= 180 || dia >= 110) return { severity: 'urgent', tone: 'bad', label: 'สูงมาก' };
+  if (sys >= 135 || dia >= 85) return { severity: 'watch', tone: 'bad', label: 'สูง' };
+  if (sys < 90 || dia < 60) return { severity: 'ok', tone: 'warn', label: 'ต่ำ' };
+  if (sys >= 125 || dia >= 75) return { severity: 'ok', tone: 'warn', label: 'สูงกว่าปกติเล็กน้อย' };
   return { severity: 'ok', tone: 'good', label: 'ปกติ' };
 }
 
-/** น้ำตาล: ผู้ที่เป็นเบาหวานใช้เกณฑ์เตือนที่หลวมกว่า เพราะเป้าหมายตามแพทย์กำหนด */
+/** คำแนะนำประกอบความดันแต่ละระดับ (ไม่ใช่การรักษา) */
+export function bpAdvice(c: Classified): string {
+  if (c.label === 'สูงมาก')
+    return 'วัดซ้ำอีกครั้ง ถ้ายังสูงมากควรติดต่อแพทย์โดยเร็ว ถ้ามีเจ็บแน่นหน้าอก ปากเบี้ยว แขนขาอ่อนแรง หรือพูดไม่ชัด โทร 1669 ทันที';
+  if (c.label === 'ต่ำ') return 'ถ้ามีอาการหน้ามืด เวียนหัว หรือเป็นลมบ่อย ควรปรึกษาแพทย์';
+  if (c.tone === 'good') return '';
+  return 'ค่าครั้งเดียวยังสรุปไม่ได้ แนวทางให้วัดเช้าและก่อนนอน 7 วันแล้วดูค่าเฉลี่ย ถ้าค่าเฉลี่ยสูงควรปรึกษาแพทย์';
+}
+
+/**
+ * น้ำตาลจากเครื่องเจาะปลายนิ้ว (มก./ดล.) ตาม ADA Standards of Care 2025:
+ * - ต่ำ: <70 = ระดับ 1, <54 = ระดับ 2 (ตาราง 6.4)
+ * - เป็นเบาหวาน: เป้าทั่วไปก่อนอาหาร 80–130, สูงสุดหลังอาหาร <180 (ตาราง 6.3) แพทย์อาจตั้งเป้าต่างไป
+ *   ≥200 = ควรสังเกตอาการ/ตรวจคีโตน (ADA hyperglycemic crisis consensus)
+ * - ไม่เป็นเบาหวาน: อดอาหาร 100–125 / ≥126 และค่าสุ่ม ≥200 คือเกณฑ์ของการตรวจในแล็บ (Section 2)
+ *   ค่าจากปลายนิ้ววินิจฉัยไม่ได้ จึงใช้คำว่า "ควรตรวจยืนยัน"
+ */
 export function classifyGlucose(value: number, timing: GlucoseTiming | undefined, diabetic: boolean): Classified {
-  if (value < 54 || value >= 300) return { severity: 'urgent', tone: 'bad', label: value < 54 ? 'ต่ำมาก' : 'สูงมาก' };
+  if (value < 54) return { severity: 'urgent', tone: 'bad', label: 'ต่ำมาก' };
   if (value < 70) return { severity: 'watch', tone: 'warn', label: 'ต่ำ' };
   if (diabetic) {
-    if (value >= 180) return { severity: 'watch', tone: 'bad', label: 'สูง' };
-    return { severity: 'ok', tone: 'good', label: 'ในเกณฑ์' };
+    if (value >= 200) return { severity: 'watch', tone: 'bad', label: 'สูง' };
+    if (timing === 'fasting' && value > 130) return { severity: 'ok', tone: 'warn', label: 'สูงกว่าเป้าทั่วไป' };
+    if (timing !== 'fasting' && value >= 180) return { severity: 'ok', tone: 'warn', label: 'สูงกว่าเป้าทั่วไป' };
+    return { severity: 'ok', tone: 'good', label: 'ตามเป้าทั่วไป' };
   }
   if (timing === 'fasting') {
-    if (value >= 126) return { severity: 'watch', tone: 'bad', label: 'สูง' };
-    if (value >= 100) return { severity: 'ok', tone: 'warn', label: 'เสี่ยงเบาหวาน' };
+    if (value >= 126) return { severity: 'watch', tone: 'bad', label: 'สูง ควรตรวจยืนยัน' };
+    if (value >= 100) return { severity: 'ok', tone: 'warn', label: 'สูงกว่าปกติ' };
     return { severity: 'ok', tone: 'good', label: 'ปกติ' };
   }
-  if (value >= 200) return { severity: 'watch', tone: 'bad', label: 'สูง' };
-  return { severity: 'ok', tone: 'good', label: 'ปกติ' };
+  if (value >= 200) return { severity: 'watch', tone: 'bad', label: 'สูง ควรตรวจยืนยัน' };
+  return { severity: 'ok', tone: 'good', label: 'ไม่เกินเกณฑ์' };
+}
+
+/** คำแนะนำประกอบค่าน้ำตาล (ไม่ใช่การรักษา) */
+export function glucoseAdvice(c: Classified, diabetic: boolean): string {
+  if (c.label === 'ต่ำมาก' || c.label === 'ต่ำ')
+    return 'น้ำตาลต่ำ ถ้าซึม สับสน หรือไม่รู้สึกตัว โทร 1669 ทันที';
+  if (c.severity === 'watch' && diabetic)
+    return 'ถ้าอาเจียน ดื่มน้ำไม่ได้ ซึมหรือสับสน ควรไปโรงพยาบาลทันที';
+  if (c.severity === 'watch') return 'ค่าจากเครื่องเจาะปลายนิ้วใช้วินิจฉัยไม่ได้ ควรตรวจยืนยันที่สถานพยาบาล';
+  if (c.label === 'สูงกว่าเป้าทั่วไป') return 'เป้าหมายของแต่ละคนอาจต่างกัน ใช้เป้าที่แพทย์กำหนด';
+  return '';
 }
 
 export const GLUCOSE_TIMING_LABEL: Record<GlucoseTiming, string> = {
@@ -285,7 +336,7 @@ export function latestVitals(record: MemberRecord, own: OnboardingProfile | null
   return { bp, glucose, weight };
 }
 
-/** น้ำหนักเปลี่ยนเร็ว (เทียบค่าล่าสุดกับค่าก่อนหน้าภายใน WEIGHT_SHIFT_DAYS วัน) */
+/** น้ำหนักขึ้นเร็ว (เทียบค่าล่าสุดกับค่าก่อนหน้าภายใน WEIGHT_SHIFT_DAYS วัน) */
 export function weightShift(
   list: VitalReading[] | undefined
 ): { deltaKg: number; days: number } | null {
@@ -298,7 +349,7 @@ export function weightShift(
     if (days <= 0) continue;
     if (days > WEIGHT_SHIFT_DAYS) break;
     const delta = round1((latest.weightKg as number) - (prev.weightKg as number));
-    if (Math.abs(delta) >= WEIGHT_SHIFT_KG) return { deltaKg: delta, days: Math.max(1, Math.round(days)) };
+    if (delta > WEIGHT_SHIFT_KG) return { deltaKg: delta, days: Math.max(1, Math.round(days)) };
   }
   return null;
 }
@@ -674,15 +725,18 @@ export function buildFollowUps(ctx: FollowContext): FollowItem[] {
   for (const p of recent) {
     if (p.symptoms.length > 0) {
       const urgent = p.symptoms.filter((s) => URGENT_SYMPTOMS.has(s));
+      const emergency = p.symptoms.filter((s) => EMERGENCY_SYMPTOMS.has(s));
       items.push({
         id: `symptom-${p.id}`,
         level: urgent.length > 0 ? 'urgent' : 'watch',
         kind: 'symptom',
         title: `บันทึกอาการ: ${p.symptoms.join(', ')}`,
         detail:
-          urgent.length > 0
-            ? `มีอาการที่ควรได้รับการประเมินจากแพทย์ (${urgent.join(', ')}) · บันทึกเวลา ${timeText(p.createdAt)} น.`
-            : `บันทึกเวลา ${timeText(p.createdAt)} น.`,
+          emergency.length > 0
+            ? `ถ้ายังมีอาการ${emergency.join(', ')} โทร 1669 ทันที ห้ามรอดูอาการ · บันทึกเวลา ${timeText(p.createdAt)} น.`
+            : urgent.length > 0
+              ? `มีอาการที่ควรพบแพทย์โดยเร็ว (${urgent.join(', ')}) · บันทึกเวลา ${timeText(p.createdAt)} น.`
+              : `บันทึกเวลา ${timeText(p.createdAt)} น.`,
         target: 'symptoms',
       });
     }
@@ -711,7 +765,7 @@ export function buildFollowUps(ctx: FollowContext): FollowItem[] {
         level: c.severity,
         kind: 'vital',
         title: `ความดัน ${latest.bp.sys}/${latest.bp.dia} mmHg อยู่ในช่วง “${c.label}”`,
-        detail: `วัดเมื่อ ${dayText(keyOfIso(latest.bp.at as string))} ${timeText(latest.bp.at as string)} น. ควรวัดซ้ำและปรึกษาแพทย์ถ้ายังผิดปกติ`,
+        detail: `วัดเมื่อ ${dayText(keyOfIso(latest.bp.at as string))} ${timeText(latest.bp.at as string)} น. · ${bpAdvice(c)}`,
         target: 'bp',
       });
     }
@@ -724,19 +778,24 @@ export function buildFollowUps(ctx: FollowContext): FollowItem[] {
         level: c.severity,
         kind: 'vital',
         title: `น้ำตาล ${latest.glucose.value} มก./ดล. อยู่ในช่วง “${c.label}”`,
-        detail: `วัดเมื่อ ${dayText(keyOfIso(latest.glucose.at as string))} · ${GLUCOSE_TIMING_LABEL[latest.glucose.timing]}`,
+        detail: [
+          `วัดเมื่อ ${dayText(keyOfIso(latest.glucose.at as string))} · ${GLUCOSE_TIMING_LABEL[latest.glucose.timing]}`,
+          glucoseAdvice(c, diabetic),
+        ]
+          .filter(Boolean)
+          .join(' · '),
         target: 'glucose',
       });
     }
   }
-  const shift = weightShift(ctx.record.vitals);
+  const shift = hasHeartFailure(conditions) ? weightShift(ctx.record.vitals) : null;
   if (shift && fresh(sortedReadings(ctx.record.vitals).find((r) => r.weightKg != null)?.at ?? null)) {
     items.push({
       id: 'vital-weight',
       level: 'watch',
       kind: 'vital',
-      title: `น้ำหนัก${shift.deltaKg > 0 ? 'เพิ่มขึ้น' : 'ลดลง'} ${Math.abs(shift.deltaKg)} กก. ใน ${shift.days} วัน`,
-      detail: 'น้ำหนักเปลี่ยนเร็วกว่าปกติ ควรสังเกตอาการบวมหรือการกินอาหาร',
+      title: `น้ำหนักขึ้น ${shift.deltaKg} กก. ใน ${shift.days} วัน`,
+      detail: 'ผู้ที่มีภาวะหัวใจล้มเหลว น้ำหนักขึ้นเกิน 2 กก. ใน 3 วันอาจเป็นน้ำคั่ง ควรแจ้งแพทย์หรือพยาบาล ถ้าหายใจลำบาก โทร 1669',
       target: 'weight',
     });
   }
@@ -752,7 +811,7 @@ export function buildFollowUps(ctx: FollowContext): FollowItem[] {
       level: 'watch',
       kind: 'record',
       title: `ยังไม่ได้วัดความดันในรอบ ${VITAL_MISSING_DAYS} วัน`,
-      detail: 'มีโรคความดันโลหิตสูง ควรวัดและบันทึกค่าสม่ำเสมอ',
+      detail: 'มีโรคความดันโลหิตสูง ถ้าแพทย์ให้วัดที่บ้าน อย่าลืมบันทึกไว้',
       target: 'record',
     });
   }
@@ -762,7 +821,7 @@ export function buildFollowUps(ctx: FollowContext): FollowItem[] {
       level: 'watch',
       kind: 'record',
       title: `ยังไม่ได้ตรวจน้ำตาลในรอบ ${VITAL_MISSING_DAYS} วัน`,
-      detail: 'มีโรคเบาหวาน ควรตรวจและบันทึกค่าสม่ำเสมอ',
+      detail: 'มีโรคเบาหวาน ถ้าแพทย์ให้ตรวจที่บ้าน อย่าลืมบันทึกไว้',
       target: 'record',
     });
   }

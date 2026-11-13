@@ -26,6 +26,8 @@ import { canViewMember } from './access';
 import {
   classifyBp,
   classifyGlucose,
+  bpAdvice,
+  glucoseAdvice,
   hasDiabetes,
   isAppointmentFor,
   isMedicalEvent,
@@ -641,7 +643,7 @@ export function generateHealthNotifications(
               type: 'checkup_due',
               priority: 'important',
               title: `ถึงกำหนดตรวจติดตามสุขภาพของ ${mem?.name ?? 'สมาชิก'}`,
-              body: `ผู้มีประวัติโรคเรื้อรังควรพบแพทย์หรือตรวจเลือดติดตามผลทุก 6 เดือน`,
+              body: `ไม่มีบันทึกการตรวจติดตามในรอบ 6 เดือน ลองเช็กว่ามีนัดกับแพทย์ครั้งถัดไปแล้วหรือยัง`,
               memberId: mId,
               memberName: mem?.name,
               link: `/members/${mId}`,
@@ -673,18 +675,26 @@ export function generateHealthNotifications(
       for (const r of recentReadings) {
         let abnormal = false;
         let changeText = '';
+        // ด่วน = ค่าที่เกณฑ์จัดว่าอันตราย (ความดัน ≥180/110, น้ำตาล <54) ที่เหลือเป็น "สำคัญ" เพื่อไม่ให้ทั้งบ้านชินกับการเตือนด่วน
+        let urgent = false;
+        const advice: string[] = [];
 
         if (r.systolic != null && r.diastolic != null) {
           const bp = classifyBp(r.systolic, r.diastolic);
           if (bp.severity !== 'ok') {
             abnormal = true;
+            urgent = urgent || bp.severity === 'urgent';
             changeText = `ความดัน ${r.systolic}/${r.diastolic} mmHg (${bp.label})`;
+            advice.push(bpAdvice(bp));
           }
         }
         if (r.glucose != null) {
-          const glu = classifyGlucose(r.glucose, r.glucoseTiming, hasDiabetes(rec.health.conditions));
+          const diabetic = hasDiabetes(rec.health.conditions);
+          const glu = classifyGlucose(r.glucose, r.glucoseTiming, diabetic);
           if (glu.severity !== 'ok') {
             abnormal = true;
+            urgent = urgent || glu.severity === 'urgent';
+            advice.push(glucoseAdvice(glu, diabetic));
             changeText = changeText ? `${changeText}, น้ำตาล ${r.glucose} มก./ดล. (${glu.label})` : `น้ำตาล ${r.glucose} มก./ดล. (${glu.label})`;
           }
         }
@@ -696,10 +706,10 @@ export function generateHealthNotifications(
               fingerprint: fp,
               category: 'family',
               type: 'health_change',
-              priority: 'urgent',
+              priority: urgent ? 'urgent' : 'important',
               title: `${mem?.name ?? 'สมาชิก'} มีการเปลี่ยนแปลงข้อมูลสุขภาพ`,
               body: changeText,
-              detail: r.note ? `บันทึกเพิ่มเติม: ${r.note}` : undefined,
+              detail: [...advice.filter(Boolean), r.note ? `บันทึกเพิ่มเติม: ${r.note}` : ''].filter(Boolean).join(' · ') || undefined,
               memberId: mId,
               memberName: mem?.name,
               link: `/members/${mId}`,
