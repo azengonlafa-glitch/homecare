@@ -10,7 +10,7 @@ import { SYMPTOM_DESCRIPTIONS } from '../../data/symptomDescriptions';
 import { deleteFiles } from '../../lib/fileStore';
 import { loadHomeData } from '../../lib/storage';
 import { CURRENT_MEMBER_ID, loadSettings } from '../../lib/settings';
-import { canEditMember } from '../../lib/access';
+import { canEditMember, consumeOnce, loadRequests, requestsFor } from '../../lib/access';
 import { loadMemberRecord } from '../../lib/members';
 import { SELF_LABEL, currentJournalUser, loadPosts, newId, savePosts, type JournalPost } from '../../lib/journal';
 import {
@@ -44,13 +44,19 @@ export interface StartOptions {
   about?: string;
 }
 
-/** ชื่อที่เลือกได้ในช่อง "บันทึกของใคร" */
-function aboutChoices(): string[] {
-  const members = loadSettings()
-    .members.filter((m) => m.id !== CURRENT_MEMBER_ID)
-    .map((m) => m.name);
+/**
+ * ชื่อที่เลือกได้ในช่อง "บันทึกของใคร"
+ * สมาชิกคนอื่นขึ้นเฉพาะเมื่อเจ้าตัวอนุญาตให้เราแก้ไขข้อมูลแล้ว (อนุญาตครั้งนี้/ตลอด/อนุญาตรายคน/ให้ทุกคนแก้) และไม่ได้ถูกห้าม
+ * keep = ชื่อที่ต้องคงไว้ (ตอนแก้โพสต์เดิม ไม่ให้ชื่อเจ้าของโพสต์หายไปจากตัวเลือก)
+ */
+function aboutChoices(keep?: string): { options: string[]; hiddenMembers: number } {
+  const requests = loadRequests();
+  const others = loadSettings().members.filter((m) => m.id !== CURRENT_MEMBER_ID);
+  const allowed = others.filter((m) => canEditMember(loadMemberRecord(m.id), CURRENT_MEMBER_ID, requests)).map((m) => m.name);
   const patients = loadHomeData().patients.map((p) => p.name);
-  return [SELF_LABEL, ...new Set([...members, ...patients])];
+  const options = [SELF_LABEL, ...new Set([...allowed, ...patients])];
+  if (keep && !options.includes(keep)) options.push(keep);
+  return { options, hiddenMembers: others.length - allowed.length };
 }
 
 /**
@@ -67,7 +73,7 @@ export function useDailyRecordComposer() {
   const [editing, setEditing] = useState<JournalPost | null>(null);
   const [draft, setDraft] = useState<PostDraft>(emptyDraft);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
-  const [options, setOptions] = useState<string[]>(aboutChoices);
+  const [choices, setChoices] = useState(() => aboutChoices());
 
   // รูปที่อัปโหลดระหว่างเขียน ใช้ล้างทิ้งเมื่อยกเลิกหรือเปลี่ยนรูป
   const uploadedIds = useRef(new Set<string>());
@@ -79,9 +85,9 @@ export function useDailyRecordComposer() {
   };
 
   const start = ({ first = 'details', guided: guidedFlow = false, about }: StartOptions = {}) => {
-    const choices = aboutChoices();
-    const fresh = emptyDraft(about && choices.includes(about) ? about : SELF_LABEL);
-    setOptions(choices);
+    const next = aboutChoices();
+    const fresh = emptyDraft(about && next.options.includes(about) ? about : SELF_LABEL);
+    setChoices(next);
     setEditing(null);
     setDraft(fresh);
     initialSnapshot.current = JSON.stringify(fresh);
@@ -102,7 +108,7 @@ export function useDailyRecordComposer() {
       photo: post.photo,
       vitals: draftFromVitals(post.vitals),
     };
-    setOptions(aboutChoices());
+    setChoices(aboutChoices(post.about));
     setEditing(post);
     setDraft(fromPost);
     initialSnapshot.current = JSON.stringify(fromPost);
@@ -203,6 +209,11 @@ export function useDailyRecordComposer() {
       savePosts([saved, ...posts]);
     }
     if (memberId) syncPostVitals(memberId, saved, vitals);
+    // บันทึกให้คนอื่นด้วยสิทธิ์ "อนุญาตครั้งนี้": ใช้สิทธิ์ไปแล้ว ครั้งหน้าต้องขอใหม่
+    if (memberId && memberId !== CURRENT_MEMBER_ID) {
+      const once = requestsFor(memberId).find((r) => r.scope === 'edit' && r.decision === 'once' && !r.usedAt);
+      if (once) consumeOnce(once.id);
+    }
 
     toast.show(vitals ? 'บันทึกแล้ว ค่าสุขภาพขึ้นกราฟพัฒนาการแล้ว' : 'บันทึกแล้ว');
     finishFlow(finalPhotoId);
@@ -263,7 +274,12 @@ export function useDailyRecordComposer() {
         open={step === 'details'}
         mode={editing ? 'edit' : 'new'}
         draft={draft}
-        aboutOptions={options}
+        aboutOptions={choices.options}
+        aboutHint={
+          choices.hiddenMembers > 0
+            ? 'สมาชิกคนอื่นจะขึ้นที่นี่เมื่อเจ้าตัวอนุญาตให้คุณแก้ไขข้อมูลแล้ว ขออนุญาตได้ที่หน้าสมาชิก'
+            : undefined
+        }
         onChange={updateDraft}
         onOpenSymptoms={() => setStep('symptoms')}
         onOpenMood={() => setStep('mood')}

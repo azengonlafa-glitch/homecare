@@ -30,6 +30,8 @@ interface PostComposerModalProps {
   mode: 'new' | 'edit';
   draft: PostDraft;
   aboutOptions: string[];
+  /** คำอธิบายใต้ตัวเลือก (เช่น ทำไมบางคนไม่ขึ้น) */
+  aboutHint?: string;
   onChange: (patch: Partial<PostDraft>) => void;
   onOpenSymptoms: () => void;
   onOpenMood: () => void;
@@ -46,6 +48,7 @@ const ComposerDialog: React.FC<Omit<PostComposerModalProps, 'open'>> = ({
   mode,
   draft,
   aboutOptions,
+  aboutHint,
   onChange,
   onOpenSymptoms,
   onOpenMood,
@@ -112,6 +115,7 @@ const ComposerDialog: React.FC<Omit<PostComposerModalProps, 'open'>> = ({
               </Chip>
             ))}
           </div>
+          {aboutHint && <p className="mt-2 text-sm text-slate-600">{aboutHint}</p>}
         </FieldGroup>
 
         <TextField
