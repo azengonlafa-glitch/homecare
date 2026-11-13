@@ -176,6 +176,19 @@ export const ReviewConsentPage: React.FC = () => {
             )}
           </div>
         )}
+        {!docOutdated && (
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="w-full text-base text-slate-700">อ่านเอกสารให้ความยินยอมและข้อกำหนดการใช้งานก่อนติ๊กยินยอม</p>
+            <Button variant="soft" size="sm" onClick={() => setDocOpen(true)}>
+              <FileText className="w-5 h-5" aria-hidden="true" />
+              อ่านเอกสารให้ความยินยอม
+            </Button>
+            <Link to="/terms" className={buttonClass('soft', 'sm')}>
+              <FileText className="w-5 h-5" aria-hidden="true" />
+              ข้อกำหนดการใช้งาน
+            </Link>
+          </div>
+        )}
         <CheckboxField id="rv-agree" boxed disabled={docOutdated} checked={agree} error={errors['rv-agree']} onChange={setAgree}>
           {CONSULT_MODE === 'mock'
             ? 'เข้าใจว่านี่เป็นโหมดทดสอบ ข้อมูลอยู่ในเครื่องนี้เท่านั้นและไม่ได้ส่งให้ใคร'
@@ -186,12 +199,17 @@ export const ReviewConsentPage: React.FC = () => {
             {submitError} ข้อมูลที่กรอกยังอยู่ ลองส่งใหม่ได้
           </p>
         )}
+        {!agree && (
+          <p id="rv-gate-hint" className="text-base text-slate-700">
+            ติ๊กช่องยินยอมด้านบนก่อน จึงจะกดเริ่มปรึกษาได้
+          </p>
+        )}
         <div className="flex flex-col-reverse sm:flex-row gap-3">
           <Button variant="neutral" className="flex-1" disabled={busy} onClick={() => navigate('/consult/checkin')}>
             <ArrowLeft className="w-5 h-5" aria-hidden="true" />
             แก้ไขคำตอบ
           </Button>
-          <Button className="flex-1" disabled={busy} onClick={() => void submit()}>
+          <Button className="flex-1" disabled={busy || !agree || docOutdated} aria-describedby={!agree ? 'rv-gate-hint' : undefined} onClick={() => void submit()}>
             {busy ? <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" /> : <Send className="w-5 h-5" aria-hidden="true" />}
             {busy ? 'กำลังส่ง...' : 'ยืนยันและเริ่มปรึกษา'}
           </Button>
