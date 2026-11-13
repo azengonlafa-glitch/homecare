@@ -84,6 +84,10 @@ interface MetricTile {
   points: TrendPoint[];
   /** ข้อความค่าล่าสุด (เช่น ความดันแสดง 125/80) */
   latestText?: string;
+  /** ข้อความค่าเฉลี่ย (เช่น ความดันแสดง 125/80) */
+  avgText?: string;
+  /** คำนำหน้าการเปลี่ยนแปลง (เช่น "ตัวบน") เมื่อกราฟใช้ค่าเดียวจากหลายค่า */
+  changePrefix?: string;
 }
 
 const fmt = (v: number, d: number) => v.toLocaleString('th-TH', { minimumFractionDigits: d, maximumFractionDigits: d });
@@ -100,7 +104,7 @@ const MetricCard: React.FC<{ tile: MetricTile; onOpen: () => void }> = ({ tile, 
       ? 'วัดครั้งเดียวในช่วงนี้'
       : s.direction === 'flat'
         ? 'เท่าเดิมจากต้นช่วง'
-        : `${s.direction === 'up' ? 'เพิ่มขึ้น' : 'ลดลง'} ${fmt(Math.abs(s.delta), tile.decimals)} ${tile.unit} จากต้นช่วง`;
+        : `${tile.changePrefix ? `${tile.changePrefix}` : ''}${s.direction === 'up' ? 'เพิ่มขึ้น' : 'ลดลง'} ${fmt(Math.abs(s.delta), tile.decimals)} ${tile.unit} จากต้นช่วง`;
 
   return (
     <li>
@@ -132,7 +136,7 @@ const MetricCard: React.FC<{ tile: MetricTile; onOpen: () => void }> = ({ tile, 
             {change}
           </span>
           <span className="text-slate-600">
-            เฉลี่ย {fmt(avg, tile.decimals)} · {s.count} ครั้ง
+            เฉลี่ย {tile.avgText ?? fmt(avg, tile.decimals)} · {s.count} ครั้ง
           </span>
         </span>
       </button>
@@ -249,9 +253,14 @@ export const ProgressOverview: React.FC<ProgressOverviewProps> = ({
   const maxSym = symptoms[0]?.count ?? 1;
 
   const sys = seriesOf(rs, (r) => (r.diastolic != null ? r.systolic : undefined));
+  const bpPairs = rs.filter((r) => r.systolic != null && r.diastolic != null);
+  const avgOf = (vals: number[]) => Math.round(vals.reduce((a, b) => a + b, 0) / vals.length);
+  const bpAvgText = bpPairs.length
+    ? `${avgOf(bpPairs.map((r) => r.systolic as number))}/${avgOf(bpPairs.map((r) => r.diastolic as number))}`
+    : undefined;
   const lastBp = [...rs].filter((r) => r.systolic != null && r.diastolic != null).sort((a, b) => b.at.localeCompare(a.at))[0];
   const allTiles: MetricTile[] = [
-    { key: 'bp', category: 'vitals', target: 'bp' as const, label: 'ความดัน (ตัวบน)', unit: 'mmHg', decimals: 0, color: '#15703A', points: sys, latestText: lastBp ? `${lastBp.systolic}/${lastBp.diastolic}` : undefined },
+    { key: 'bp', category: 'vitals', target: 'bp' as const, label: 'ความดัน', unit: 'mmHg', decimals: 0, color: '#15703A', points: sys, latestText: lastBp ? `${lastBp.systolic}/${lastBp.diastolic}` : undefined, avgText: bpAvgText, changePrefix: 'ตัวบน' },
     { key: 'glucose', category: 'sugar', target: 'glucose' as const, label: 'น้ำตาลในเลือด', unit: 'มก./ดล.', decimals: 0, color: '#E8913A', points: seriesOf(rs, (r) => r.glucose) },
     { key: 'weight', category: 'body', target: 'weight' as const, label: 'น้ำหนัก', unit: 'กก.', decimals: 1, color: '#1FA38A', points: seriesOf(rs, (r) => r.weightKg) },
     ...EXTRA_METRICS.map((m) => ({

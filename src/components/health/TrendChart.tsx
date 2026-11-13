@@ -44,7 +44,12 @@ export const TrendChart: React.FC<{
 
   const x = (t: number) => (tMax === tMin ? (L + W - R) / 2 : L + ((t - tMin) / (tMax - tMin)) * (W - L - R));
   const y = (v: number) => T + (1 - (v - vMin) / (vMax - vMin)) * (H - T - B);
-  const ticks = [vMin + (vMax - vMin) * 0.1, (vMin + vMax) / 2, vMax - (vMax - vMin) * 0.1];
+  // เส้นแกนที่ตัวเลขกลม (1, 2, 5 × 10ⁿ) อ่านง่ายกว่าตัวเลขที่ได้จากการแบ่งช่วงตรง ๆ
+  const rawStep = (vMax - vMin) / 4;
+  const mag = 10 ** Math.floor(Math.log10(rawStep));
+  const step = [1, 2, 5, 10].map((k) => k * mag).find((s) => s >= rawStep) ?? 10 * mag;
+  const ticks: number[] = [];
+  for (let v = Math.ceil(vMin / step) * step; v <= vMax + 1e-9; v += step) ticks.push(Number(v.toFixed(6)));
 
   return (
     <div>
