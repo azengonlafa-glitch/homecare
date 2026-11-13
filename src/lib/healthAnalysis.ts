@@ -1,8 +1,11 @@
 import type { OnboardingProfile } from './onboarding';
 
 /**
- * วิเคราะห์สุขภาพเบื้องต้นจากข้อมูลโปรไฟล์ เทียบกับเกณฑ์ทั่วไปของคนสุขภาพดี
- * (BMI ตามเกณฑ์เอเชีย-แปซิฟิก, ความดันและน้ำตาลตามเกณฑ์สากล) ไม่ใช่การวินิจฉัยโรค
+ * เทียบข้อมูลโปรไฟล์กับเกณฑ์ที่มีแหล่งอ้างอิง (ไม่ใช่การวินิจฉัยโรค) ที่มาทั้งหมด: docs/HEALTH_CRITERIA_AND_LEGAL.pdf (ต้นฉบับ .html)
+ * - BMI: WHO ภูมิภาคแปซิฟิกตะวันตก 2000 (เกณฑ์เอเชีย) ใช้กับอายุ 19 ปีขึ้นไป อายุน้อยกว่านี้ต้องใช้ BMI ตามอายุ (WHO 2007)
+ * - ความดัน: เกณฑ์วัดที่บ้าน Thai Hypertension Society 2022 (ตรงกับ classifyBp ใน memberDashboard.ts)
+ * - น้ำตาลตอนอดอาหาร: ADA Standards of Care 2025
+ * ไม่มีคะแนนรวม: ไม่มีมาตรฐานใดรองรับการรวมหลายค่าเป็นคะแนนเดียว
  */
 
 export type Tone = 'good' | 'warn' | 'bad';
@@ -45,13 +48,14 @@ export const SYSTOLIC_GAUGE: GaugeSpec = {
   title: 'ความดันตัวบน',
   unit: 'mmHg',
   min: 70,
-  max: 180,
+  max: 200,
   decimals: 0,
   zones: [
     { from: 70, to: 90, label: 'ต่ำ', tone: 'warn' },
-    { from: 90, to: 120, label: 'ปกติ', tone: 'good' },
-    { from: 120, to: 140, label: 'เริ่มสูง', tone: 'warn' },
-    { from: 140, to: 180, label: 'สูง', tone: 'bad' },
+    { from: 90, to: 125, label: 'ปกติ', tone: 'good' },
+    { from: 125, to: 135, label: 'สูงกว่าปกติเล็กน้อย', tone: 'warn' },
+    { from: 135, to: 180, label: 'สูง', tone: 'bad' },
+    { from: 180, to: 200, label: 'สูงมาก', tone: 'bad' },
   ],
 };
 
@@ -60,13 +64,14 @@ export const DIASTOLIC_GAUGE: GaugeSpec = {
   title: 'ความดันตัวล่าง',
   unit: 'mmHg',
   min: 40,
-  max: 110,
+  max: 120,
   decimals: 0,
   zones: [
     { from: 40, to: 60, label: 'ต่ำ', tone: 'warn' },
-    { from: 60, to: 80, label: 'ปกติ', tone: 'good' },
-    { from: 80, to: 90, label: 'เริ่มสูง', tone: 'warn' },
-    { from: 90, to: 110, label: 'สูง', tone: 'bad' },
+    { from: 60, to: 75, label: 'ปกติ', tone: 'good' },
+    { from: 75, to: 85, label: 'สูงกว่าปกติเล็กน้อย', tone: 'warn' },
+    { from: 85, to: 110, label: 'สูง', tone: 'bad' },
+    { from: 110, to: 120, label: 'สูงมาก', tone: 'bad' },
   ],
 };
 
@@ -80,8 +85,8 @@ export const GLUCOSE_GAUGE: GaugeSpec = {
   zones: [
     { from: 50, to: 70, label: 'ต่ำ', tone: 'warn' },
     { from: 70, to: 100, label: 'ปกติ', tone: 'good' },
-    { from: 100, to: 126, label: 'เสี่ยงเบาหวาน', tone: 'warn' },
-    { from: 126, to: 180, label: 'สูง', tone: 'bad' },
+    { from: 100, to: 126, label: 'สูงกว่าปกติ', tone: 'warn' },
+    { from: 126, to: 180, label: 'สูง ควรตรวจยืนยัน', tone: 'bad' },
   ],
 };
 
@@ -122,117 +127,108 @@ export const vitalsOf = (p: OnboardingProfile) => ({
   glucose: toNumber(p.fastingGlucose),
 });
 
-// ---------- คะแนนรายด้าน (0–100, 100 = เหมือนคนสุขภาพดี) ----------
-
-const bmiScore = (bmi: number) => {
-  if (bmi < 17) return 40;
-  if (bmi < 18.5) return 65;
-  if (bmi < 23) return 100;
-  if (bmi < 25) return 75;
-  if (bmi < 30) return 50;
-  return 25;
+/** BMI แบบผู้ใหญ่ใช้กับอายุ 19 ปีขึ้นไป (WHO growth reference 2007 ครอบคลุม 5–19 ปี) */
+export const ADULT_BMI_AGE = 19;
+export const isAdultForBmi = (p: OnboardingProfile): boolean => {
+  const age = ageOf(p);
+  return age === null || age >= ADULT_BMI_AGE;
 };
 
-const bpScore = (sys: number | null, dia: number | null): number | null => {
-  const parts: number[] = [];
-  if (sys !== null) parts.push(sys >= 160 ? 20 : sys >= 140 ? 45 : sys >= 120 ? 70 : sys >= 90 ? 100 : 65);
-  if (dia !== null) parts.push(dia >= 100 ? 20 : dia >= 90 ? 45 : dia >= 80 ? 70 : dia >= 60 ? 100 : 65);
-  return parts.length ? Math.min(...parts) : null;
-};
+const isDiabetic = (p: OnboardingProfile) => p.conditions.some((c) => c.includes('เบาหวาน'));
 
-const glucoseScore = (g: number) => (g >= 126 ? 25 : g >= 100 ? 60 : g >= 70 ? 100 : 60);
+const worstZone = (zones: (Zone | null)[]): Zone | null =>
+  zones.filter((z): z is Zone => z !== null).sort((x, y) => rank(y.tone) - rank(x.tone))[0] ?? null;
 
-const exerciseScore = (v: string): number | null =>
-  v.startsWith('3') ? 100 : v.startsWith('1') ? 65 : v ? 30 : null;
+// ---------- รายการเทียบกับเกณฑ์ (แทนคะแนนรวมเดิมที่ไม่มีมาตรฐานรองรับ) ----------
 
-const smokingScore = (v: string): number | null =>
-  v === 'ไม่สูบ' ? 100 : v === 'เคยสูบ เลิกแล้ว' ? 70 : v === 'สูบอยู่' ? 20 : null;
-
-const alcoholScore = (v: string): number | null =>
-  v === 'ไม่ดื่ม' ? 100 : v === 'นาน ๆ ครั้ง' ? 80 : v === 'ดื่มเป็นประจำ' ? 35 : null;
-
-const conditionScore = (p: OnboardingProfile): number | null => {
-  if (p.noConditions) return 100;
-  if (p.conditions.length === 0) return null;
-  return Math.max(25, 100 - 15 * p.conditions.length);
-};
-
-export interface AxisScore {
+export interface CheckItem {
   key: string;
   label: string;
-  /** null = ยังไม่มีข้อมูล */
-  score: number | null;
-  detail: string;
+  /** ค่าของผู้ใช้ หรือ null = ยังไม่มีข้อมูล */
+  value: string | null;
+  /** สถานะเทียบเกณฑ์ (null = ไม่มีเกณฑ์ให้ตัดสิน แสดงแค่คำแนะนำ) */
+  status: string | null;
+  tone: Tone | null;
+  /** เกณฑ์และที่มาแบบสั้น */
+  standard: string;
 }
 
-export function axisScores(p: OnboardingProfile): AxisScore[] {
+export function checklist(p: OnboardingProfile): CheckItem[] {
   const bmi = bmiOf(p);
+  const adult = isAdultForBmi(p);
   const { systolic, diastolic, glucose } = vitalsOf(p);
-  const smoke = smokingScore(p.smoking);
-  const alcohol = alcoholScore(p.alcohol);
-  const habit = [smoke, alcohol].filter((v): v is number => v !== null);
+  const bpZone = worstZone([
+    systolic !== null ? zoneOf(SYSTOLIC_GAUGE, systolic) : null,
+    diastolic !== null ? zoneOf(DIASTOLIC_GAUGE, diastolic) : null,
+  ]);
+  const diabetic = isDiabetic(p);
 
+  let glu: { status: string; tone: Tone } | null = null;
+  if (glucose !== null) {
+    if (glucose < 54) glu = { status: 'ต่ำมาก', tone: 'bad' };
+    else if (glucose < 70) glu = { status: 'ต่ำ', tone: 'warn' };
+    else if (diabetic) glu = glucose > 130 ? { status: 'สูงกว่าเป้าทั่วไป', tone: 'warn' } : { status: 'ตามเป้าทั่วไป', tone: 'good' };
+    else {
+      const z = zoneOf(GLUCOSE_GAUGE, glucose);
+      glu = { status: z.label, tone: z.tone };
+    }
+  }
+
+  const drinks = !!p.alcohol && p.alcohol !== 'ไม่ดื่ม';
+  const lowExercise = p.exercise.startsWith('แทบไม่');
   return [
     {
       key: 'weight',
-      label: 'น้ำหนัก',
-      score: bmi === null ? null : bmiScore(bmi),
-      detail: bmi === null ? 'ใส่ส่วนสูงและน้ำหนัก' : `BMI ${bmi} · ${zoneOf(BMI_GAUGE, bmi).label}`,
+      label: 'น้ำหนัก (BMI)',
+      value: bmi === null ? null : `BMI ${bmi}`,
+      status: bmi === null ? null : adult ? zoneOf(BMI_GAUGE, bmi).label : 'อายุต่ำกว่า 19 ปี ต้องใช้เกณฑ์ตามอายุ',
+      tone: bmi === null || !adult ? null : zoneOf(BMI_GAUGE, bmi).tone,
+      standard: 'เกณฑ์เอเชีย-แปซิฟิก (WHO 2000) สมส่วน 18.5–22.9',
     },
     {
       key: 'bp',
       label: 'ความดัน',
-      score: bpScore(systolic, diastolic),
-      detail:
-        systolic === null && diastolic === null
-          ? 'ใส่ค่าความดันล่าสุด'
-          : `${systolic ?? '–'}/${diastolic ?? '–'} mmHg`,
+      value: systolic === null && diastolic === null ? null : `${systolic ?? '–'}/${diastolic ?? '–'} mmHg`,
+      status: bpZone?.label ?? null,
+      tone: bpZone?.tone ?? null,
+      standard: 'วัดที่บ้าน (สมาคมความดันโลหิตสูงแห่งประเทศไทย 2022) ปกติต่ำกว่า 125/75 ดูจากค่าเฉลี่ย 7 วัน',
     },
     {
       key: 'glucose',
-      label: 'น้ำตาล',
-      score: glucose === null ? null : glucoseScore(glucose),
-      detail: glucose === null ? 'ใส่ค่าน้ำตาลตอนอดอาหาร' : `${glucose} มก./ดล. · ${zoneOf(GLUCOSE_GAUGE, glucose).label}`,
+      label: 'น้ำตาลตอนอดอาหาร',
+      value: glucose === null ? null : `${glucose} มก./ดล.`,
+      status: glu?.status ?? null,
+      tone: glu?.tone ?? null,
+      standard: diabetic
+        ? 'ADA 2025 เป้าทั่วไปก่อนอาหาร 80–130 (แพทย์อาจตั้งเป้าต่างไป)'
+        : 'ADA 2025 ปกติต่ำกว่า 100 · ค่าจากปลายนิ้วต้องตรวจยืนยันที่สถานพยาบาล',
     },
     {
       key: 'exercise',
       label: 'ออกกำลังกาย',
-      score: exerciseScore(p.exercise),
-      detail: p.exercise || 'ยังไม่ได้เลือก',
+      value: p.exercise || null,
+      status: lowExercise ? 'น้อยกว่าที่แนะนำ' : null,
+      tone: lowExercise ? 'warn' : null,
+      standard: 'WHO 2020 แนะนำระดับปานกลาง 150–300 นาทีต่อสัปดาห์',
     },
     {
-      key: 'habit',
-      label: 'บุหรี่ / แอลกอฮอล์',
-      score: habit.length ? Math.round(habit.reduce((a, b) => a + b, 0) / habit.length) : null,
-      detail: [p.smoking, p.alcohol].filter(Boolean).join(' · ') || 'ยังไม่ได้เลือก',
+      key: 'smoking',
+      label: 'บุหรี่',
+      value: p.smoking || null,
+      status: p.smoking === 'สูบอยู่' ? 'ควรเลิก' : null,
+      tone: p.smoking === 'สูบอยู่' ? 'bad' : p.smoking ? 'good' : null,
+      standard: 'ปรึกษาเลิกบุหรี่ฟรี สายด่วน 1600',
     },
     {
-      key: 'conditions',
-      label: 'โรคประจำตัว',
-      score: conditionScore(p),
-      detail: p.noConditions
-        ? 'ไม่มีโรคประจำตัว'
-        : p.conditions.length
-          ? `${p.conditions.length} โรค`
-          : 'ยังไม่ได้ระบุ',
+      key: 'alcohol',
+      label: 'แอลกอฮอล์',
+      value: p.alcohol || null,
+      status: drinks ? 'ไม่มีปริมาณที่ปลอดภัย' : null,
+      tone: drinks ? 'warn' : p.alcohol ? 'good' : null,
+      standard: 'WHO 2023 ไม่มีปริมาณการดื่มที่ปลอดภัยต่อสุขภาพ',
     },
   ];
 }
-
-export const overallScore = (axes: AxisScore[]): number | null => {
-  const vals = axes.map((a) => a.score).filter((v): v is number => v !== null);
-  if (vals.length < 3) return null;
-  return Math.round(vals.reduce((a, b) => a + b, 0) / vals.length);
-};
-
-export const scoreLabel = (score: number): { label: string; tone: Tone } =>
-  score >= 85
-    ? { label: 'ดีมาก', tone: 'good' }
-    : score >= 70
-      ? { label: 'ดี', tone: 'good' }
-      : score >= 50
-        ? { label: 'ควรดูแลเพิ่ม', tone: 'warn' }
-        : { label: 'ควรปรึกษาแพทย์', tone: 'bad' };
 
 // ---------- ข้อสังเกต ----------
 
@@ -248,7 +244,7 @@ export function buildInsights(p: OnboardingProfile): Insight[] {
   const weight = toNumber(p.weightKg);
   const { systolic, diastolic, glucose } = vitalsOf(p);
 
-  if (bmi !== null) {
+  if (bmi !== null && isAdultForBmi(p)) {
     const zone = zoneOf(BMI_GAUGE, bmi);
     if (zone.tone === 'good') {
       out.push({ tone: 'good', text: `BMI ${bmi} อยู่ในช่วงสมส่วน รักษาน้ำหนักนี้ไว้` });
@@ -272,21 +268,23 @@ export function buildInsights(p: OnboardingProfile): Insight[] {
       text:
         worst.tone === 'good'
           ? 'ความดันโลหิตอยู่ในเกณฑ์ปกติ'
-          : `ความดันโลหิตอยู่ในช่วง “${worst.label}” ควรวัดซ้ำสม่ำเสมอ และปรึกษาแพทย์ถ้าสูงต่อเนื่อง`,
+          : worst.label === 'ต่ำ'
+            ? 'ความดันค่อนข้างต่ำ ถ้ามีอาการหน้ามืด เวียนหัว หรือเป็นลมบ่อย ควรปรึกษาแพทย์'
+            : `ความดันอยู่ในช่วง “${worst.label}” ค่าครั้งเดียวยังสรุปไม่ได้ แนวทางให้วัดเช้าและก่อนนอน 7 วันแล้วดูค่าเฉลี่ย ถ้าค่าเฉลี่ยสูงควรปรึกษาแพทย์`,
     });
   }
 
   if (glucose !== null) {
     const zone = zoneOf(GLUCOSE_GAUGE, glucose);
-    const diabetic = p.conditions.some((c) => c.includes('เบาหวาน'));
+    const diabetic = isDiabetic(p);
     out.push({
       tone: zone.tone,
       text:
         zone.tone === 'good'
           ? 'น้ำตาลตอนอดอาหารอยู่ในเกณฑ์ปกติ'
           : diabetic
-            ? `น้ำตาลตอนอดอาหาร ${glucose} มก./ดล. เกณฑ์นี้ใช้กับคนทั่วไป ผู้ที่เป็นเบาหวานให้ใช้เป้าหมายที่แพทย์กำหนด`
-            : `น้ำตาลตอนอดอาหารอยู่ในช่วง “${zone.label}” ควรตรวจซ้ำและปรึกษาแพทย์`,
+            ? `น้ำตาลตอนอดอาหาร ${glucose} มก./ดล. เป้าทั่วไปของผู้เป็นเบาหวานคือ 80–130 แต่ให้ใช้เป้าที่แพทย์กำหนด`
+            : `น้ำตาลตอนอดอาหารอยู่ในช่วง “${zone.label}” ค่าจากเครื่องเจาะปลายนิ้วใช้วินิจฉัยไม่ได้ ควรตรวจยืนยันที่สถานพยาบาล`,
     });
   }
 
@@ -296,8 +294,8 @@ export function buildInsights(p: OnboardingProfile): Insight[] {
       text: 'การสูบบุหรี่เพิ่มความเสี่ยงโรคหัวใจ หลอดเลือด และปอด ขอคำปรึกษาเลิกบุหรี่ได้ที่สายด่วน 1600',
     });
   }
-  if (p.alcohol === 'ดื่มเป็นประจำ') {
-    out.push({ tone: 'warn', text: 'การดื่มแอลกอฮอล์เป็นประจำกระทบตับและความดัน ลองลดปริมาณลง' });
+  if (p.alcohol && p.alcohol !== 'ไม่ดื่ม') {
+    out.push({ tone: 'warn', text: 'องค์การอนามัยโลกระบุว่าไม่มีปริมาณการดื่มแอลกอฮอล์ที่ปลอดภัยต่อสุขภาพ ยิ่งดื่มน้อยยิ่งดี' });
   }
   if (p.exercise.startsWith('แทบไม่')) {
     out.push({
@@ -305,16 +303,16 @@ export function buildInsights(p: OnboardingProfile): Insight[] {
       text: 'องค์การอนามัยโลกแนะนำออกกำลังกายระดับปานกลางอย่างน้อย 150 นาทีต่อสัปดาห์ เริ่มจากเดินวันละ 15–20 นาทีก็ช่วยได้',
     });
   } else if (p.exercise.startsWith('3')) {
-    out.push({ tone: 'good', text: 'ออกกำลังกายสม่ำเสมอ เป็นนิสัยที่ดีต่อหัวใจและน้ำหนัก' });
+    out.push({ tone: 'good', text: 'ออกกำลังกายสม่ำเสมอ องค์การอนามัยโลกแนะนำรวมให้ได้ 150–300 นาทีต่อสัปดาห์' });
   }
 
   // โรคในครอบครัวที่ควรตรวจเพิ่ม
   const family = p.familyHistory.join(' ');
   if (family.includes('เบาหวาน') && glucose === null) {
-    out.push({ tone: 'warn', text: 'ครอบครัวมีประวัติเบาหวาน ควรตรวจน้ำตาลในเลือดปีละครั้ง แล้วบันทึกค่าไว้ที่นี่' });
+    out.push({ tone: 'warn', text: 'ครอบครัวมีประวัติเบาหวาน ถ้าเคยตรวจน้ำตาล บันทึกค่าไว้ที่นี่ และปรึกษาแพทย์เรื่องการตรวจคัดกรอง' });
   }
   if ((family.includes('ความดัน') || family.includes('หัวใจ')) && systolic === null && diastolic === null) {
-    out.push({ tone: 'warn', text: 'ครอบครัวมีประวัติโรคความดันหรือหัวใจ ควรวัดความดันสม่ำเสมอ แล้วบันทึกค่าไว้ที่นี่' });
+    out.push({ tone: 'warn', text: 'ครอบครัวมีประวัติโรคความดันหรือหัวใจ ถ้าเคยวัดความดัน บันทึกค่าไว้ที่นี่ และปรึกษาแพทย์เรื่องการตรวจคัดกรอง' });
   }
 
   return out;
