@@ -137,11 +137,15 @@ drop policy if exists user_docs_all on public.user_docs;
 create policy user_docs_all on public.user_docs for all
   using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
 
--- กันผู้ใช้เปลี่ยนบทบาทของตัวเองผ่านการอัปเดตตรง ๆ
+-- กันผู้ใช้เปลี่ยนบทบาท/ย้ายบ้านของตัวเองผ่านการอัปเดตตรง ๆ (ผ่าน API = บทบาท authenticated/anon)
+-- ฟังก์ชันของระบบ (set_member_role, transfer_ownership) ทำงานในบทบาทเจ้าของฟังก์ชัน จึงเปลี่ยนได้ (ดู fix_member_roles.sql)
 create or replace function public.guard_member_update()
 returns trigger language plpgsql set search_path = public as $$
 begin
-  if new.role is distinct from old.role or new.home_id is distinct from old.home_id or new.user_id is distinct from old.user_id then
+  if current_user in ('authenticated', 'anon')
+     and (new.role is distinct from old.role
+          or new.home_id is distinct from old.home_id
+          or new.user_id is distinct from old.user_id) then
     raise exception 'forbidden';
   end if;
   return new;
