@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { CalendarClock, ChevronDown, ChevronUp, History, Pill, ShieldOff, Trash2 } from 'lucide-react';
+import { CalendarClock, ChevronDown, ChevronUp, History, MessageCircle, Pill, ShieldOff, Trash2 } from 'lucide-react';
 import { ErrorCard, LoadingCard, StatusBadge } from '../../components/consult/ConsultUI';
 import { NoteSummary } from '../../components/consult/NoteSummary';
 import { PushCard } from '../../components/consult/PushCard';
@@ -88,28 +88,38 @@ const Entry: React.FC<{ bundle: SessionBundle; onChanged: () => void }> = ({ bun
 
   return (
     <li className="relative pl-8 sm:pl-10">
-      <span className="absolute left-0 top-7 flex h-6 w-6 items-center justify-center rounded-full bg-purple-700 ring-4 ring-purple-100" aria-hidden="true" />
+      <span className={`absolute left-0 top-7 flex h-6 w-6 items-center justify-center rounded-full ring-4 ${closed ? 'bg-purple-700 ring-purple-100' : 'bg-amber-400 ring-amber-100'}`} aria-hidden="true" />
       <Card className="p-4 sm:p-5 space-y-3">
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-slate-600">
+            <h2 className="text-xl font-bold text-slate-900 break-words">{session.topic}</h2>
+            <p className="mt-0.5 text-sm font-semibold text-slate-600">
               {new Date(session.createdAt).toLocaleString('th-TH', { dateStyle: 'long', timeStyle: 'short' })}
-            </p>
-            <h2 className="text-lg font-bold text-slate-900 break-words">{session.topic}</h2>
-            <p className="text-base text-slate-700 break-words">
-              {provider?.displayName ?? 'ร้านยาหรือคลินิก'}
             </p>
           </div>
           <StatusBadge status={session.status} />
         </div>
 
-        {checkin && (
-          <p className="text-base text-slate-800 break-words">
-            <span className="font-semibold">อาการขณะนั้น: </span>
-            {symptomLabels(checkin).join(', ') || 'ไม่ได้ระบุ'}
-            {checkin.severity !== null && ` · ${checkin.severity}/10`}
-          </p>
-        )}
+        <dl className="space-y-1.5 rounded-2xl bg-slate-50/70 p-3 text-base text-slate-800">
+          <div className="flex gap-2">
+            <dt className="w-24 shrink-0 font-semibold text-slate-600">ปรึกษากับ</dt>
+            <dd className="min-w-0 break-words">{provider?.displayName ?? 'ร้านยาหรือคลินิก'}</dd>
+          </div>
+          {checkin && (
+            <>
+              <div className="flex gap-2">
+                <dt className="w-24 shrink-0 font-semibold text-slate-600">อาการที่แจ้ง</dt>
+                <dd className="min-w-0 break-words">{symptomLabels(checkin).join(', ') || 'ไม่ได้ระบุ'}</dd>
+              </div>
+              {checkin.severity !== null && (
+                <div className="flex gap-2">
+                  <dt className="w-24 shrink-0 font-semibold text-slate-600">ความรุนแรง</dt>
+                  <dd>{checkin.severity} จาก 10</dd>
+                </div>
+              )}
+            </>
+          )}
+        </dl>
 
         {note && <NoteSummary note={note} />}
 
@@ -144,8 +154,9 @@ const Entry: React.FC<{ bundle: SessionBundle; onChanged: () => void }> = ({ bun
         })}
 
         <div className="flex flex-wrap gap-2">
-          <Link to={`/consult/room/${session.id}`} className={buttonClass('soft', 'sm')}>
-            เปิดห้องสนทนา
+          <Link to={`/consult/room/${session.id}`} className={buttonClass('primary', 'sm')}>
+            <MessageCircle className="w-5 h-5" aria-hidden="true" />
+            {closed ? 'ดูข้อความสนทนา' : 'เข้าห้องสนทนา'}
           </Link>
           {note?.medicationAdvice && (
             <Link to="/meds" className={buttonClass('neutral', 'sm')}>
@@ -155,7 +166,7 @@ const Entry: React.FC<{ bundle: SessionBundle; onChanged: () => void }> = ({ bun
           )}
           <Button variant="neutral" size="sm" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
             {open ? <ChevronUp className="w-5 h-5" aria-hidden="true" /> : <ChevronDown className="w-5 h-5" aria-hidden="true" />}
-            ความยินยอมและการเข้าถึง
+            ใครดูข้อมูลของฉันได้บ้าง
           </Button>
         </div>
 

@@ -25,6 +25,7 @@ const RemindersSettingsPage = lazyNamed(() => import('./pages/settings/Reminders
 const FontSizeSettingsPage = lazyNamed(() => import('./pages/settings/FontSizeSettingsPage'), 'FontSizeSettingsPage');
 const DataSettingsPage = lazyNamed(() => import('./pages/settings/DataSettingsPage'), 'DataSettingsPage');
 const PrivacyPolicyPage = lazyNamed(() => import('./pages/PrivacyPolicyPage'), 'PrivacyPolicyPage');
+const TermsPage = lazyNamed(() => import('./pages/TermsPage'), 'TermsPage');
 
 const ConsultShell = lazyNamed(() => import('./pages/consult/ConsultShell'), 'ConsultShell');
 const ConsultHomePage = lazyNamed(() => import('./pages/consult/ConsultHomePage'), 'ConsultHomePage');
@@ -76,6 +77,8 @@ export const App: React.FC = () => {
         <Route path="/signup" element={<SignUpPage />} />
         {/* นโยบายความเป็นส่วนตัว: อ่านได้โดยไม่ต้องล็อกอิน */}
         <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+        {/* ข้อกำหนดการใช้งาน: อ่านได้โดยไม่ต้องล็อกอิน */}
+        <Route path="/terms" element={<TermsPage />} />
 
         {/* หลังเข้าสู่ระบบ: เข้าร่วมบ้านด้วยรหัสเชิญ หรือสร้างบ้านใหม่ */}
         <Route path="/setup" element={<RequireAuth><HomeSetupPage /></RequireAuth>} />

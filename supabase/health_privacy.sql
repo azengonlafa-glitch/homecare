@@ -66,12 +66,12 @@ begin
 end;
 $$;
 
-revoke execute on function public.member_sharing(uuid, text) from public, anon;
-revoke execute on function public.member_access_granted(uuid, text, text) from public, anon;
+-- member_sharing / member_access_granted ใช้ภายในฟังก์ชันตรวจสิทธิ์เท่านั้น ผู้ใช้เรียกตรงไม่ได้
+-- (ถ้าเรียกได้ คนนอกบ้านอ่านค่าความเป็นส่วนตัวของสมาชิกคนอื่นได้ เพราะฟังก์ชันนี้ไม่ตรวจว่าเป็นสมาชิกบ้าน)
+revoke execute on function public.member_sharing(uuid, text) from public, anon, authenticated;
+revoke execute on function public.member_access_granted(uuid, text, text) from public, anon, authenticated;
 revoke execute on function public.can_edit_member(uuid, text) from public, anon;
 revoke execute on function public.can_view_member(uuid, text) from public, anon;
-grant execute on function public.member_sharing(uuid, text) to authenticated;
-grant execute on function public.member_access_granted(uuid, text, text) to authenticated;
 grant execute on function public.can_edit_member(uuid, text) to authenticated;
 grant execute on function public.can_view_member(uuid, text) to authenticated;
 

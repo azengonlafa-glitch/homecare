@@ -19,7 +19,7 @@ export const Sidebar: React.FC = () => {
   const badges = useNavBadges();
 
   return (
-    <aside className="sidebar-paper hidden lg:flex lg:w-64 2xl:w-72 shrink-0 flex-col sticky top-0 h-dvh text-slate-900 rounded-br-[2.5rem] overflow-hidden">
+    <aside className="sidebar-paper hidden lg:flex lg:w-64 2xl:w-72 shrink-0 flex-col sticky top-0 h-dvh text-slate-900 rounded-r-[2.5rem] overflow-hidden">
       <div className="relative shrink-0 flex items-center">
         <HomeHeader variant="sidebar" />
       </div>

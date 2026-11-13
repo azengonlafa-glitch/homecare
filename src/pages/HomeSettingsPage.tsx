@@ -798,12 +798,12 @@ export const HomeSettingsPage: React.FC = () => {
                       src={member.id === CURRENT_MEMBER_ID ? settings.profile.photo : undefined}
                       className="w-12 h-12 text-xl"
                     />
-                    <div className="min-w-0">
-                      <p className="text-lg font-bold text-slate-900 break-words">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-lg font-bold text-slate-900 break-words [overflow-wrap:anywhere] break-all">
                         {member.name}
                         {member.id === CURRENT_MEMBER_ID && <span className="font-normal text-slate-600"> (คุณ)</span>}
                       </p>
-                      <p className="text-base text-slate-600 break-words">{member.relation}</p>
+                      <p className="text-base text-slate-600 break-words [overflow-wrap:anywhere]">{member.relation}</p>
                     </div>
                   </div>
 

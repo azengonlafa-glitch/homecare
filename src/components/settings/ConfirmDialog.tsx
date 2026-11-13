@@ -54,7 +54,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   >
     <div className="flex items-center gap-4 py-5">
       <Dino pose={tone === 'danger' ? 'worried' : 'wink'} className="h-20 w-24 shrink-0" />
-      <p className="min-w-0 text-base sm:text-lg leading-relaxed text-slate-700 break-words">{message}</p>
+      <p className="min-w-0 text-base sm:text-lg leading-relaxed text-slate-700 break-words [overflow-wrap:anywhere] break-all">{message}</p>
     </div>
   </Modal>
 );

@@ -145,7 +145,7 @@ export const Modal: React.FC<ModalProps> = ({
         <span aria-hidden="true" className="sm:hidden mx-auto mt-2.5 h-1.5 w-12 shrink-0 rounded-full bg-slate-300" />
         <div className="px-5 sm:px-8 pt-3 sm:pt-7 pb-4 shrink-0">
           <div className="flex items-start justify-between gap-4">
-            <h2 id={titleId} className="text-xl sm:text-2xl font-bold text-slate-900 break-words min-w-0">
+            <h2 id={titleId} className="text-xl sm:text-2xl font-bold text-slate-900 break-words [overflow-wrap:anywhere] break-all min-w-0">
               {title}
             </h2>
             <button

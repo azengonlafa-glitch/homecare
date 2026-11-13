@@ -32,7 +32,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({ variant }) => {
         'relative flex items-center gap-3 min-w-0 overflow-hidden',
         isSidebar ? 'w-full px-4 lg:px-6' : 'rounded-2xl pr-2 pl-1 py-1.5 max-w-full gap-2',
         // แบนเนอร์เมนูข้าง: เป็นการ์ดมุมโค้งเว้นขอบ 12px ให้อยู่ในเส้นประของเมนู ไม่ให้เส้นประพาดผ่านภาพและขอบล่างไม่ตัดตรง
-        isSidebar ? (banner ? 'h-28 items-end pb-3.5 mt-3 ml-0 w-[calc(100%-0.75rem)] rounded-r-3xl rounded-l-none' : 'h-20') : banner ? 'h-14' : ''
+        isSidebar ? (banner ? 'h-28 items-end pb-3.5 mt-3 ml-0 w-[calc(100%-0.75rem)] rounded-r-[1.75rem] rounded-l-none' : 'h-20') : banner ? 'h-14' : ''
       )}
     >
       {banner && (

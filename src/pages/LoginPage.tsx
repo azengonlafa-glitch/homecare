@@ -291,7 +291,17 @@ export const LoginPage: React.FC<LoginPageProps> = ({ defaultTab }) => {
               className="h-6 w-6 shrink-0 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
             />
             <span className="text-sm text-slate-700 font-medium leading-relaxed">
-              ยอมรับข้อกำหนดการใช้งานและ{' '}
+              ยอมรับ{' '}
+              <a
+                href="/terms"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="font-bold text-emerald-800 underline underline-offset-2"
+              >
+                ข้อกำหนดการใช้งาน
+              </a>{' '}
+              และ{' '}
               <a
                 href="/privacy-policy"
                 target="_blank"

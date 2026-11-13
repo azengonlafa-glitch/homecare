@@ -5,7 +5,6 @@ import { AlertTriangle, BarChart3, BellRing, ClipboardCheck, Pill, Plus } from '
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { PageHeader } from '../components/ui/PageHeader';
-import { ConsultEntryCard } from '../components/consult/ConsultEntryCard';
 import { PushPromptModal } from '../components/consult/PushPromptModal';
 import { useToast } from '../components/ui/Toast';
 import { ConfirmDialog } from '../components/settings/ConfirmDialog';
@@ -295,9 +294,6 @@ export const MedsPage: React.FC = () => {
           </div>
         </>
       )}
-
-      {/* ทางเข้าปรึกษาเภสัชกร: ไว้ท้ายหน้า (เดิมอยู่บนสุด ดันงานหลักลงล่าง) */}
-      <ConsultEntryCard />
 
       {/* ปุ่มเพิ่มยาเข้าตู้ยา แยกจากปุ่ม "เพิ่มยา / การดูแล" ด้านบนให้ไม่สับสน */}
       {hasMeds && tab === 'cabinet' && form === null && (

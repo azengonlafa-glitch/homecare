@@ -42,6 +42,12 @@ export const PrivacyPolicyPage: React.FC = () => {
           <h1 className="sr-only">นโยบายความเป็นส่วนตัว</h1>
           <p className="text-sm font-semibold text-slate-600">นโยบายความเป็นส่วนตัว · เวอร์ชัน {CONSENT_VERSION}</p>
           <ConsentArticle showClosing={false} />
+          <p className="mb-2 text-base text-slate-700">
+            กติกาการใช้แอปอยู่ที่{' '}
+            <Link to="/terms" className="font-bold text-purple-800 underline underline-offset-2">
+              ข้อกำหนดการใช้งาน
+            </Link>
+          </p>
           <p className="text-base text-slate-700">
             ต้องการใช้สิทธิของคุณ?{' '}
             <Link to="/settings/data" className="font-bold text-purple-800 underline underline-offset-2">

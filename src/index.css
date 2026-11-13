@@ -759,8 +759,8 @@
   left: -4px;
   right: 8px;
   border: 2px dashed var(--accent);
-  /* ด้านบนชิดขอบจอ จึงโค้งเฉพาะมุมล่างขวา ไม่ให้มุมบนขวาเว้าเห็นพื้นหลังเป็นรอยตัดกับแถบบน */
-  border-radius: 0 0 calc(2.5rem - 8px) 0;
+  /* โค้งทั้งมุมบนและล่างขวาให้เท่ากับมุมของตัวเมนู ส่วนด้านซ้ายชิดขอบจอจึงไม่โค้ง */
+  border-radius: 0 calc(2.5rem - 8px) calc(2.5rem - 8px) 0;
   opacity: 0.26;
   pointer-events: none;
 }

@@ -165,7 +165,7 @@ function memberMedFromForm(id: string, data: MedFormData): MemberMed {
   };
 }
 
-const roleBadge = 'inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-sm font-bold text-slate-700';
+const roleBadge = 'inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-0.5 sm:px-3 sm:py-1 text-xs sm:text-sm font-bold text-slate-700 shrink-0';
 
 type DashboardTab = 'overview' | 'meds' | 'history';
 type HistoryFilter = 'all' | 'symptoms' | 'bp' | 'glucose' | 'weight' | 'other' | 'meds' | 'appointments';
@@ -888,18 +888,18 @@ export const MemberDetailPage: React.FC = () => {
       {/* ==================== 1. ข้อมูลพื้นฐานของสมาชิก (Basic Profile Header) ==================== */}
       <Card className="p-4 sm:p-5 shadow-xs space-y-4">
         <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-          <div className="flex items-start gap-3.5 min-w-0">
+          <div className="flex items-start gap-2.5 sm:gap-3.5 min-w-0 w-full flex-1">
             <Link
               to="/members"
               title="กลับไปหน้ารายชื่อสมาชิก"
-              className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-purple-50 text-purple-700 hover:bg-purple-100 transition-colors mt-0.5"
+              className="inline-flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-xl bg-purple-50 text-purple-700 hover:bg-purple-100 transition-colors mt-0.5"
             >
-              <ChevronLeft className="w-6 h-6" aria-hidden="true" />
+              <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" aria-hidden="true" />
             </Link>
-            <Avatar src={photo} name={member.name} className="h-16 w-16 sm:h-20 sm:w-20 text-2xl shadow-xs shrink-0" />
+            <Avatar src={photo} name={member.name} className="h-14 w-14 sm:h-20 sm:w-20 text-xl sm:text-2xl shadow-xs shrink-0" />
             <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight break-words">
+              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 min-w-0">
+                <h1 className="min-w-0 max-w-full text-lg sm:text-2xl font-extrabold text-slate-900 tracking-tight break-words [overflow-wrap:anywhere] break-all">
                   {member.name}
                 </h1>
                 <span className={roleBadge}>
@@ -909,12 +909,12 @@ export const MemberDetailPage: React.FC = () => {
                 {viewable && todayMood && (
                   <span
                     className={cn(
-                      'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm font-bold',
+                      'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 sm:px-3 sm:py-1 text-xs sm:text-sm font-bold max-w-full',
                       todayMood.toneBadge
                     )}
                   >
-                    <MoodDino mood={todayMood.main} className="h-7 w-7 -my-1 shrink-0" />
-                    <span>
+                    <MoodDino mood={todayMood.main} className="h-6 w-6 sm:h-7 sm:w-7 -my-1 shrink-0" />
+                    <span className="truncate">
                       อารมณ์วันนี้: {todayMood.label}
                       {todayMood.detail ? ` (${todayMood.detail})` : ''}
                     </span>
@@ -923,7 +923,7 @@ export const MemberDetailPage: React.FC = () => {
               </div>
 
               {/* อายุ วันเกิด เพศ ความสัมพันธ์ (แสดงรายละเอียดเฉพาะเมื่อมีสิทธิ์ดูข้อมูล) */}
-              <p className="mt-1 text-sm sm:text-base text-slate-700 font-medium">
+              <p className="mt-1 text-sm sm:text-base text-slate-700 font-medium break-words [overflow-wrap:anywhere]">
                 {isMe ? 'ตัวฉันเอง' : `ความสัมพันธ์: ${member.relation}`}
                 {viewable ? (
                   <>
@@ -947,9 +947,9 @@ export const MemberDetailPage: React.FC = () => {
               {/* ผู้ดูแลหลักของสมาชิก (แสดงเมื่อมีสิทธิ์ดูข้อมูล) */}
               {viewable && (
                 <div className="mt-1.5 flex flex-wrap items-center gap-2 text-sm text-slate-600">
-                  <span className="inline-flex items-center gap-1.5 rounded-lg bg-purple-50/80 border border-purple-200/80 px-2.5 py-1 text-xs sm:text-sm font-bold text-purple-900">
+                  <span className="inline-flex max-w-full items-center gap-1.5 rounded-lg bg-purple-50/80 border border-purple-200/80 px-2.5 py-1 text-xs sm:text-sm font-bold text-purple-900">
                     <UserCheck className="w-4 h-4 text-purple-700 shrink-0" aria-hidden="true" />
-                    <span>
+                    <span className="break-words [overflow-wrap:anywhere] line-clamp-1">
                       ผู้ดูแลหลัก:{' '}
                       {caregiver.member
                         ? `${caregiver.member.name} (${caregiver.member.relation})`
@@ -962,16 +962,16 @@ export const MemberDetailPage: React.FC = () => {
           </div>
 
           {/* สิทธิ์เข้าถึงและปุ่มการกระทำหลัก */}
-          <div className="flex flex-wrap items-center gap-2 shrink-0">
+          <div className="flex flex-wrap items-center gap-2 shrink-0 w-full sm:w-auto">
             {!isMe && !editable && (
               <>
                 {latestEditRequest?.decision === 'pending' ? (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 text-amber-800 text-sm font-bold border border-amber-200">
-                    <Clock className="w-4 h-4" aria-hidden="true" />
-                    <span>ส่งคำขอแล้ว · รอ {member.name} ตอบ</span>
+                  <span className="inline-flex max-w-full items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 text-amber-800 text-sm font-bold border border-amber-200">
+                    <Clock className="w-4 h-4 shrink-0" aria-hidden="true" />
+                    <span className="truncate">ส่งคำขอแล้ว · รอ {member.name} ตอบ</span>
                   </span>
                 ) : (
-                  <Button size="sm" onClick={() => setDialog('edit')}>
+                  <Button size="sm" onClick={() => setDialog('edit')} className="w-full sm:w-auto">
                     <Send className="w-4 h-4" aria-hidden="true" />
                     <span>ขออนุญาตแก้ไขข้อมูล</span>
                   </Button>

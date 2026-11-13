@@ -9,6 +9,7 @@ interface CheckboxFieldProps {
   /** แสดงเป็นกล่องไฮไลต์ (ใช้กับข้อความยินยอม) */
   boxed?: boolean;
   error?: string;
+  disabled?: boolean;
 }
 
 /** ช่องติ๊กขนาดใหญ่ พื้นที่กดทั้งแถว */
@@ -19,12 +20,14 @@ export const CheckboxField: React.FC<CheckboxFieldProps> = ({
   children,
   boxed,
   error,
+  disabled,
 }) => (
   <div>
     <label
       htmlFor={id}
       className={cn(
         'flex items-start gap-3 cursor-pointer select-none min-h-[48px]',
+        disabled && 'cursor-not-allowed opacity-50',
         boxed && 'rounded-2xl bg-purple-50 border border-purple-200 p-4 sm:p-5',
         error && 'border-red-500'
       )}
@@ -33,10 +36,11 @@ export const CheckboxField: React.FC<CheckboxFieldProps> = ({
         id={id}
         type="checkbox"
         checked={checked}
+        disabled={disabled}
         onChange={(e) => onChange(e.target.checked)}
         aria-invalid={error ? true : undefined}
         aria-describedby={error ? `${id}-error` : undefined}
-        className="mt-0.5 w-6 h-6 shrink-0 rounded-md border-slate-400 text-purple-700 focus:ring-purple-600 focus:ring-offset-0 cursor-pointer"
+        className="mt-0.5 w-6 h-6 shrink-0 rounded-md border-slate-400 text-purple-700 focus:ring-purple-600 focus:ring-offset-0 cursor-pointer disabled:cursor-not-allowed"
       />
       <span className="text-base sm:text-lg text-slate-900 leading-snug">{children}</span>
     </label>
