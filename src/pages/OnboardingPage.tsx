@@ -161,7 +161,7 @@ export const OnboardingPage: React.FC = () => {
                 <ChevronLeft className="w-5 h-5" aria-hidden="true" />
                 <span>{step === 0 ? 'กลับ' : 'ก่อนหน้า'}</span>
               </Button>
-              <Button type="submit" className="flex-1">
+              <Button type="submit" className="flex-1" disabled={step === lastStep && !profile.consent}>
                 {step === lastStep ? 'เสร็จสิ้น เริ่มใช้งาน' : 'ถัดไป'}
               </Button>
             </div>

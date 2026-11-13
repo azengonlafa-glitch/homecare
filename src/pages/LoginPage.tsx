@@ -48,7 +48,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ defaultTab }) => {
 
   // ฟอร์มสมัครสมาชิก
   const [fullName, setFullName] = useState('');
-  const [agreeTerms, setAgreeTerms] = useState(true);
+  // ต้องเริ่มเป็นว่าง ผู้ใช้ติ๊กเอง (การยินยอมที่ติ๊กไว้ให้ล่วงหน้าไม่นับเป็นการยินยอม)
+  const [agreeTerms, setAgreeTerms] = useState(false);
 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -213,7 +214,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ defaultTab }) => {
           <button
             type="submit"
             disabled={busy}
-            className="w-full min-h-[52px] sm:min-h-[56px] rounded-2xl bg-[#16A34A] hover:bg-[#15803D] active:translate-y-0.5 border-b-4 border-[#14532D] active:border-b-2 text-white text-base sm:text-lg lg:text-xl font-black shadow-md transition-all cursor-pointer disabled:opacity-60"
+            className="w-full min-h-[52px] sm:min-h-[56px] rounded-2xl bg-[#16A34A] hover:bg-[#15803D] active:translate-y-0.5 border-b-4 border-[#14532D] active:border-b-2 text-white text-base sm:text-lg lg:text-xl font-black shadow-md transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {busy ? 'กำลังเข้าสู่ระบบ…' : 'เข้าสู่ระบบ'}
           </button>
@@ -325,11 +326,14 @@ export const LoginPage: React.FC<LoginPageProps> = ({ defaultTab }) => {
             </p>
           )}
 
+          {!agreeTerms && (
+            <p className="text-sm text-slate-700">ติ๊กยอมรับข้อกำหนดด้านบนก่อน จึงจะกดสมัครสมาชิกได้</p>
+          )}
           {/* ปุ่มสมัครสมาชิกสีเขียวสดใส มีมิติแบบ 3D */}
           <button
             type="submit"
-            disabled={busy}
-            className="w-full min-h-[52px] sm:min-h-[56px] rounded-2xl bg-[#16A34A] hover:bg-[#15803D] active:translate-y-0.5 border-b-4 border-[#14532D] active:border-b-2 text-white text-base sm:text-lg lg:text-xl font-black shadow-md transition-all cursor-pointer disabled:opacity-60"
+            disabled={busy || !agreeTerms}
+            className="w-full min-h-[52px] sm:min-h-[56px] rounded-2xl bg-[#16A34A] hover:bg-[#15803D] active:translate-y-0.5 border-b-4 border-[#14532D] active:border-b-2 text-white text-base sm:text-lg lg:text-xl font-black shadow-md transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {busy ? 'กำลังสร้างบัญชี…' : 'สมัครสมาชิก'}
           </button>
