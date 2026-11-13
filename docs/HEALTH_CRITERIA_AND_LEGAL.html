@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>Growa Homecare: เกณฑ์ประเมินสุขภาพและข้อกฎหมาย</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  @page { size: A4; margin: 16mm 14mm 18mm; }
+  :root { --ink:#1d2a1f; --muted:#55645a; --line:#d5ddd3; --green:#15703A; --soft:#eef5ee; --warn:#fff6e0; --bad:#fdecec; }
+  body { font-family: 'Sarabun', 'Leelawadee UI', Tahoma, sans-serif; color: var(--ink); font-size: 10.5pt; line-height: 1.55; margin: 0; background:#fff; }
+  h1 { font-size: 20pt; margin: 0 0 4px; color: var(--green); }
+  h2 { font-size: 14pt; margin: 22px 0 8px; padding-bottom: 4px; border-bottom: 2px solid var(--green); break-after: avoid; }
+  h3 { font-size: 11.5pt; margin: 14px 0 6px; break-after: avoid; }
+  p { margin: 4px 0 8px; }
+  .meta { color: var(--muted); font-size: 9.5pt; margin-bottom: 12px; }
+  .box { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; margin: 8px 0 12px; background: var(--soft); break-inside: avoid; }
+  .box.warn { background: var(--warn); border-color: #f0d79a; }
+  .box.bad { background: var(--bad); border-color: #f2b8b8; }
+  table { width: 100%; border-collapse: collapse; margin: 6px 0 12px; font-size: 9.5pt; }
+  th, td { border: 1px solid var(--line); padding: 5px 6px; vertical-align: top; text-align: left; }
+  th { background: #e3eee3; font-weight: 700; }
+  tr { break-inside: avoid; }
+  .tag { display: inline-block; border-radius: 99px; padding: 0 7px; font-size: 8.5pt; font-weight: 700; white-space: nowrap; }
+  .ok { background: #dff3e4; color: #145a2c; } .chg { background: #fff0c7; color: #7a5300; } .del { background: #fadada; color: #8a1f1f; } .chk { background: #e4e9f7; color: #263b7a; }
+  ul { margin: 4px 0 10px; padding-left: 20px; } li { margin: 2px 0; }
+  .src { font-size: 8.8pt; color: var(--muted); }
+  .refs li { font-size: 8.8pt; word-break: break-all; margin: 3px 0; }
+  .refs a { color: #1d4f9c; text-decoration: none; }
+  sup { font-size: 7.5pt; color: #1d4f9c; }
+</style>
+</head>
+<body>
+
+<h1>เกณฑ์ประเมินสุขภาพและข้อกฎหมาย</h1>
+<div class="meta">Growa Homecare · จัดทำ 13 พฤศจิกายน 2569 · สำหรับเจ้าของโครงการ เภสัชกร/แพทย์ผู้ตรวจเกณฑ์ และที่ปรึกษากฎหมาย<br>
+รายงานนี้รวบรวมจากการค้นคว้าแหล่งข้อมูลสาธารณะ <b>ไม่ใช่คำแนะนำทางการแพทย์หรือทางกฎหมาย</b> ก่อนเปิดใช้จริงต้องให้ผู้เชี่ยวชาญตรวจตามหัวข้อที่ 6</div>
+
+<div class="box">
+<b>สรุปสั้น</b>
+<ul>
+  <li>แอปใช้นโยบาย <b>"ประเมินตามมาตรฐาน แต่ตัดจุดที่เสี่ยงเกินไป"</b>: ทุกตัวเลขที่ใช้ตัดสินต้องมีแหล่งอ้างอิง ถ้าหาแหล่งไม่ได้ ตัดออกหรือเลิกแจ้งเตือน</li>
+  <li>เปลี่ยนเกณฑ์ความดันเป็น <b>เกณฑ์วัดที่บ้านของไทย (2022)</b>, น้ำตาลเป็น <b>ADA 2025</b>, BMI ใช้ <b>เกณฑ์เอเชีย</b> เฉพาะอายุ 19 ปีขึ้นไป</li>
+  <li><b>เอาออก</b>: คะแนนสุขภาพรวม, กราฟใยแมงมุม, คำอธิบายอาการ ~120 ข้อที่ไม่มีแหล่งอ้างอิง, การเตือนน้ำหนักสำหรับทุกคน</li>
+  <li>อาการฉุกเฉิน (หลอดเลือดสมอง เจ็บหน้าอก) แนะนำ <b>โทร 1669 ทันที</b> แทนคำว่า "ควรพบแพทย์"</li>
+  <li>กฎหมายที่เกี่ยวข้องหลัก: <b>PDPA</b> (ข้อมูลสุขภาพเป็นข้อมูลอ่อนไหว), <b>เครื่องมือแพทย์ที่เป็นซอฟต์แวร์</b> (อย.), <b>เภสัชกรรมทางไกล/การแพทย์ทางไกล</b>, <b>การโฆษณายา</b></li>
+</ul>
+</div>
+
+<h2>1. หลักที่ใช้เลือกมาตรฐาน</h2>
+<ul>
+  <li><b>ใช้แนวทางของไทยก่อน</b> ถ้าไทยไม่มีหรือหาต้นฉบับไม่ได้ ใช้ของสากล (WHO, ADA, ESC/ESH)</li>
+  <li><b>ค่าจากเครื่องที่บ้านใช้วินิจฉัยไม่ได้</b> แอปจึงใช้คำว่า "ควรตรวจยืนยัน" และ "ค่าครั้งเดียวยังสรุปไม่ได้"</li>
+  <li><b>ไม่มีแหล่ง = ไม่ตัดสิน</b> ตัวเลขที่คิดขึ้นเองถูกตัดออก</li>
+  <li><b>ไม่ทำให้คนชินกับการเตือน</b>: การแจ้ง "ด่วน" ถึงทั้งบ้านใช้เฉพาะค่าที่เกณฑ์จัดว่าอันตราย</li>
+  <li>เป้าหมายรายคนที่แพทย์สั่ง สำคัญกว่าเกณฑ์ทั่วไปเสมอ แอปบอกเรื่องนี้ทุกจุดที่ตัดสิน</li>
+</ul>
+
+<h2>2. เกณฑ์ที่แอปใช้อยู่ตอนนี้ และที่มา</h2>
+
+<h3>2.1 ดัชนีมวลกาย (BMI)</h3>
+<table>
+<tr><th style="width:24%">ช่วง (กก./ตร.ม.)</th><th>ป้ายในแอป</th><th style="width:44%">ที่มา</th></tr>
+<tr><td>&lt;18.5 / 18.5–22.9 / 23–24.9 / 25–29.9 / ≥30</td><td>ผอม / สมส่วน / ท้วม / อ้วน / อ้วนมาก</td><td>WHO ภูมิภาคแปซิฟิกตะวันตก 2000 (เกณฑ์เอเชีย) ซึ่งรายงานสุขภาพคนไทยใช้<sup>[1][2]</sup></td></tr>
+<tr><td>อายุต่ำกว่า 19 ปี</td><td>ไม่ตัดสิน ("ต้องใช้เกณฑ์ตามอายุ")</td><td>เด็กและวัยรุ่น 5–19 ปีใช้ BMI ตามอายุ (WHO 2007)<sup>[3]</sup></td></tr>
+</table>
+
+<h3>2.2 ความดันโลหิต (วัดเองที่บ้าน)</h3>
+<table>
+<tr><th style="width:24%">ค่า (mmHg)</th><th>ป้าย / การแจ้งเตือน</th><th style="width:44%">ที่มา</th></tr>
+<tr><td>&lt;125 / &lt;75</td><td>ปกติ</td><td rowspan="3">Thai Hypertension Society 2022 แนวทางวัดความดันที่บ้าน: 125–134/75–84 = high normal, ≥135/85 = ความดันสูง ให้วัดเช้าและก่อนนอน 7 วันแล้วใช้ค่าเฉลี่ย<sup>[4]</sup></td></tr>
+<tr><td>125–134 หรือ 75–84</td><td>สูงกว่าปกติเล็กน้อย (ไม่แจ้งเตือน)</td></tr>
+<tr><td>≥135 หรือ ≥85</td><td>สูง · แจ้ง "สำคัญ"</td></tr>
+<tr><td>≥180 หรือ ≥110</td><td>สูงมาก · แจ้ง "ด่วน" + อาการที่ต้องโทร 1669</td><td>Grade 3 ของ ESC/ESH 2018 ที่ ESH 2023 ใช้ต่อ<sup>[5]</sup> (เป็นค่าที่คลินิก ค่าที่บ้านจะต่ำกว่า เกณฑ์นี้จึงไม่เตือนเกินจริง)</td></tr>
+<tr><td>&lt;90 / &lt;60</td><td>ต่ำ (ไม่แจ้งเตือน มีความหมายเมื่อมีอาการ)</td><td>NHS / Heart Foundation NZ<sup>[6][7]</sup></td></tr>
+</table>
+
+<h3>2.3 น้ำตาลในเลือด (เครื่องเจาะปลายนิ้ว)</h3>
+<table>
+<tr><th style="width:24%">ค่า (มก./ดล.)</th><th>ป้าย / การแจ้งเตือน</th><th style="width:44%">ที่มา</th></tr>
+<tr><td>&lt;70 / &lt;54</td><td>ต่ำ (สำคัญ) / ต่ำมาก (ด่วน) + ซึม สับสน → 1669</td><td>ADA 2025 ตาราง 6.4: hypoglycemia ระดับ 1 &lt;70, ระดับ 2 &lt;54<sup>[8]</sup></td></tr>
+<tr><td>ไม่เป็นเบาหวาน: อดอาหาร 100–125 / ≥126</td><td>สูงกว่าปกติ / สูง ควรตรวจยืนยัน</td><td>ADA เกณฑ์วินิจฉัย (ตรวจในแล็บ) prediabetes 100–125, เบาหวาน ≥126<sup>[9]</sup></td></tr>
+<tr><td>ไม่เป็นเบาหวาน: ไม่ได้อดอาหาร ≥200</td><td>สูง ควรตรวจยืนยัน</td><td>ADA ค่าสุ่ม ≥200 ร่วมกับอาการ<sup>[9]</sup></td></tr>
+<tr><td>เป็นเบาหวาน: ก่อนอาหาร &gt;130, หลังอาหาร ≥180</td><td>สูงกว่าเป้าทั่วไป (ไม่แจ้งเตือน) + "ใช้เป้าที่แพทย์กำหนด"</td><td>ADA 2025 ตาราง 6.3: ก่อนอาหาร 80–130, สูงสุดหลังอาหาร &lt;180<sup>[8]</sup></td></tr>
+<tr><td>เป็นเบาหวาน: ≥200</td><td>สูง · สำคัญ + อาเจียน ซึม → โรงพยาบาล</td><td>ADA hyperglycemic crisis consensus: ≥200 ให้ประเมินคีโตนและอาการ<sup>[10]</sup></td></tr>
+</table>
+
+<h3>2.4 อื่น ๆ</h3>
+<table>
+<tr><th style="width:24%">เรื่อง</th><th>เกณฑ์ในแอป</th><th style="width:44%">ที่มา</th></tr>
+<tr><td>อาการที่ต้องโทร 1669</td><td>ปากเบี้ยว อ่อนแรงครึ่งซีก พูดไม่ชัด ตาผิดปกติ เจ็บหน้าอก หายใจลำบาก ชัก เป็นลม</td><td>หลัก BE FAST ของโรคหลอดเลือดสมอง<sup>[11]</sup>, เจ็บแน่นหน้าอกจากหัวใจขาดเลือด<sup>[12]</sup>, ข้อความเหตุฉุกเฉินที่แอปแสดงอยู่แล้ว</td></tr>
+<tr><td>น้ำหนักขึ้นเร็ว</td><td>&gt;2 กก. ใน 3 วัน <b>เฉพาะผู้มีภาวะหัวใจล้มเหลว</b></td><td>ESC (heartfailurematters.org)<sup>[13]</sup>; BC Guidelines: 2 กก./2 วัน หรือ 2.5 กก./สัปดาห์<sup>[14]</sup></td></tr>
+<tr><td>ออกกำลังกาย</td><td>"แทบไม่ออกกำลังกาย" = น้อยกว่าที่แนะนำ</td><td>WHO 2020: ระดับปานกลาง 150–300 นาที/สัปดาห์<sup>[15]</sup></td></tr>
+<tr><td>แอลกอฮอล์</td><td>ดื่มทุกระดับ = "ไม่มีปริมาณที่ปลอดภัย"</td><td>WHO Europe, Lancet Public Health 2023<sup>[16]</sup></td></tr>
+<tr><td>บุหรี่</td><td>สูบอยู่ = ควรเลิก + สายด่วน 1600</td><td>ศูนย์บริการเลิกบุหรี่ทางโทรศัพท์แห่งชาติ<sup>[17]</sup></td></tr>
+<tr><td>การกินยาตามนัด</td><td>สีเขียวเมื่อ ≥80%</td><td>PQA: Proportion of Days Covered ≥80%<sup>[18]</sup></td></tr>
+<tr><td>ค่าแล็บ 17 ตัว (ไขมัน ไต ตับ เลือด เกลือแร่)</td><td><b>ไม่ตัดสิน</b> แสดงแค่แนวโน้ม</td><td>ค่าปกติต่างกันตามแล็บ ต้องดูจากใบผลของแล็บนั้น</td></tr>
+</table>
+
+<h2>3. สิ่งที่ตัดออกหรือลดระดับ และเหตุผล</h2>
+<table>
+<tr><th style="width:30%">สิ่งเดิม</th><th style="width:12%">ผล</th><th>เหตุผล</th></tr>
+<tr><td>คะแนนสุขภาพรวม "คนสุขภาพดี = 100" และ "&lt;50 ควรปรึกษาแพทย์"</td><td><span class="tag del">ตัดออก</span></td><td>ไม่มีมาตรฐานรองรับการเฉลี่ยหลายค่าเป็นคะแนนเดียว แทนที่ด้วยรายการ "เทียบกับเกณฑ์" ที่บอกที่มาทุกข้อ</td></tr>
+<tr><td>กราฟใยแมงมุม 6 ด้าน</td><td><span class="tag del">ตัดออก</span></td><td>สร้างจากคะแนนที่คิดขึ้นเอง</td></tr>
+<tr><td>โรคประจำตัว −15 คะแนนต่อโรค</td><td><span class="tag del">ตัดออก</span></td><td>ไม่มีที่มา และลงโทษผู้ที่คุมโรคได้ดี</td></tr>
+<tr><td>คะแนนบุหรี่ 100/70/20, แอลกอฮอล์ 100/80/35, ออกกำลังกาย 100/65/30</td><td><span class="tag del">ตัดออก</span></td><td>ไม่มีที่มา และ "ดื่มนาน ๆ ครั้ง = 80" ขัดกับ WHO 2023</td></tr>
+<tr><td>คำอธิบายอาการ ~120 ข้อ (เช่น "ไข้ &gt;37.5°C", "อาจเป็นวัณโรคหรือมะเร็งปอด")</td><td><span class="tag del">ตัดออก</span></td><td>ไม่มีแหล่งอ้างอิง ชี้นำการวินิจฉัย ขัดกฎ "ชื่ออย่างเดียว" ของโครงการ เกณฑ์ไข้ทั่วไปคือ 38.0°C ไม่ใช่ 37.5<sup>[19]</sup> (ดูไฟล์เดิมได้ในประวัติ git)</td></tr>
+<tr><td>ความดัน 120–139 = "เริ่มสูง"</td><td><span class="tag chg">เปลี่ยน</span></td><td>เป็นเกณฑ์ที่คลินิกของสหรัฐฯ ใช้ แต่ค่าในแอปวัดที่บ้าน จึงเปลี่ยนเป็นเกณฑ์วัดที่บ้านของไทย</td></tr>
+<tr><td>ความดันต่ำ = แจ้งเตือน</td><td><span class="tag chg">ลดระดับ</span></td><td>ความดันต่ำมีความหมายเมื่อมีอาการเท่านั้น<sup>[6]</sup></td></tr>
+<tr><td>น้ำตาล ≥300 = ด่วน</td><td><span class="tag chg">เปลี่ยน</span></td><td>หาที่มาของเลข 300 ไม่เจอ จึงใช้ ≥200 + อาการตาม ADA</td></tr>
+<tr><td>น้ำตาลผู้เป็นเบาหวาน "ในเกณฑ์" จนถึง 179 ทุกช่วงเวลา</td><td><span class="tag chg">เปลี่ยน</span></td><td>ADA แยกเป้าก่อนอาหาร (80–130) กับหลังอาหาร (&lt;180)</td></tr>
+<tr><td>"เสี่ยงเบาหวาน" จากค่าปลายนิ้ว</td><td><span class="tag chg">เปลี่ยนคำ</span></td><td>ค่าปลายนิ้วใช้วินิจฉัยไม่ได้ ใช้ "สูงกว่าปกติ / ควรตรวจยืนยัน"</td></tr>
+<tr><td>น้ำหนักเปลี่ยน ≥2.5 กก./7 วัน เตือนทุกคน</td><td><span class="tag chg">จำกัด</span></td><td>เกณฑ์นี้มาจากแนวทางหัวใจล้มเหลว จึงเตือนเฉพาะผู้ที่มีภาวะนี้</td></tr>
+<tr><td>ค่าผิดเกณฑ์ทุกค่าส่งเป็น "ด่วน" ถึงทั้งบ้าน</td><td><span class="tag chg">ลดระดับ</span></td><td>ด่วนเฉพาะความดัน ≥180/110 และน้ำตาล &lt;54 ที่เหลือเป็น "สำคัญ"</td></tr>
+<tr><td>"ผู้มีโรคเรื้อรังควรพบแพทย์ทุก 6 เดือน"</td><td><span class="tag chg">เปลี่ยนคำ</span></td><td>ไม่มีที่มา เปลี่ยนเป็นการเตือนว่าไม่มีบันทึกการตรวจ ให้เช็กนัดกับแพทย์</td></tr>
+<tr><td>"ควรตรวจน้ำตาลปีละครั้ง" (ประวัติครอบครัว)</td><td><span class="tag chg">เปลี่ยนคำ</span></td><td>ไม่มีที่มา เปลี่ยนเป็น "ปรึกษาแพทย์เรื่องการตรวจคัดกรอง"</td></tr>
+<tr><td>ข้อความ "แอปไม่ได้บอกว่าปกติหรือไม่" ในหน้าต่างบันทึกค่า</td><td><span class="tag chg">แก้ให้ตรง</span></td><td>แอปเทียบเกณฑ์บางค่าจริง ข้อความจึงต้องตรงกับที่แอปทำ</td></tr>
+</table>
+
+<h2>4. จุดที่ยังไม่แน่ใจ (ต้องตรวจเพิ่ม)</h2>
+<ul>
+  <li><span class="tag chk">ตรวจ</span> <b>แนวทางเวชปฏิบัติโรคเบาหวานของไทย</b> (สมาคมโรคเบาหวานแห่งประเทศไทย) ยังไม่ได้เทียบ ใช้ ADA ไปก่อน</li>
+  <li><span class="tag chk">ตรวจ</span> ADA ออก <b>Standards of Care 2026</b> แล้ว<sup>[20]</sup> ตัวเลขในรายงานนี้มาจากฉบับ 2025</li>
+  <li><span class="tag chk">ตรวจ</span> เกณฑ์ความดันที่บ้านของไทย 2022 อ่านจากบทความใน PMC ยังไม่ได้อ่านฉบับเต็ม และ "สูงมาก ≥180/110" เป็นเกณฑ์ที่คลินิก ยังไม่มีเกณฑ์ที่บ้านโดยตรง</li>
+  <li><span class="tag chk">ตรวจ</span> แอปยังจัดระดับจาก <b>ค่าครั้งเดียว</b> (บอกผู้ใช้แล้วว่ายังสรุปไม่ได้) แนวทางไทยให้ใช้ค่าเฉลี่ย 7 วัน ควรพัฒนาให้คำนวณค่าเฉลี่ยต่อไป</li>
+  <li><span class="tag chk">ตรวจ</span> รายการอาการด่วนและอาการที่ต้องโทร 1669 ควรให้แพทย์ยืนยันทีละข้อ ("แพ้ยา" ทุกระดับยังนับเป็นด่วน)</li>
+  <li><span class="tag chk">ตรวจ</span> เกณฑ์น้ำตาลต่ำของ ADA เขียนไว้สำหรับผู้เป็นเบาหวาน แอปใช้กับทุกคน</li>
+  <li><span class="tag chk">ตรวจ</span> แอปยังไม่ได้ส่งต่ออายุให้ทุกจุดที่ตัดสินความดัน/น้ำตาล เกณฑ์เหล่านี้เป็นของผู้ใหญ่</li>
+</ul>
+
+<h2>5. ข้อกฎหมายที่เกี่ยวข้อง</h2>
+
+<h3>5.1 พ.ร.บ.คุ้มครองข้อมูลส่วนบุคคล พ.ศ. 2562 (PDPA)</h3>
+<ul>
+  <li><b>ข้อมูลสุขภาพเป็นข้อมูลอ่อนไหว (มาตรา 26)</b> ต้องได้ <b>ความยินยอมโดยชัดแจ้ง</b> เว้นแต่เข้าข้อยกเว้น เช่น ป้องกันอันตรายต่อชีวิตเมื่อเจ้าของให้ความยินยอมไม่ได้<sup>[21]</sup></li>
+  <li><b>บันทึกแทนคนอื่น</b>: ผู้ดูแลที่ใส่ข้อมูลของพ่อแม่หรือผู้สูงอายุ ต้องคิดเรื่องความยินยอมของเจ้าของข้อมูลตัวจริง หรือผู้มีอำนาจกระทำการแทน</li>
+  <li><b>ส่งข้อมูลไปต่างประเทศ (มาตรา 28–29)</b>: ถ้าเซิร์ฟเวอร์ (Supabase, Vercel) อยู่นอกไทย ต้องเป็นประเทศที่มีมาตรฐานเพียงพอ หรือมีมาตรการคุ้มครองที่เหมาะสม ประกาศ สคส. มีผล 24 มี.ค. 2567<sup>[22]</sup> → <b>ต้องเช็กว่าฐานข้อมูลอยู่ภูมิภาคไหน</b></li>
+  <li><b>แจ้งเหตุข้อมูลรั่ว</b>: แจ้ง สคส. ภายใน 72 ชั่วโมงนับแต่ทราบเหตุ และแจ้งเจ้าของข้อมูลถ้ามีความเสี่ยงสูง<sup>[23]</sup></li>
+  <li><b>เจ้าหน้าที่คุ้มครองข้อมูล (DPO, มาตรา 41)</b>: น่าจะต้องมี เพราะกิจกรรมหลักคือประมวลผลข้อมูลอ่อนไหว<sup>[23]</sup></li>
+  <li><b>บทลงโทษ</b>: มีทั้งทางปกครอง อาญา และแพ่ง มีรายงานว่าไม่แจ้งเหตุรั่วอาจถูกปรับทางปกครองถึง 3 ล้านบาท<sup>[23]</sup> (ควรตรวจกับตัวบท)</li>
+  <li><b>สถานะในแอป</b>: มีเอกสารยินยอมฉบับร่าง (draft-0.3) และหน้าใช้สิทธิ์เจ้าของข้อมูลแล้ว ไฟล์ <code>account_delete.sql</code> และ <code>health_privacy.sql</code> ยังไม่ได้รันบนเซิร์ฟเวอร์จริง ค่าเริ่มต้นตอนนี้คือคนในบ้านดูและแก้ได้ เจ้าของปิดเองได้ ต้องเขียนเรื่องนี้ในเอกสารยินยอมให้ชัด</li>
+</ul>
+
+<h3>5.2 เครื่องมือแพทย์ที่เป็นซอฟต์แวร์ (SaMD) ตาม พ.ร.บ.เครื่องมือแพทย์</h3>
+<ul>
+  <li>อย. ออกแนวทางการจัดสถานะและจัดระดับความเสี่ยงของซอฟต์แวร์ (10 พ.ย. 2565) ตัดสินจาก <b>วัตถุประสงค์การใช้ (intended use)</b><sup>[24]</sup></li>
+  <li>ตามแนวทางนี้ <b>ไม่ถือเป็นเครื่องมือแพทย์</b>: การแพทย์ทางไกล, แชตบอต, การทำนายความเสี่ยงโรค, การเตือนกิจวัตร, ระบบงานการแพทย์<sup>[24]</sup></li>
+  <li><b>อาจเป็นเครื่องมือแพทย์</b>: ซอฟต์แวร์ที่ใช้สัญญาณชีพเพื่อการวินิจฉัย (เช่น อุณหภูมิเพื่อวินิจฉัย, ECG)<sup>[24]</sup> ถ้าเป็นแล้วต้องจัดระดับ (Class 1–4) และทำฉลากหรือคู่มือตามแนวทาง SaMD<sup>[25][26]</sup></li>
+  <li><b>สำหรับแอปนี้</b>: การติดป้าย "สูง/ต่ำ" ให้ค่าสุขภาพใกล้เคียงกับ "การเฝ้าติดตาม" จึงต้องพูดเสมอว่า <b>ไม่ใช่การวินิจฉัย</b> และไม่โฆษณาว่าวินิจฉัยหรือรักษาได้ ถ้าต้องการความชัดเจน ยื่น <b>Justification application</b> ให้ อย. พิจารณาสถานะได้<sup>[24]</sup></li>
+</ul>
+
+<h3>5.3 เภสัชกรรมทางไกลและการแพทย์ทางไกล (ระบบปรึกษา)</h3>
+<ul>
+  <li><b>เภสัชกรรมทางไกล</b>: ประกาศกระทรวงสาธารณสุข เรื่องรายละเอียดสถานที่ อุปกรณ์ และวิธีปฏิบัติทางเภสัชกรรมชุมชน (ฉบับที่ 2) พ.ศ. 2569 รองรับให้ร้านยา ขย.1 ให้บริการทางไกล<sup>[27]</sup> ร้านยาที่มาให้บริการในแอปต้องทำตามประกาศนี้ (ต้องตรวจตัวบทในราชกิจจานุเบกษา)</li>
+  <li><b>การแพทย์ทางไกล</b>: ประกาศแพทยสภาที่ 54/2563 (แนวทางโทรเวชและคลินิกออนไลน์) และประกาศกระทรวงสาธารณสุขเรื่องมาตรฐานสถานพยาบาลที่ใช้ระบบการแพทย์ทางไกล พ.ศ. 2564<sup>[28][29]</sup> ใช้เมื่อมีแพทย์หรือคลินิกให้บริการผ่านแอป</li>
+  <li>ต้องตรวจใบอนุญาตของผู้ให้บริการ (เลขใบประกอบวิชาชีพ, ใบอนุญาตร้านยาหรือสถานพยาบาล) ก่อนเปิดให้บริการจริง</li>
+</ul>
+
+<h3>5.4 การโฆษณายา (พ.ร.บ.ยา พ.ศ. 2510 มาตรา 88–90)</h3>
+<ul>
+  <li>การโฆษณายาต้องได้รับอนุญาตจาก อย. ก่อน รวมถึงในโซเชียลมีเดีย ห้ามโอ้อวดหรืออ้างว่ารักษาโรคบางโรคหายได้ (เช่น เบาหวาน มะเร็ง) ฝ่าฝืนมีโทษปรับไม่เกิน 100,000 บาท (มาตรา 124)<sup>[30][31]</sup></li>
+  <li><b>สำหรับแอปนี้</b>: เก็บข้อมูลยาไว้แค่ชื่อ ไม่แนะนำหรือโปรโมตยาหรือร้านยาใด ข้อมูลวัตถุประสงค์ยา มื้ออาหาร หรือข้อมูลจาก NHS ต้องให้เภสัชกรหรือที่ปรึกษากฎหมายตรวจก่อนเปิดใช้</li>
+</ul>
+
+<h3>5.5 การแจ้งเหตุฉุกเฉิน</h3>
+<ul>
+  <li>แอปบอกชัดว่าไม่ใช่ช่องทางแจ้งเหตุฉุกเฉิน และแนะนำเบอร์ <b>1669</b> (ระบบการแพทย์ฉุกเฉิน กระทรวงสาธารณสุข)<sup>[11][12]</sup></li>
+</ul>
+
+<h2>6. สิ่งที่ต้องทำก่อนเปิดใช้จริง</h2>
+<table>
+<tr><th style="width:5%">#</th><th>งาน</th><th style="width:28%">ใครทำ</th></tr>
+<tr><td>1</td><td>ตรวจตารางหัวข้อ 2 และรายการหัวข้อ 4 ทีละข้อ ยืนยันหรือแก้ตัวเลข</td><td>เภสัชกร / แพทย์</td></tr>
+<tr><td>2</td><td>ตรวจสถานะ SaMD ของฟีเจอร์ติดป้ายค่าสุขภาพ (พิจารณายื่น Justification ต่อ อย.)</td><td>ที่ปรึกษากฎหมาย / อย.</td></tr>
+<tr><td>3</td><td>ตรวจเอกสารยินยอม PDPA ให้ครอบคลุม: ค่าเริ่มต้นแชร์ในบ้าน, การบันทึกแทนผู้อื่น, การส่งข้อมูลไปต่างประเทศ, DPO, ขั้นตอนแจ้งเหตุรั่ว</td><td>ที่ปรึกษากฎหมาย</td></tr>
+<tr><td>4</td><td>เช็กภูมิภาคของฐานข้อมูลและเซิร์ฟเวอร์</td><td>ทีมพัฒนา</td></tr>
+<tr><td>5</td><td>รัน <code>health_privacy.sql</code> และ <code>account_delete.sql</code> บนเซิร์ฟเวอร์จริง (หลังเอาแอปเวอร์ชันใหม่ขึ้นเว็บ)</td><td>ทีมพัฒนา</td></tr>
+<tr><td>6</td><td>ตรวจตัวบทประกาศเภสัชกรรมทางไกล 2569 และประกาศการแพทย์ทางไกล ในราชกิจจานุเบกษา</td><td>ที่ปรึกษากฎหมาย</td></tr>
+<tr><td>7</td><td>เพิ่มการคำนวณค่าเฉลี่ยความดัน 7 วันตามแนวทางไทย</td><td>ทีมพัฒนา</td></tr>
+</table>
+
+<h2>แหล่งอ้างอิง</h2>
+<ol class="refs">
+<li>BMI and type 2 diabetes in Thai adults (WHO 2000 Asian cut-offs). <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC5824639">pmc.ncbi.nlm.nih.gov/articles/PMC5824639</a></li>
+<li>Thai Health 2014 report. <a href="https://www.hiso.or.th/hiso/picture/reportHealth/ThaiHealth2014/eng2014_3.pdf">hiso.or.th/…/eng2014_3.pdf</a></li>
+<li>WHO growth reference for children and adolescents 5–19 years. <a href="https://ennonline.net/fex/32/who">ennonline.net/fex/32/who</a></li>
+<li>2022 Thai Hypertension Society guidelines on home blood pressure monitoring. <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC9532919">pmc.ncbi.nlm.nih.gov/articles/PMC9532919</a></li>
+<li>ACC: 2023 ESH Hypertension Guideline Update. <a href="https://www.acc.org/Latest-in-Cardiology/Articles/2024/02/05/11/43/2023-ESH-Hypertension-Guideline-Update">acc.org/…/2023-ESH-Hypertension-Guideline-Update</a></li>
+<li>NHS: Low blood pressure, diagnosis. <a href="https://www.nhs.uk/conditions/low-blood-pressure-hypotension/diagnosis/">nhs.uk/conditions/low-blood-pressure-hypotension</a></li>
+<li>Heart Foundation NZ: Low blood pressure. <a href="https://www.heartfoundation.org.nz/wellbeing/managing-risk/blood-pressure-and-your-heart/low-blood-pressure-hypotension">heartfoundation.org.nz/…/low-blood-pressure-hypotension</a></li>
+<li>ADA. 6. Glycemic Goals and Hypoglycemia: Standards of Care in Diabetes 2025 (Tables 6.3, 6.4). <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC11635034/">pmc.ncbi.nlm.nih.gov/articles/PMC11635034</a> · <a href="https://pubmed.ncbi.nlm.nih.gov/39651981/">pubmed 39651981</a></li>
+<li>ADA Abridged Standards of Care for primary care (diagnostic criteria). <a href="https://ada.silverchair-cdn.com/ada/content_public/journal/clinical/issue/43/2/8/abridged-standards-of-care.pdf">ada.silverchair-cdn.com/…/abridged-standards-of-care.pdf</a></li>
+<li>BMJ Best Practice: DKA prevention (ADA hyperglycemic crisis consensus, ≥200 mg/dL). <a href="https://bestpractice.bmj.com/topics/en-us/162/prevention">bestpractice.bmj.com/topics/en-us/162/prevention</a></li>
+<li>BE FAST และโทร 1669 (ไทยรัฐ, Hfocus, Thai PBS). <a href="https://www.thairath.co.th/lifestyle/health-and-beauty/2942765">thairath.co.th/…/2942765</a> · <a href="https://www.hfocus.org/content/2026/11/40111">hfocus.org/content/2026/11/40111</a> · <a href="https://www.thaipbs.or.th/news/content/504599">thaipbs.or.th/news/content/504599</a></li>
+<li>อาการหัวใจขาดเลือดและการโทร 1669 (PPTV). <a href="https://www.pptvhd36.com/health/care/7958">pptvhd36.com/health/care/7958</a></li>
+<li>Heart Failure Matters (ESC): Rapid weight gain. <a href="https://www.heartfailurematters.org/warning-signs/rapid-weight-gain/">heartfailurematters.org/warning-signs/rapid-weight-gain</a></li>
+<li>BC Guidelines: Heart failure, Appendix A. <a href="https://www2.gov.bc.ca/assets/gov/health/practitioner-pro/bc-guidelines/hf_appendixa.pdf">gov.bc.ca/…/hf_appendixa.pdf</a></li>
+<li>WHO 2020 guidelines on physical activity and sedentary behaviour. <a href="https://www.ncbi.nlm.nih.gov/books/NBK566048/">ncbi.nlm.nih.gov/books/NBK566048</a></li>
+<li>WHO: No level of alcohol consumption is safe for our health (2023). <a href="https://www.who.int/azerbaijan/news/item/04-01-2023-no-level-of-alcohol-consumption-is-safe-for-our-health">who.int/…/no-level-of-alcohol-consumption-is-safe</a></li>
+<li>สายเลิกบุหรี่ 1600 เป็นสถานบริการบัตรทอง (PPTV). <a href="https://www.pptvhd36.com/health/news/2121">pptvhd36.com/health/news/2121</a></li>
+<li>PQA PDC measure rationale; URAC measures at a glance. <a href="https://www.pqaalliance.org/assets/docs/PQA_PDC-CMP-PH_Rationale.pdf">pqaalliance.org/…/PQA_PDC-CMP-PH_Rationale.pdf</a> · <a href="https://www.urac.org/wp-content/uploads/2022/12/2023_PBM_Measures-at-a-Glance.pdf">urac.org/…/2023_PBM_Measures-at-a-Glance.pdf</a></li>
+<li>Fever thresholds (AMBOSS; MedlinePlus). <a href="https://knowledge.manus.amboss.com/us/knowledge/fever">amboss.com/…/fever</a> · <a href="https://medlineplus.gov/ency/article/003090.htm">medlineplus.gov/ency/article/003090.htm</a></li>
+<li>ADA Standards of Care 2026 guideline spotlight. <a href="https://www.guidelinecentral.com/insights/dec-2025-ada-diabetesstandardsofcare-guideline-spotlight/">guidelinecentral.com/…/dec-2025-ada-…</a></li>
+<li>PDPA Section 26 (English). <a href="https://pdpathailand.com/pdpa/content_eng/article26_eng.php">pdpathailand.com/pdpa/content_eng/article26_eng.php</a></li>
+<li>Tilleke &amp; Gibbins: Thailand unveils regulations for cross-border personal data transfer. <a href="https://www.tilleke.com/insights/thailand-unveils-regulations-for-cross-border-personal-data-transfer/2/">tilleke.com/insights/thailand-unveils-regulations-…</a></li>
+<li>PDPA overviews (breach 72 h, DPO, penalties). <a href="https://www.mondaq.com/data-protection/1590812/law-over-borders-data-protection-2025-thailand">mondaq.com/…/law-over-borders-data-protection-2025-thailand</a> · <a href="https://legal.pwc.de/content/im-fokus/thailand-global-data-protection-law-overview.pdf">legal.pwc.de/…/thailand-global-data-protection-law-overview.pdf</a> · <a href="https://law.asia/thailand-data-protection-laws/">law.asia/thailand-data-protection-laws</a></li>
+<li>Asia Actual: Thailand FDA publishes guidance for Software as Medical Device. <a href="https://asiaactual.com/blog/thailand-fda-publishes-guidance-for-software-as-medical-device/">asiaactual.com/…/thailand-fda-publishes-guidance-…</a></li>
+<li>Andaman Medical: Thai FDA guidance on labeling and IFU for SaMD. <a href="https://andamanmed.com/thailand-thai-fda-guidance-on-labeling-and-instructions-for-use-requirements-for-software-as-a-medical-device/">andamanmed.com/…/labeling-…-software-as-a-medical-device</a></li>
+<li>ASEAN MediPass: SaMD registration in Southeast Asia. <a href="https://aseanmedipass.com/samd-registration/">aseanmedipass.com/samd-registration</a></li>
+<li>ประกาศกระทรวงสาธารณสุข เภสัชกรรมชุมชน (ฉบับที่ 2) 2569 รองรับ Telepharmacy (ประชาชาติธุรกิจ, Hfocus). <a href="https://www.prachachat.net/business/news-1140620">prachachat.net/business/news-1140620</a> · <a href="https://www.hfocus.org/content/2026/06/38502">hfocus.org/content/2026/06/38502</a></li>
+<li>สธ. ออกประกาศมาตรฐานระบบบริการการแพทย์ทางไกล (InfoQuest). <a href="https://www.infoquest.co.th/?p=63532">infoquest.co.th/?p=63532</a></li>
+<li>HITAP Policy Brief: Telemedicine in Thailand; คู่มือระบบการแพทย์ทางไกล กรมการแพทย์. <a href="https://hitap.net/wp-content/uploads/2023/03/PB-152_TelemedThai.pdf">hitap.net/…/PB-152_TelemedThai.pdf</a></li>
+<li>Tilleke ICLG Pharmaceutical Advertising 2024 Thailand. <a href="https://tilleke.com/wp-content/uploads/2024/08/Tilleke-ICLG-Pharmaceutical-Advertising-2024-Thailand.pdf">tilleke.com/…/Tilleke-ICLG-Pharmaceutical-Advertising-2024-Thailand.pdf</a></li>
+<li>Mondaq: Pharmaceutical Advertising 2024, Thailand chapter. <a href="https://www.mondaq.com/healthcare/1503628/pharmaceutical-advertising-2024thailand-chapter">mondaq.com/…/pharmaceutical-advertising-2024thailand-chapter</a></li>
+</ol>
+<p class="src">หมายเหตุ: แหล่งข้อ 11, 12, 17, 22–31 บางส่วนเป็นแหล่งรอง (ข่าว สำนักงานกฎหมาย ที่ปรึกษา) ต้องยืนยันกับตัวบทหรือหน่วยงานต้นทาง (ราชกิจจานุเบกษา, อย., สคส., สภาเภสัชกรรม, แพทยสภา) ก่อนอ้างอิงอย่างเป็นทางการ</p>
+
+</body>
+</html>
