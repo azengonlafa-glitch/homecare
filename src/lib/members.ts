@@ -144,8 +144,8 @@ const emptyHealth = (): MemberHealth => ({
 
 const defaultSharing = (): MemberSharing => ({
   shareData: true,
-  // ค่าเริ่มต้น: ทุกคนในบ้านดูและแก้ได้ เจ้าของปิดหรือจำกัดเองได้ที่ ตั้งค่า > ความเป็นส่วนตัว (ฐานข้อมูลบังคับตาม)
-  editPolicy: 'all',
+  // ค่าเริ่มต้น: ทุกคนในบ้านดูได้ แต่ต้องขออนุญาตเจ้าของก่อนแก้ไข (เจ้าของเปิดให้ทุกคนแก้ หรือปิดการแชร์ได้ที่ ตั้งค่า > ความเป็นส่วนตัว)
+  editPolicy: 'choose',
   allowedEditors: [],
   blockedEditors: [],
 });

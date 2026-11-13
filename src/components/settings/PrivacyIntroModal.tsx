@@ -71,7 +71,7 @@ export const PrivacyIntroModal: React.FC = () => {
           </li>
           <li className="flex items-start gap-3">
             <Settings2 className="mt-0.5 h-5 w-5 shrink-0 text-purple-700" aria-hidden="true" />
-            <span>ตอนนี้ทุกคนในบ้านดูและช่วยแก้ข้อมูลของคุณได้ ถ้าอยากซ่อนหรือให้แก้ได้เฉพาะบางคน ปรับได้ทุกเมื่อ</span>
+            <span>ตอนนี้คนในบ้านดูข้อมูลของคุณได้ แต่จะแก้ไขได้ต่อเมื่อคุณอนุญาต ถ้าไม่อยากให้ใครดู ปิดได้ที่ ตั้งค่า → ความเป็นส่วนตัว</span>
           </li>
         </ul>
         <p className="rounded-2xl bg-peach-soft p-3 text-base text-slate-800">

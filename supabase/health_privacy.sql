@@ -103,8 +103,8 @@ returns trigger language plpgsql security definer set search_path = public as $$
 declare
   me text := auth.uid()::text;
   health_keys constant text[] := array['health', 'meds', 'vitals', 'doseLogs', 'heightCm', 'weightKg'];
-  -- ค่าเริ่มต้นตรงกับแอป (sharingFor ใน src/lib/members.ts): ทุกคนในบ้านดูและแก้ได้ จนกว่าเจ้าของจะจำกัดเอง
-  default_sharing constant jsonb := '{"shareData": true, "editPolicy": "all", "allowedEditors": [], "blockedEditors": []}';
+  -- ค่าเริ่มต้นตรงกับแอป (defaultSharing ใน src/lib/members.ts): ทุกคนในบ้านดูได้ แต่ต้องขออนุญาตเจ้าของก่อนแก้ไข
+  default_sharing constant jsonb := '{"shareData": true, "editPolicy": "choose", "allowedEditors": [], "blockedEditors": []}';
   part jsonb;
   row_exists boolean;
 begin

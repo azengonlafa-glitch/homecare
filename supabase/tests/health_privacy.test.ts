@@ -164,11 +164,11 @@ describe('ค่าความเป็นส่วนตัว', () => {
   });
 
   it('สร้างแถวให้สมาชิกที่ยังไม่มีแถวได้ แต่ค่าความเป็นส่วนตัวถูกบังคับเป็นค่าเริ่มต้น', async () => {
-    await upsert(OWNER, 'member_records', HELPER, { id: HELPER, age: 30, sharing: JSON.parse(sharing({ shareData: false, allowedEditors: [OWNER] })) });
+    await upsert(OWNER, 'member_records', HELPER, { id: HELPER, age: 30, sharing: JSON.parse(sharing({ shareData: false, editPolicy: 'all', allowedEditors: [OWNER] })) });
     const pub = (await raw('member_records', HELPER)) as { sharing: { shareData: boolean; editPolicy: string; allowedEditors: string[] } };
-    // ค่าเริ่มต้น = ทุกคนในบ้านดูและแก้ได้ จนกว่าเจ้าของจะจำกัดเอง
+    // ค่าเริ่มต้น = ทุกคนในบ้านดูได้ แต่ต้องขออนุญาตก่อนแก้ (คนสร้างแถวให้คนอื่นตั้งค่าเองไม่ได้)
     expect(pub.sharing.shareData).toBe(true);
-    expect(pub.sharing.editPolicy).toBe('all');
+    expect(pub.sharing.editPolicy).toBe('choose');
     expect(pub.sharing.allowedEditors).toEqual([]);
   });
 });
